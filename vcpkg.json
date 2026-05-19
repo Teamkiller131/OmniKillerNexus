@@ -12,9 +12,6 @@
     "stb",
     "basisu",
     "lua",
-    "quickjs-ng",
-    "qtbase",
-    "qtdeclarative",
-    "qtquickcontrols2"
+    "quickjs-ng"
   ]
 }
