@@ -167,9 +167,83 @@ okn-memory:
 # ============================================================
 
 okn-platform:
-  status: blocked  # 依赖 P0 层完成
-  # 所有文件状态: pending
-  # 完整文件列表参见 README.md 的目录结构
+  status: completed
+  api:
+    api.hpp:      {status: completed, date: 2026-05-18}
+    config.hpp:   {status: completed, date: 2026-05-18}
+    platform.hpp: {status: completed, date: 2026-05-18}
+  time:
+    clock.hpp:     {status: completed, date: 2026-05-18}
+    clock.cpp:     {status: completed, date: 2026-05-18}
+    stopwatch.hpp: {status: completed, date: 2026-05-18}
+    stopwatch.cpp: {status: completed, date: 2026-05-18}
+  thread:
+    thread.hpp:           {status: completed, date: 2026-05-18}
+    thread.cpp:           {status: completed, date: 2026-05-18}
+    thread_name.hpp:      {status: completed, date: 2026-05-18}
+    thread_name.cpp:      {status: completed, date: 2026-05-18}
+    thread_affinity.hpp:  {status: completed, date: 2026-05-18}
+    thread_affinity.cpp:  {status: completed, date: 2026-05-18}
+    tls.hpp:              {status: completed, date: 2026-05-18}
+    sync.hpp:             {status: completed, date: 2026-05-18}
+    sync.cpp:             {status: completed, date: 2026-05-18}
+    task_queue.hpp:       {status: completed, date: 2026-05-18}
+    task_queue.cpp:       {status: completed, date: 2026-05-18}
+    thread_pool.hpp:      {status: completed, date: 2026-05-18}
+    thread_pool.cpp:      {status: completed, date: 2026-05-18}
+    job_adapter.hpp:      {status: completed, date: 2026-05-18}
+    job_adapter.cpp:      {status: completed, date: 2026-05-18}
+  fs:
+    path.hpp:    {status: completed, date: 2026-05-18}
+    path.cpp:    {status: completed, date: 2026-05-18}
+    file.hpp:    {status: completed, date: 2026-05-18}
+    file.cpp:    {status: completed, date: 2026-05-18}
+    mmap.hpp:    {status: completed, date: 2026-05-18}
+    mmap.cpp:    {status: completed, date: 2026-05-18}
+    temp.hpp:    {status: completed, date: 2026-05-18}
+    temp.cpp:    {status: completed, date: 2026-05-18}
+    fs_info.hpp: {status: completed, date: 2026-05-18}
+    fs_info.cpp: {status: completed, date: 2026-05-18}
+  system_info:
+    system_info.hpp:  {status: completed, date: 2026-05-18}
+    system_info.cpp:  {status: completed, date: 2026-05-18}
+    cpu_features.hpp: {status: completed, date: 2026-05-18}
+    cpu_features.cpp: {status: completed, date: 2026-05-18}
+  dll:
+    dynamic_library.hpp: {status: completed, date: 2026-05-18}
+    dynamic_library.cpp: {status: completed, date: 2026-05-18}
+    symbol.hpp:          {status: completed, date: 2026-05-18}
+  vm:
+    vm.hpp:      {status: completed, date: 2026-05-18}
+    vm.cpp:      {status: completed, date: 2026-05-18}
+    vm_info.hpp: {status: completed, date: 2026-05-18}
+    vm_info.cpp: {status: completed, date: 2026-05-18}
+  crash:
+    crash_handler.hpp: {status: completed, date: 2026-05-18}
+    crash_handler.cpp: {status: completed, date: 2026-05-18}
+    minidump.hpp:      {status: completed, date: 2026-05-18}
+    minidump.cpp:      {status: completed, date: 2026-05-18}
+    signals.hpp:       {status: completed, date: 2026-05-18}
+    signals.cpp:       {status: completed, date: 2026-05-18}
+  encoding:
+    codec.hpp:  {status: completed, date: 2026-05-18}
+    codec.cpp:  {status: completed, date: 2026-05-18}
+    locale.hpp: {status: completed, date: 2026-05-18}
+    locale.cpp: {status: completed, date: 2026-05-18}
+  path:
+    path_normalize.hpp: {status: completed, date: 2026-05-18}
+    path_normalize.cpp: {status: completed, date: 2026-05-18}
+  input:
+    input.hpp:       {status: completed, date: 2026-05-18}
+    input.cpp:       {status: completed, date: 2026-05-18}
+    input_events.hpp: {status: completed, date: 2026-05-18}
+  hooks:
+    hooks.hpp:         {status: completed, date: 2026-05-18}
+    memory_hooks.hpp:  {status: completed, date: 2026-05-18}
+    memory_hooks.cpp:  {status: completed, date: 2026-05-18}
+    physics_hooks.hpp: {status: completed, date: 2026-05-18}
+    profile_hooks.hpp: {status: completed, date: 2026-05-18}
+    profile_hooks.cpp: {status: completed, date: 2026-05-18}
 
 # ============================================================
 # Layer 2: 核心服务
