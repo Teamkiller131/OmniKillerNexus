@@ -358,13 +358,114 @@ okn-network:
   status: blocked  # 依赖 P2 层完成
 
 okn-physics:
-  status: blocked  # 依赖 P2 层完成
+  status: partial
+  ccd:
+    ccd_config.hpp:    {status: completed, task: impl-p3-physics-ccd, date: 2026-05-19}
+    ccd_config.cpp:    {status: completed, task: impl-p3-physics-ccd, date: 2026-05-19}
+    ccd_toi.hpp:       {status: completed, task: impl-p3-physics-ccd, date: 2026-05-19}
+    ccd_toi.cpp:       {status: completed, task: impl-p3-physics-ccd, date: 2026-05-19}
+    ccd_dispatch.hpp:  {status: completed, task: impl-p3-physics-ccd, date: 2026-05-19}
+    ccd_dispatch.cpp:  {status: completed, task: impl-p3-physics-ccd, date: 2026-05-19}
+  cloth:
+    cloth.hpp:         {status: completed, task: impl-p3-physics-cloth, date: 2026-05-19}
+    cloth.cpp:         {status: completed, task: impl-p3-physics-cloth, date: 2026-05-19}
+    cloth_settings.hpp: {status: completed, task: impl-p3-physics-cloth, date: 2026-05-19}
+    cloth_settings.cpp: {status: completed, task: impl-p3-physics-cloth, date: 2026-05-19}
+  fluids:
+    fluid.hpp:         {status: completed, task: impl-p3-physics-fluids, date: 2026-05-19}
+    fluid.cpp:         {status: completed, task: impl-p3-physics-fluids, date: 2026-05-19}
+    fluid_settings.hpp: {status: completed, task: impl-p3-physics-fluids, date: 2026-05-19}
+    fluid_settings.cpp: {status: completed, task: impl-p3-physics-fluids, date: 2026-05-19}
 
 okn-audio:
-  status: blocked  # 依赖 P2 层完成
+  status: partial
+  backend:
+    audio_backend.hpp:     {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    audio_backend.cpp:     {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_factory.hpp:   {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_factory.cpp:   {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_xaudio2.hpp:   {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_xaudio2.cpp:   {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_coreaudio.hpp: {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_coreaudio.cpp: {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_alsa.hpp:      {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_alsa.cpp:      {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_pulseaudio.hpp: {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_pulseaudio.cpp: {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_aaudio.hpp:    {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_aaudio.cpp:    {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_opensl.hpp:    {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_opensl.cpp:    {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_asio.hpp:      {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_asio.cpp:      {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_wasapi.hpp:    {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_wasapi.cpp:    {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_null.hpp:      {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+    backend_null.cpp:      {status: completed, task: impl-p3-audio-backend, date: 2026-05-19}
+  decode:
+    decoder.hpp:           {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    decoder.cpp:           {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    decoder_mp3.hpp:       {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    decoder_mp3.cpp:       {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    decoder_flac.hpp:      {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    decoder_flac.cpp:      {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    decoder_aac.hpp:       {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    decoder_aac.cpp:       {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    decoder_opus.hpp:      {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    decoder_opus.cpp:      {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    decoder_vorbis.hpp:    {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    decoder_vorbis.cpp:    {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    decoder_wav.hpp:       {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    decoder_wav.cpp:       {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    ogg_decoder.hpp:       {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    ogg_decoder.cpp:       {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    wav_decoder.hpp:       {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+    wav_decoder.cpp:       {status: completed, task: impl-p3-audio-decode, date: 2026-05-19}
+  dsp:
+    limiter.hpp:           {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    limiter.cpp:           {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    delay.hpp:             {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    delay.cpp:             {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    filter.hpp:            {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    filter.cpp:            {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    attenuation.hpp:       {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    attenuation.cpp:       {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    hrtf.hpp:              {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    hrtf.cpp:              {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    doppler.hpp:           {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    doppler.cpp:           {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    occlusion.hpp:         {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    occlusion.cpp:         {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    environmental.hpp:     {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    environmental.cpp:     {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    spatializer.hpp:       {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+    spatializer.cpp:       {status: completed, task: impl-p3-audio-dsp, date: 2026-05-19}
+  drm:
+    drm.hpp:               {status: completed, task: impl-p3-audio-drm, date: 2026-05-19}
+    drm.cpp:               {status: completed, task: impl-p3-audio-drm, date: 2026-05-19}
 
 okn-script:
-  status: blocked  # 依赖 P2 层完成
+  status: partial
+  runtime:
+    runtime.hpp:           {status: completed, task: impl-p3-script-runtime, date: 2026-05-19}
+    runtime.cpp:           {status: completed, task: impl-p3-script-runtime, date: 2026-05-19}
+    runtime_js.hpp:        {status: completed, task: impl-p3-script-runtime, date: 2026-05-19}
+    runtime_js.cpp:        {status: completed, task: impl-p3-script-runtime, date: 2026-05-19}
+    runtime_python.hpp:    {status: completed, task: impl-p3-script-runtime, date: 2026-05-19}
+    runtime_python.cpp:    {status: completed, task: impl-p3-script-runtime, date: 2026-05-19}
+  sandbox:
+    sandbox_quota.hpp:     {status: completed, task: impl-p3-script-sandbox, date: 2026-05-19}
+    sandbox_quota.cpp:     {status: completed, task: impl-p3-script-sandbox, date: 2026-05-19}
+    sandbox_policies.hpp:  {status: completed, task: impl-p3-script-sandbox, date: 2026-05-19}
+    sandbox_policies.cpp:  {status: completed, task: impl-p3-script-sandbox, date: 2026-05-19}
+  debug:
+    debug_server.hpp:      {status: completed, task: impl-p3-script-debugger, date: 2026-05-19}
+    debug_server.cpp:      {status: completed, task: impl-p3-script-debugger, date: 2026-05-19}
+    debug_protocol.hpp:    {status: completed, task: impl-p3-script-debugger, date: 2026-05-19}
+    debug_protocol.cpp:    {status: completed, task: impl-p3-script-debugger, date: 2026-05-19}
+  binding:
+    binding_generator.hpp: {status: completed, task: impl-p3-script-binding, date: 2026-05-19}
+    binding_generator.cpp: {status: completed, task: impl-p3-script-binding, date: 2026-05-19}
 
 # ============================================================
 # Layer 4: 集成层
