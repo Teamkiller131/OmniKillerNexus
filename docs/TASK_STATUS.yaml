@@ -250,12 +250,102 @@ okn-platform:
 # ============================================================
 
 okn-ecs:
-  status: blocked  # 依赖 P1 层完成
-  # 所有文件状态: stub
+  status: completed
+  ecs_types.hpp:   {status: completed, date: 2026-05-19}
+  entity.hpp:      {status: completed, date: 2026-05-19}
+  component.hpp:   {status: completed, date: 2026-05-19}
+  archetype:
+    archetype.hpp:        {status: completed, date: 2026-05-19}
+    archetype.cpp:        {status: completed, date: 2026-05-19}
+    chunk.hpp:            {status: completed, date: 2026-05-19}
+    chunk.cpp:            {status: completed, date: 2026-05-19}
+    chunk_allocator.hpp:  {status: completed, date: 2026-05-19}
+    chunk_allocator.cpp:  {status: completed, date: 2026-05-19}
+  sparse:
+    sparse_set.hpp: {status: completed, date: 2026-05-19}
+    sparse_set.cpp: {status: completed, date: 2026-05-19}
+  storage:
+    storage.hpp:    {status: completed, date: 2026-05-19}
+    storage.cpp:    {status: completed, date: 2026-05-19}
+  world:
+    world.hpp:         {status: completed, date: 2026-05-19}
+    world.cpp:         {status: completed, date: 2026-05-19}
+    world_builder.hpp: {status: completed, date: 2026-05-19}
+    world_builder.cpp: {status: completed, date: 2026-05-19}
+  query:
+    filter.hpp: {status: completed, date: 2026-05-19}
+    query.hpp:  {status: completed, date: 2026-05-19}
+    query.cpp:  {status: completed, date: 2026-05-19}
+    view.hpp:   {status: completed, date: 2026-05-19}
+    relation.hpp: {status: completed, date: 2026-05-19}
+  scheduler:
+    system.hpp:        {status: completed, date: 2026-05-19}
+    system.cpp:        {status: completed, date: 2026-05-19}
+    system_graph.hpp:  {status: completed, date: 2026-05-19}
+    system_graph.cpp:  {status: completed, date: 2026-05-19}
+    scheduler.hpp:     {status: completed, date: 2026-05-19}
+    scheduler.cpp:     {status: completed, date: 2026-05-19}
+    job_adapter.hpp:   {status: completed, date: 2026-05-19}
+  hierarchy:
+    transform.hpp: {status: completed, date: 2026-05-19}
+    transform.cpp: {status: completed, date: 2026-05-19}
+    hierarchy.hpp: {status: completed, date: 2026-05-19}
+    hierarchy.cpp: {status: completed, date: 2026-05-19}
+  events:
+    event_bus.hpp:   {status: completed, date: 2026-05-19}
+    event_bus.cpp:   {status: completed, date: 2026-05-19}
+    event_queue.hpp: {status: completed, date: 2026-05-19}
+  lifecycle:
+    lifecycle.hpp: {status: completed, date: 2026-05-19}
+    lifecycle.cpp: {status: completed, date: 2026-05-19}
+  metrics:
+    metrics.hpp:  {status: completed, date: 2026-05-19}
+    metrics.cpp:  {status: completed, date: 2026-05-19}    
 
 okn-asset:
-  status: blocked  # 依赖 P1 层完成
-  # 所有文件状态: stub
+  status: completed
+  asset_types.hpp: {status: completed, date: 2026-05-19}
+  asset_id.hpp:    {status: completed, date: 2026-05-19}
+  registry:
+    asset_registry.hpp:  {status: completed, date: 2026-05-19}
+    asset_registry.cpp:  {status: completed, date: 2026-05-19}
+    dependency_graph.hpp: {status: completed, date: 2026-05-19}
+    dependency_graph.cpp: {status: completed, date: 2026-05-19}
+  io:
+    asset_io.hpp:    {status: completed, date: 2026-05-19}
+    asset_io.cpp:    {status: completed, date: 2026-05-19}
+    stream.hpp:      {status: completed, date: 2026-05-19}
+    stream.cpp:      {status: completed, date: 2026-05-19}
+    async_loader.hpp: {status: completed, date: 2026-05-19}
+    async_loader.cpp: {status: completed, date: 2026-05-19}
+  formats:
+    model_importer.hpp:     {status: completed, date: 2026-05-19}
+    model_importer.cpp:     {status: completed, date: 2026-05-19}
+    texture_importer.hpp:   {status: completed, date: 2026-05-19}
+    texture_importer.cpp:   {status: completed, date: 2026-05-19}
+    material_importer.hpp:  {status: completed, date: 2026-05-19}
+    material_importer.cpp:  {status: completed, date: 2026-05-19}
+    animation_importer.hpp: {status: completed, date: 2026-05-19}
+    animation_importer.cpp: {status: completed, date: 2026-05-19}
+  pipeline:
+    mesh_pipeline.hpp:    {status: completed, date: 2026-05-19}
+    mesh_pipeline.cpp:    {status: completed, date: 2026-05-19}
+    texture_pipeline.hpp: {status: completed, date: 2026-05-19}
+    texture_pipeline.cpp: {status: completed, date: 2026-05-19}
+  pack:
+    pack_file.hpp:  {status: completed, date: 2026-05-19}
+    pack_file.cpp:  {status: completed, date: 2026-05-19}
+    pack_index.hpp: {status: completed, date: 2026-05-19}
+    pack_index.cpp: {status: completed, date: 2026-05-19}
+  cache:
+    cache_manager.hpp: {status: completed, date: 2026-05-19}
+    cache_manager.cpp: {status: completed, date: 2026-05-19}
+    lru.hpp:           {status: completed, date: 2026-05-19}
+    ref_count.hpp:     {status: completed, date: 2026-05-19}
+  streaming:
+    mip_streamer.hpp:   {status: completed, date: 2026-05-19}
+    chunk_streamer.hpp: {status: completed, date: 2026-05-19}
+    upload_queue.hpp:   {status: completed, date: 2026-05-19}
 
 # ============================================================
 # Layer 3: 功能模块
