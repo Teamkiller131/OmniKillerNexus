@@ -53,131 +53,114 @@ okn-core:
     test_service_registry.cpp:  {status: completed, date: 2026-05-18}
 
 okn-math:
-  status: pending
+  status: completed
   common:
-    constants.hpp:  {status: stub}
-    traits.hpp:     {status: stub}
-    types.hpp:      {status: stub}
+    constants.hpp:  {status: completed, date: 2026-05-18}
+    traits.hpp:     {status: completed, date: 2026-05-18}
+    types.hpp:      {status: completed, date: 2026-05-18}
   algebra:
-    vec2.hpp:       {status: stub}
-    vec2.cpp:       {status: stub}
-    vec3.hpp:       {status: stub}
-    vec3.cpp:       {status: stub}
-    vec4.hpp:       {status: stub}
-    vec4.cpp:       {status: stub}
-    mat3.hpp:       {status: stub}
-    mat3.cpp:       {status: stub}
-    mat4.hpp:       {status: stub}
-    mat4.cpp:       {status: stub}
-    quat.hpp:       {status: stub}
-    quat.cpp:       {status: stub}
-    transform.hpp:  {status: stub}
-    transform.cpp:  {status: stub}
+    vec2.hpp:       {status: completed, date: 2026-05-18}
+    vec2.cpp:       {status: completed, date: 2026-05-18}
+    vec3.hpp:       {status: completed, date: 2026-05-18}
+    vec3.cpp:       {status: completed, date: 2026-05-18}
+    vec4.hpp:       {status: completed, date: 2026-05-18}
+    vec4.cpp:       {status: completed, date: 2026-05-18}
+    mat3.hpp:       {status: completed, date: 2026-05-18}
+    mat3.cpp:       {status: completed, date: 2026-05-18}
+    mat4.hpp:       {status: completed, date: 2026-05-18}
+    mat4.cpp:       {status: completed, date: 2026-05-18}
+    quat.hpp:       {status: completed, date: 2026-05-18}
+    quat.cpp:       {status: completed, date: 2026-05-18}
+    transform.hpp:  {status: completed, date: 2026-05-18}
+    transform.cpp:  {status: completed, date: 2026-05-18}
+    complex.hpp:    {status: completed, date: 2026-05-18}
+    complex.cpp:    {status: completed, date: 2026-05-18}
+    calculus.hpp:   {status: completed, date: 2026-05-18}
   geometry:
-    aabb.hpp:             {status: stub}
-    aabb.cpp:             {status: stub}
-    bounds.hpp:           {status: stub}
-    bounds.cpp:           {status: stub}
-    frustum.hpp:          {status: stub}
-    frustum.cpp:          {status: stub}
-    intersection.hpp:     {status: stub}
-    intersection.cpp:     {status: stub}
-    obb.hpp:              {status: stub}
-    obb.cpp:              {status: stub}
-    plane.hpp:            {status: stub}
-    plane.cpp:            {status: stub}
-    ray.hpp:              {status: stub}
-    ray.cpp:              {status: stub}
-    sphere.hpp:           {status: stub}
-    sphere.cpp:           {status: stub}
-    triangle.hpp:         {status: stub}
-    triangle.cpp:         {status: stub}
+    aabb.hpp:             {status: completed, date: 2026-05-18}
+    aabb.cpp:             {status: completed, date: 2026-05-18}
+    bounds.hpp:           {status: completed, date: 2026-05-18}
+    frustum.hpp:          {status: completed, date: 2026-05-18}
+    frustum.cpp:          {status: completed, date: 2026-05-18}
+    intersection.hpp:     {status: completed, date: 2026-05-18}
+    obb.hpp:              {status: completed, date: 2026-05-18}
+    plane.hpp:            {status: completed, date: 2026-05-18}
+    ray.hpp:              {status: completed, date: 2026-05-18}
+    sphere.hpp:           {status: completed, date: 2026-05-18}
+    sphere.cpp:           {status: completed, date: 2026-05-18}
+    triangle.hpp:         {status: completed, date: 2026-05-18}
   numeric:
-    easing.hpp:         {status: stub}
-    easing.cpp:         {status: stub}
-    interpolation.hpp:  {status: stub}
-    interpolation.cpp:  {status: stub}
-    noise.hpp:          {status: stub}
-    noise.cpp:          {status: stub}
-    random.hpp:         {status: stub}
-    random.cpp:         {status: stub}
+    easing.hpp:         {status: completed, date: 2026-05-18}
+    easing.cpp:         {status: completed, date: 2026-05-18}
+    interpolation.hpp:  {status: completed, date: 2026-05-18}
+    interpolation.cpp:  {status: completed, date: 2026-05-18}
+    noise.hpp:          {status: completed, date: 2026-05-18}
+    noise.cpp:          {status: completed, date: 2026-05-18}
+    random.hpp:         {status: completed, date: 2026-05-18}
+    random.cpp:         {status: completed, date: 2026-05-18}
   color:
-    color.hpp:       {status: stub}
-    color.cpp:       {status: stub}
-    color_space.hpp: {status: stub}
-    color_space.cpp: {status: stub}
+    color.hpp:       {status: completed, date: 2026-05-18}
+    color.cpp:       {status: completed, date: 2026-05-18}
+    color_space.hpp: {status: completed, date: 2026-05-18}
+    color_space.cpp: {status: completed, date: 2026-05-18}
   simd:
-    simd_base.hpp:  {status: stub}
-    simd_base.cpp:  {status: stub}
-    simd_vec4.hpp:  {status: stub}
-    simd_vec4.cpp:  {status: stub}
+    simd_base.hpp:  {status: completed, date: 2026-05-18}
+    simd_vec4.hpp:  {status: completed, date: 2026-05-18}
+    simd_vec4.cpp:  {status: completed, date: 2026-05-18}
   util:
-    compare.hpp: {status: stub}
-    compare.cpp: {status: stub}
-    format.hpp:  {status: stub}
-    format.cpp:  {status: stub}
-    hash.hpp:    {status: stub}
-    hash.cpp:    {status: stub}
+    compare.hpp: {status: completed, date: 2026-05-18}
+    compare.cpp: {status: completed, date: 2026-05-18}
+    format.hpp:  {status: completed, date: 2026-05-18}
+    format.cpp:  {status: completed, date: 2026-05-18}
+    hash.hpp:    {status: completed, date: 2026-05-18}
+    hash.cpp:    {status: completed, date: 2026-05-18}
 
 okn-memory:
-  status: pending
+  status: completed
   backend:
-    backend.hpp:    {status: stub}
-    backend.cpp:    {status: stub}
-    mi_backend.hpp: {status: stub}
-    mi_backend.cpp: {status: stub}
-    rp_backend.hpp: {status: stub}
-    rp_backend.cpp: {status: stub}
-    sys_backend.hpp: {status: stub}
-    sys_backend.cpp: {status: stub}
+    backend.hpp:    {status: completed, date: 2026-05-18}
+    backend.cpp:    {status: completed, date: 2026-05-18}
+    mi_backend.hpp: {status: completed, date: 2026-05-18}
+    rp_backend.hpp: {status: completed, date: 2026-05-18}
+    sys_backend.hpp: {status: stub, note: merged into backend.hpp}
   alloc:
-    allocator.hpp:      {status: stub}
-    allocator.cpp:      {status: stub}
+    allocator.hpp:      {status: completed, date: 2026-05-18}
+    allocator.cpp:      {status: completed, date: 2026-05-18}
     override_new.hpp:   {status: stub}
-    override_new.cpp:   {status: stub}
-    proxy_allocator.hpp: {status: stub}
-    proxy_allocator.cpp: {status: stub}
-    stl_adapter.hpp:    {status: stub}
-    stl_adapter.cpp:    {status: stub}
-    tag_allocator.hpp:  {status: stub}
-    tag_allocator.cpp:  {status: stub}
+    proxy_allocator.hpp: {status: completed, date: 2026-05-18}
+    proxy_allocator.cpp: {status: completed, date: 2026-05-18}
+    stl_adapter.hpp:    {status: completed, date: 2026-05-18}
+    tag_allocator.hpp:  {status: completed, date: 2026-05-18}
+    tag_allocator.cpp:  {status: completed, date: 2026-05-18}
   arena:
-    linear_arena.hpp:     {status: stub}
-    linear_arena.cpp:     {status: stub}
-    segmented_arena.hpp:  {status: stub}
-    segmented_arena.cpp:  {status: stub}
-    stack_arena.hpp:      {status: stub}
-    stack_arena.cpp:      {status: stub}
+    linear_arena.hpp:     {status: completed, date: 2026-05-18}
+    linear_arena.cpp:     {status: completed, date: 2026-05-18}
+    segmented_arena.hpp:  {status: completed, date: 2026-05-18}
+    segmented_arena.cpp:  {status: completed, date: 2026-05-18}
+    stack_arena.hpp:      {status: completed, date: 2026-05-18}
+    stack_arena.cpp:      {status: completed, date: 2026-05-18}
   pool:
-    fixed_block_pool.hpp:    {status: stub}
-    fixed_block_pool.cpp:    {status: stub}
-    object_pool.hpp:         {status: stub}
-    object_pool.cpp:         {status: stub}
-    small_object_pool.hpp:   {status: stub}
-    small_object_pool.cpp:   {status: stub}
+    fixed_block_pool.hpp:    {status: completed, date: 2026-05-18}
+    fixed_block_pool.cpp:    {status: completed, date: 2026-05-18}
+    object_pool.hpp:         {status: completed, date: 2026-05-18}
+    small_object_pool.hpp:   {status: completed, date: 2026-05-18}
+    small_object_pool.cpp:   {status: completed, date: 2026-05-18}
   tracking:
-    guard_page.hpp:     {status: stub}
-    guard_page.cpp:     {status: stub}
-    leak_detector.hpp:  {status: stub}
-    leak_detector.cpp:  {status: stub}
-    memory_stats.hpp:   {status: stub}
-    memory_stats.cpp:   {status: stub}
-    memory_tracker.hpp: {status: stub}
-    memory_tracker.cpp: {status: stub}
+    guard_page.hpp:     {status: completed, date: 2026-05-18}
+    leak_detector.hpp:  {status: completed, date: 2026-05-18}
+    leak_detector.cpp:  {status: completed, date: 2026-05-18}
+    memory_stats.hpp:   {status: completed, date: 2026-05-18}
+    memory_tracker.hpp: {status: completed, date: 2026-05-18}
+    memory_tracker.cpp: {status: completed, date: 2026-05-18}
   intrusive:
-    list.hpp:       {status: stub}
-    list.cpp:       {status: stub}
-    spsc_queue.hpp: {status: stub}
-    spsc_queue.cpp: {status: stub}
+    list.hpp:       {status: completed, date: 2026-05-18}
+    spsc_queue.hpp: {status: completed, date: 2026-05-18}
   util:
-    align.hpp:      {status: stub}
-    align.cpp:      {status: stub}
-    freelist.hpp:   {status: stub}
-    freelist.cpp:   {status: stub}
-    handle.hpp:     {status: stub}
-    handle.cpp:     {status: stub}
-    scope_alloc.hpp: {status: stub}
-    scope_alloc.cpp: {status: stub}
+    align.hpp:      {status: completed, date: 2026-05-18}
+    freelist.hpp:   {status: completed, date: 2026-05-18}
+    freelist.cpp:   {status: completed, date: 2026-05-18}
+    handle.hpp:     {status: completed, date: 2026-05-18}
+    scope_alloc.hpp: {status: completed, date: 2026-05-18}
 
 # ============================================================
 # Layer 1: 平台抽象
