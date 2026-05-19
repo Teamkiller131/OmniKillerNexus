@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.20)
 
 option(OKN_CLI_MONO "Build single okn-cli binary with subcommands" ON)
 option(OKN_CLI_ASSET "Build okn-cli-asset" ON)

@@ -1,9 +1,18 @@
-﻿cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.20)
 project(OmniKillerNexus LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# MSVC: /std:c++latest 映射到实际 C++26 支持
+# CMake 4.3 尚不支持 CXX26 与 MSVC 的映射，需手动注入标志
+if(MSVC)
+    add_compile_options(/std:c++latest /W4 /WX /utf-8)
+else()
+    add_compile_options(-Wall -Wextra -Werror -pedantic)
+endif()
 
 option(OKN_ENABLE_CLIENT_SDK "Build client SDK" ON)
 option(OKN_ENABLE_SERVER_SDK "Build server SDK" ON)
@@ -21,17 +30,23 @@ add_subdirectory(modules/okn-ui)
 add_subdirectory(modules/okn-network)
 add_subdirectory(modules/okn-editor)
 add_subdirectory(modules/okn-platform)
+add_subdirectory(modules/okn-core)
+add_subdirectory(modules/okn-math)
+add_subdirectory(modules/okn-memory)
+add_subdirectory(modules/okn-physics)
 
 if(OKN_ENABLE_CLIENT_SDK)
     add_library(okn-client-sdk INTERFACE)
     target_link_libraries(okn-client-sdk INTERFACE
-            okn-render okn-audio okn-ui okn-ecs okn-script okn-network okn-asset okn-platform
+            okn-core-interfaces okn-core okn-math okn-memory
+            okn-render okn-audio okn-ui okn-ecs okn-script okn-network okn-asset okn-platform okn-physics
     )
 endif()
 
 if(OKN_ENABLE_SERVER_SDK)
     add_library(okn-server-sdk INTERFACE)
     target_link_libraries(okn-server-sdk INTERFACE
+            okn-core-interfaces okn-core okn-math okn-memory
             okn-network okn-ecs okn-script okn-asset okn-platform
     )
 endif()
@@ -39,7 +54,8 @@ endif()
 if(OKN_ENABLE_EDITOR_SDK)
     add_library(okn-editor-sdk INTERFACE)
     target_link_libraries(okn-editor-sdk INTERFACE
-            okn-editor okn-render okn-audio okn-ui okn-ecs okn-script okn-network okn-asset okn-platform
+            okn-core-interfaces okn-core okn-math okn-memory
+            okn-editor okn-render okn-audio okn-ui okn-ecs okn-script okn-network okn-asset okn-platform okn-physics
     )
 endif()
 

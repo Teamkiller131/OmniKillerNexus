@@ -1,0 +1,233 @@
+# OmniKillerNexus 全模块文件级开发状态追踪
+# 状态值: completed | in_progress | pending | stub
+# 验证 Agent 在验证通过后更新本文件
+
+# ============================================================
+# Layer 0: 基础设施
+# ============================================================
+
+okn-core:
+  status: completed
+  api:
+    service_registry.hpp: {status: completed, task: impl-core-service-registry, date: 2025-12-23}
+    types.hpp:           {status: completed, date: 2026-05-18}
+    hash.hpp:            {status: completed, date: 2026-05-18}
+    guid.hpp:            {status: completed, date: 2026-05-18}
+    id.hpp:              {status: completed, date: 2026-05-18}
+    result.hpp:          {status: completed, date: 2026-05-18}
+    platform.hpp:        {status: completed, date: 2026-05-18}
+    string_utils.hpp:    {status: completed, date: 2026-05-18}
+    logger.hpp:          {status: completed, date: 2026-05-18}
+    config.hpp:          {status: completed, date: 2026-05-18}
+    time.hpp:            {status: completed, date: 2026-05-18}
+    timer.hpp:           {status: completed, date: 2026-05-18}
+    profiler.hpp:        {status: completed, date: 2026-05-18}
+    memory.hpp:          {status: completed, date: 2026-05-18}
+  defaults:
+    service_registry_default.hpp: {status: completed, task: impl-core-service-registry, date: 2025-12-23}
+    service_registry_default.cpp: {status: completed, task: impl-core-service-registry, date: 2025-12-23}
+    logger_default.hpp:    {status: completed, date: 2026-05-18}
+    logger_default.cpp:    {status: completed, date: 2026-05-18}
+    config_default.hpp:    {status: completed, date: 2026-05-18}
+    config_default.cpp:    {status: completed, date: 2026-05-18}
+    time_default.hpp:      {status: completed, date: 2026-05-18}
+    time_default.cpp:      {status: completed, date: 2026-05-18}
+    timer_default.hpp:     {status: completed, date: 2026-05-18}
+    timer_default.cpp:     {status: completed, date: 2026-05-18}
+    profiler_default.hpp:  {status: completed, date: 2026-05-18}
+    profiler_default.cpp:  {status: completed, date: 2026-05-18}
+    memory_default.hpp:    {status: completed, date: 2026-05-18}
+    memory_default.cpp:    {status: completed, date: 2026-05-18}
+  impl:
+    core_factory.hpp: {status: completed, date: 2026-05-18}
+  src:
+    string_utils.cpp: {status: completed, date: 2026-05-18}
+  tests:
+    test_main.cpp:              {status: completed, date: 2026-05-18}
+    test_types.cpp:             {status: completed, date: 2026-05-18}
+    test_hash.cpp:              {status: completed, date: 2026-05-18}
+    test_result.cpp:            {status: completed, date: 2026-05-18}
+    test_id.cpp:                {status: completed, date: 2026-05-18}
+    test_string_utils.cpp:      {status: completed, date: 2026-05-18}
+    test_logger.cpp:            {status: completed, date: 2026-05-18}
+    test_service_registry.cpp:  {status: completed, date: 2026-05-18}
+
+okn-math:
+  status: pending
+  common:
+    constants.hpp:  {status: stub}
+    traits.hpp:     {status: stub}
+    types.hpp:      {status: stub}
+  algebra:
+    vec2.hpp:       {status: stub}
+    vec2.cpp:       {status: stub}
+    vec3.hpp:       {status: stub}
+    vec3.cpp:       {status: stub}
+    vec4.hpp:       {status: stub}
+    vec4.cpp:       {status: stub}
+    mat3.hpp:       {status: stub}
+    mat3.cpp:       {status: stub}
+    mat4.hpp:       {status: stub}
+    mat4.cpp:       {status: stub}
+    quat.hpp:       {status: stub}
+    quat.cpp:       {status: stub}
+    transform.hpp:  {status: stub}
+    transform.cpp:  {status: stub}
+  geometry:
+    aabb.hpp:             {status: stub}
+    aabb.cpp:             {status: stub}
+    bounds.hpp:           {status: stub}
+    bounds.cpp:           {status: stub}
+    frustum.hpp:          {status: stub}
+    frustum.cpp:          {status: stub}
+    intersection.hpp:     {status: stub}
+    intersection.cpp:     {status: stub}
+    obb.hpp:              {status: stub}
+    obb.cpp:              {status: stub}
+    plane.hpp:            {status: stub}
+    plane.cpp:            {status: stub}
+    ray.hpp:              {status: stub}
+    ray.cpp:              {status: stub}
+    sphere.hpp:           {status: stub}
+    sphere.cpp:           {status: stub}
+    triangle.hpp:         {status: stub}
+    triangle.cpp:         {status: stub}
+  numeric:
+    easing.hpp:         {status: stub}
+    easing.cpp:         {status: stub}
+    interpolation.hpp:  {status: stub}
+    interpolation.cpp:  {status: stub}
+    noise.hpp:          {status: stub}
+    noise.cpp:          {status: stub}
+    random.hpp:         {status: stub}
+    random.cpp:         {status: stub}
+  color:
+    color.hpp:       {status: stub}
+    color.cpp:       {status: stub}
+    color_space.hpp: {status: stub}
+    color_space.cpp: {status: stub}
+  simd:
+    simd_base.hpp:  {status: stub}
+    simd_base.cpp:  {status: stub}
+    simd_vec4.hpp:  {status: stub}
+    simd_vec4.cpp:  {status: stub}
+  util:
+    compare.hpp: {status: stub}
+    compare.cpp: {status: stub}
+    format.hpp:  {status: stub}
+    format.cpp:  {status: stub}
+    hash.hpp:    {status: stub}
+    hash.cpp:    {status: stub}
+
+okn-memory:
+  status: pending
+  backend:
+    backend.hpp:    {status: stub}
+    backend.cpp:    {status: stub}
+    mi_backend.hpp: {status: stub}
+    mi_backend.cpp: {status: stub}
+    rp_backend.hpp: {status: stub}
+    rp_backend.cpp: {status: stub}
+    sys_backend.hpp: {status: stub}
+    sys_backend.cpp: {status: stub}
+  alloc:
+    allocator.hpp:      {status: stub}
+    allocator.cpp:      {status: stub}
+    override_new.hpp:   {status: stub}
+    override_new.cpp:   {status: stub}
+    proxy_allocator.hpp: {status: stub}
+    proxy_allocator.cpp: {status: stub}
+    stl_adapter.hpp:    {status: stub}
+    stl_adapter.cpp:    {status: stub}
+    tag_allocator.hpp:  {status: stub}
+    tag_allocator.cpp:  {status: stub}
+  arena:
+    linear_arena.hpp:     {status: stub}
+    linear_arena.cpp:     {status: stub}
+    segmented_arena.hpp:  {status: stub}
+    segmented_arena.cpp:  {status: stub}
+    stack_arena.hpp:      {status: stub}
+    stack_arena.cpp:      {status: stub}
+  pool:
+    fixed_block_pool.hpp:    {status: stub}
+    fixed_block_pool.cpp:    {status: stub}
+    object_pool.hpp:         {status: stub}
+    object_pool.cpp:         {status: stub}
+    small_object_pool.hpp:   {status: stub}
+    small_object_pool.cpp:   {status: stub}
+  tracking:
+    guard_page.hpp:     {status: stub}
+    guard_page.cpp:     {status: stub}
+    leak_detector.hpp:  {status: stub}
+    leak_detector.cpp:  {status: stub}
+    memory_stats.hpp:   {status: stub}
+    memory_stats.cpp:   {status: stub}
+    memory_tracker.hpp: {status: stub}
+    memory_tracker.cpp: {status: stub}
+  intrusive:
+    list.hpp:       {status: stub}
+    list.cpp:       {status: stub}
+    spsc_queue.hpp: {status: stub}
+    spsc_queue.cpp: {status: stub}
+  util:
+    align.hpp:      {status: stub}
+    align.cpp:      {status: stub}
+    freelist.hpp:   {status: stub}
+    freelist.cpp:   {status: stub}
+    handle.hpp:     {status: stub}
+    handle.cpp:     {status: stub}
+    scope_alloc.hpp: {status: stub}
+    scope_alloc.cpp: {status: stub}
+
+# ============================================================
+# Layer 1: 平台抽象
+# ============================================================
+
+okn-platform:
+  status: blocked  # 依赖 P0 层完成
+  # 所有文件状态: pending
+  # 完整文件列表参见 README.md 的目录结构
+
+# ============================================================
+# Layer 2: 核心服务
+# ============================================================
+
+okn-ecs:
+  status: blocked  # 依赖 P1 层完成
+  # 所有文件状态: stub
+
+okn-asset:
+  status: blocked  # 依赖 P1 层完成
+  # 所有文件状态: stub
+
+# ============================================================
+# Layer 3: 功能模块
+# ============================================================
+
+okn-render:
+  status: blocked  # 依赖 P2 层完成
+
+okn-network:
+  status: blocked  # 依赖 P2 层完成
+
+okn-physics:
+  status: blocked  # 依赖 P2 层完成
+
+okn-audio:
+  status: blocked  # 依赖 P2 层完成
+
+okn-script:
+  status: blocked  # 依赖 P2 层完成
+
+# ============================================================
+# Layer 4: 集成层
+# ============================================================
+
+okn-ui:
+  status: blocked  # 依赖 P3 层完成
+
+okn-editor:
+  status: blocked  # 依赖 P3 层完成
+
+tools:
+  status: blocked  # 依赖 P4 层完成

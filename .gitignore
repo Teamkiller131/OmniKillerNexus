@@ -1,0 +1,58 @@
+# Build outputs
+build/
+out/
+dist/
+*.user
+*.suo
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake-build-*/
+compile_commands.json
+
+# Ninja
+.ninja*
+*.ninja
+
+# Visual Studio
+.vs/
+.vscode/
+*.db
+*.opendb
+
+# vcpkg
+vcpkg_installed/
+vcpkg-manifest-install.log
+
+# IDE
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Test outputs
+Testing/
+CTestTestfile.cmake
+*.gcov
+*.gcda
+*.gcno
+
+# Coverage
+coverage/
+*.profraw
+*.profdata
+
+# Packages
+*.zip
+*.tar.gz
+*.7z
+
+# Misc
+*.log
+*.tmp

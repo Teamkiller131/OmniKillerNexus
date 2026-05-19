@@ -25,3 +25,15 @@
 [submodule "modules/okn-platform"]
 	path = modules/okn-platform
 	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-platform.git
+[submodule "modules/okn-core"]
+	path = modules/okn-core
+	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-core.git
+[submodule "modules/okn-memory"]
+	path = modules/okn-memory
+	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-memory.git
+[submodule "modules/okn-physics"]
+	path = modules/okn-physics
+	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-physics.git
+[submodule "modules/okn-math"]
+	path = modules/okn-math
+	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-math.git

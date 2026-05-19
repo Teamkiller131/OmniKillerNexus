@@ -1,0 +1,20 @@
+{
+  "name": "omnkillernexus",
+  "version": "0.1.0",
+  "description": "OmniKillerNexus commercial game engine framework",
+  "dependencies": [
+    "doctest",
+    "mimalloc",
+    "miniaudio",
+    "asio",
+    "msquic",
+    "assimp",
+    "stb",
+    "basisu",
+    "lua",
+    "quickjs-ng",
+    "qtbase",
+    "qtdeclarative",
+    "qtquickcontrols2"
+  ]
+}

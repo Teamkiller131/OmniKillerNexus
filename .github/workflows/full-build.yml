@@ -1,0 +1,60 @@
+# CI Full Build — 手动触发或 main 分支
+# 目标在 Windows Threadripper runner 上运行
+# fnos 上仅做力所能及的 Linux clang 编译（后期启用）
+
+name: Full Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      config:
+        description: "Build configuration"
+        required: false
+        default: "Debug"
+        type: choice
+        options: ["Debug", "Release"]
+
+jobs:
+  # Windows 全量编译（需要 Windows runner，目前手动在本地跑）
+  windows-build:
+    if: false  # 暂禁用，需配置 Windows runner 后启用
+    runs-on: windows-threadripper
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=${{ matrix.config }} `
+            -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+      - name: Build SDKs
+        run: cmake --build build --config ${{ matrix.config }}
+
+      - name: Test
+        run: ctest --test-dir build --config ${{ matrix.config }} --output-on-failure
+
+  # Linux 轻量验证（fnos shell runner，后期启用）
+  linux-check:
+    if: false  # 暂禁用，待 okn-platform 支持 Linux 后启用
+    runs-on: fnos-shell
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build core modules (Linux/Clang)
+        run: |
+          cmake -S . -B build-linux -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ github.event.inputs.config || 'Debug' }} \
+            -DCMAKE_CXX_COMPILER=clang++
+          cmake --build build-linux --target okn-core-interfaces okn-core

@@ -35,7 +35,7 @@ git submodule update --init --recursive
 
 ## 构建要求
 - CMake ≥ 3.20
-- C++23 编译器
+- C++26 编译器
 - Ninja / Make / MSVC 均可
 
 ## 顶层 CMake 选项

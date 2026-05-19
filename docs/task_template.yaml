@@ -1,0 +1,81 @@
+# Task Card 标准格式
+# 每个 Agent 任务使用此模板下发
+
+# ── 必填字段 ──
+
+task_id: ""           # 唯一标识，格式: implement-<module>-<class>
+  # 示例: implement-okn-math-vec3
+
+module: ""            # 目标模块: okn-core / okn-math / okn-memory / etc.
+
+layer: ""             # 开发阶段: P0.1 / P0.2 / P1 / P2.1 / etc.
+
+type: ""              # 任务类型: api_interface | implementation | test | integration
+
+priority: ""          # high / medium / low
+
+depends_on: []        # 已完成的上游文件列表（绝对路径）
+  # 示例:
+  #   - D:\OmniKillerNexus\modules\okn-math\include\okn\math\common\types.hpp
+  #   - D:\OmniKillerNexus\modules\okn-math\include\okn\math\common\constants.hpp
+
+blocks: []            # 被此 Task 阻塞的后续 Task（可选，用于调度）
+  # 示例:
+  #   - implement-okn-math-mat3
+
+# ── API 契约 ──
+
+api_contract: |
+  # 完整类声明 + 文档注释
+  # 示例:
+  # class vec2 {
+  # public:
+  #     float x = 0.0f;
+  #     float y = 0.0f;
+  #
+  #     constexpr vec2() noexcept = default;
+  #     constexpr vec2(float x, float y) noexcept : x(x), y(y) {}
+  #
+  #     [[nodiscard]] auto operator+(const vec2& rhs) const noexcept -> vec2;
+  #     [[nodiscard]] auto operator-(const vec2& rhs) const noexcept -> vec2;
+  #     [[nodiscard]] auto operator*(float scalar) const noexcept -> vec2;
+  #     [[nodiscard]] auto dot(const vec2& rhs) const noexcept -> float;
+  #     [[nodiscard]] auto length() const noexcept -> float;
+  #     [[nodiscard]] auto normalize() const -> vec2;
+  # };
+
+# ── 产出文件 ──
+
+files: []             # 要写/修改的文件列表
+  # 示例:
+  #   - path: include/okn/math/algebra/vec2.hpp
+  #     action: create
+  #   - path: src/algebra/vec2.cpp
+  #     action: create
+  #   - path: tests/test_vec2.cpp
+  #     action: create
+
+# ── 验证清单 ──
+
+checklist:
+  - clang-format 通过
+  - MSVC /W4 /WX 编译零警告
+  - Clang-cl -Wall -Wextra -Werror 编译零警告（如果可用）
+  - doctest 全部通过
+  - clang-tidy 无新增告警
+  - 无内存泄漏（如适用）
+
+# ── 上下文材料 ──
+
+references: []        # 参考现有相似实现（可选）
+  # 示例:
+  #   - D:\OmniKillerNexus\modules\okn-core\include\okn\core\api\service_registry.hpp
+  #   - docs/patterns/service_registry.md
+
+# ── 状态字段（Agent 无需填写，系统/验证 Agent 更新） ──
+
+assigned_to: ""       # 分配的 Agent ID
+started_at: ""        # ISO 8601 timestamp
+completed_at: ""      # ISO 8601 timestamp
+status: pending        # pending | in_progress | completed | rejected | blocked
+validation_result: "" # pass | fail | 错误描述
