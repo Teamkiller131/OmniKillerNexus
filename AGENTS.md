@@ -235,3 +235,4 @@ cmake -S . -B build -G Ninja \
 - 依赖项是 `pending` → 不得假定其 API，须等待或先实现依赖
 - 写 API 接口时 → 注释必须包含线程安全、生命周期、错误模型说明
 - 禁止任何 Agent 修改本文件（AGENTS.md），只能由验证 Agent 在验证通过后修改
+- **禁止使用 `subagent_type="explore"`**：explore agent 在本仓库中频繁失败（aborted），已被证实不可靠。需要探索代码库时，直接使用 `grep`、`ast_grep_search`、`read` 等直接工具
