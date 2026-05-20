@@ -152,6 +152,20 @@ Layer 4    okn-ui ── okn-editor ── tools/
 - `checklist`：验证清单
 
 ### 4.2 验证标准（每个 Task 必须通过）
+
+### 4.2a Agent 调用模板（必须遵循）
+
+每次调用 `task()` 必须包含全部 5 个必填参数，缺一不可：
+
+```
+task(
+    description="简短描述（5-10词）",
+    subagent_type="general",           // 或 explore/librarian/oracle，禁用 category
+    run_in_background=false,           // false=同步等待, true=异步
+    load_skills=[],                    // 必填，无特殊技能时传空数组
+    prompt="完整任务描述"
+)
+```
 1. `scripts/lint.ps1` 通过（clang-format + clang-tidy）
 2. `scripts/build.ps1 -Module <module> -Config Debug` 通过
 3. `scripts/run_tests.ps1 -Module <module>` 全部通过

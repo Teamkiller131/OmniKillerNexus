@@ -2,7 +2,7 @@
 # https://clang.llvm.org/docs/ClangFormatStyleOptions.html
 BasedOnStyle: Google
 Language: Cpp
-Standard: c++26
+Standard: c++20
 
 # 缩进
 IndentWidth: 4

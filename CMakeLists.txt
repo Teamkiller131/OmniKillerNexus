@@ -6,10 +6,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# ── 输出目录（必须在 toolchain 之后强制设，vcpkg 可能覆盖） ──
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib" CACHE PATH "Static library output dir")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY  "${CMAKE_BINARY_DIR}/lib" CACHE PATH "DLL output dir")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY  "${CMAKE_BINARY_DIR}/bin" CACHE PATH "Executable output dir")
+foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
+    string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} "${CMAKE_BINARY_DIR}/lib")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG}  "${CMAKE_BINARY_DIR}/lib")
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG}  "${CMAKE_BINARY_DIR}/bin")
+endforeach()
+
 # MSVC: /std:c++latest 映射到实际 C++26 支持
 # CMake 4.3 尚不支持 CXX26 与 MSVC 的映射，需手动注入标志
 if(MSVC)
-    add_compile_options(/std:c++latest /W4 /WX /utf-8)
+    add_compile_options(/std:c++latest /W4 /WX /utf-8 /external:W0 /external:anglebrackets /wd4244)
 else()
     add_compile_options(-Wall -Wextra -Werror -pedantic)
 endif()
