@@ -14,6 +14,7 @@
     "lua",
     "quickjs-ng",
     "joltphysics",
-    "sokol"
+    "sokol",
+    "sol2"
   ]
 }

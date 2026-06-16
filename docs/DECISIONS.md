@@ -101,6 +101,31 @@ interactive **`okn-slice_app`** (D3D11) which runs the full loop live on hardwar
 Known workaround: `okn::math::Color::from_u8` and the static Color constants are
 unimplemented stubs, so colors are built from the inline float ctor.
 
+## ADR-0007 — Scripting is sol2/Lua; gameplay is hot-reloadable Lua (Phase 3)
+
+**Status:** accepted (2026-06-16); Phase 3
+
+sol2 (vcpkg `sol2`) over Lua 5.4 is the scripting layer (ADR-0003). Two pieces:
+- **okn-script** now uses sol2 *internally*: `LuaContext` is backed by a `sol::state`
+  (so `load_string`/`load_file` actually RUN the chunk — the raw version only loaded
+  it — and `set_global` is real), and `EngineBindings` are real & callable from Lua
+  (`vec3()`/`vec3_length`/`vec3_add`/`vec3_dot`, `okn.log`/`okn.version`,
+  `okn_input.set_key`/`key_down`, `entity(id)`). Bindings use Lua tables + functions
+  (not `new_usertype`, which crashed at `lua_close` with this sol2/Lua build).
+- **okn-render/slice/LuaSlice**: a Lua script AUTHORS the scene + gameplay. The game
+  API (`set_gravity`/`spawn_ground`/`spawn_player`/`spawn_box`/`move_player`/`jump`/
+  `player_x/y`) is bound to a `sol::state`; the script defines `on_update(dt)` and
+  `on_land()` (which calls a host-injected `play_sound`). `check_hot_reload()` re-runs
+  the file when it changes on disk.
+
+`slice_scene.lua` is the live, hot-reloadable content; `okn-slice_app` loads it and
+reloads on edit. Verified: `okn-lua_slice_tests` (3 cases — Lua authors the scene,
+the on_land trigger fires on a physics contact, hot-reload picks up file edits) and
+`okn-script_tests` (engine bindings callable). **GOTCHA:** a `sol::state_view` over a
+state you don't own holds Lua registry refs — destroy it BEFORE closing the state, or
+its dtor `luaL_unref`s a freed state (SIGSEGV). The JS/Python runtimes were already
+deleted (Phase 0); Lua is the only scripting runtime.
+
 ## ADR-0004 — Vertical slice over horizontal completeness
 
 **Status:** accepted (2026-06-16)
