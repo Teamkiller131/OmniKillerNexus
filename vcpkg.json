@@ -12,6 +12,7 @@
     "stb",
     "basisu",
     "lua",
-    "quickjs-ng"
+    "quickjs-ng",
+    "joltphysics"
   ]
 }
