@@ -32,6 +32,7 @@ $targets = [ordered]@{
     "okn-audio"    = "okn-audio_tests"
     "okn-script"   = "okn-script_tests"
     "okn-physics"  = "okn-physics_tests"
+    "okn-render2d" = "okn-render2d_tests"   # 2D sprite path (header-only, links okn-math only)
 }
 
 # Locate vcvars64 (MSVC + Ninja need the developer environment).

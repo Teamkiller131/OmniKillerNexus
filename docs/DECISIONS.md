@@ -53,6 +53,26 @@ infrastructure libraries. Standing decisions:
 If the JS/Python/QUIC paths stay deleted, also remove `quickjs-ng` and `msquic`
 from `vcpkg.json` so they stop pulling heavy deps into every build.
 
+## ADR-0005 — 2D sprite path: engine-facing layer + software reference, sokol GPU backend
+
+**Status:** accepted (2026-06-16); Phase 1
+
+The 2D render path is a backend-agnostic CPU layer plus a swappable backend:
+`Camera2D` (orthographic) → `SpriteBatch` (sprites → world-space quads grouped by
+texture) → backend. It depends ONLY on okn-math and lives header-only under
+`okn-render/include/okn/render/sprite2d/`, deliberately NOT linked against the
+okn-render static lib (which has pre-existing duplicate-symbol issues in its
+D3D12 stubs — `queue.cpp` vs `command_queue.cpp`; cleaning that is its own task).
+
+A **software rasterizer** (`SoftwareRenderer`, barycentric fill + nearest texture
++ alpha blend) is the headless reference backend: it proves the whole pipeline
+end-to-end and is what the test suite asserts pixel-by-pixel (`okn-render2d_tests`,
+9 cases). The **GPU backend is sokol_gfx** (ADR-0003) and will consume the same
+`DrawGroup`s; it plus a real window (sokol_app) is the remaining display-dependent
+step that cannot be verified headlessly. The live-window 60fps sprite is therefore
+the one Phase-1 item validated by a produced image (`sprite2d_scene.bmp`) rather
+than an automated on-screen check.
+
 ## ADR-0004 — Vertical slice over horizontal completeness
 
 **Status:** accepted (2026-06-16)

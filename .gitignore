@@ -57,6 +57,9 @@ coverage/
 # Crash dumps
 *.dmp
 
+# Render/test image artifacts
+*.bmp
+
 # Planning scratch (omo)
 .omo/
 
