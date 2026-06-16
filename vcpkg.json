@@ -13,6 +13,7 @@
     "basisu",
     "lua",
     "quickjs-ng",
-    "joltphysics"
+    "joltphysics",
+    "sokol"
   ]
 }

@@ -64,14 +64,17 @@ texture) → backend. It depends ONLY on okn-math and lives header-only under
 okn-render static lib (which has pre-existing duplicate-symbol issues in its
 D3D12 stubs — `queue.cpp` vs `command_queue.cpp`; cleaning that is its own task).
 
-A **software rasterizer** (`SoftwareRenderer`, barycentric fill + nearest texture
-+ alpha blend) is the headless reference backend: it proves the whole pipeline
-end-to-end and is what the test suite asserts pixel-by-pixel (`okn-render2d_tests`,
-9 cases). The **GPU backend is sokol_gfx** (ADR-0003) and will consume the same
-`DrawGroup`s; it plus a real window (sokol_app) is the remaining display-dependent
-step that cannot be verified headlessly. The live-window 60fps sprite is therefore
-the one Phase-1 item validated by a produced image (`sprite2d_scene.bmp`) rather
-than an automated on-screen check.
+Two backends now exist, both consuming the same `DrawGroup`s:
+- **Software rasterizer** (`SoftwareRenderer`, barycentric fill + nearest texture
+  + alpha blend): the headless reference, asserted pixel-by-pixel
+  (`okn-render2d_tests`, 9 cases).
+- **GPU backend — sokol_gfx** (`GpuSpriteRenderer`, ADR-0003): shader/pipeline/
+  dynamic buffers/image/sampler, one draw per texture group. Verified headlessly
+  on the sokol **dummy backend** through its validation layer (`okn-render2d_gpu_tests`,
+  2 cases), and shipped as a real **D3D11 windowed sample** (`okn-sprite2d_app`,
+  via sokol_app) that compiles, links, and runs a live animated sprite on
+  hardware. All sokol headers are confined to `okn-render/gpu/*.cpp`; the targets
+  link okn-math only (not the okn-render lib). sokol is a vcpkg dep.
 
 ## ADR-0004 — Vertical slice over horizontal completeness
 
