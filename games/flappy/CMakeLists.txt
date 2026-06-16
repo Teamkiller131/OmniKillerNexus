@@ -9,6 +9,7 @@ if(SOKOL_INCLUDE_DIR AND WIN32)
     set(RENDER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../modules/okn-render")
     add_executable(flappy WIN32
         "${CMAKE_CURRENT_SOURCE_DIR}/flappy_app.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/flappy.manifest"  # PerMonitorV2 DPI awareness
         "${RENDER_DIR}/gpu/gpu_sprite_renderer.cpp"
         "${RENDER_DIR}/gpu/sokol_impl_app.cpp")
     target_include_directories(flappy PRIVATE

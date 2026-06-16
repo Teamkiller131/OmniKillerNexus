@@ -351,6 +351,7 @@ sapp_desc sokol_main(int /*argc*/, char* /*argv*/[]) {
     d.event_cb = on_event;
     d.width = 460;
     d.height = 690;   // ~ 400:600 world aspect
+    d.high_dpi = true;   // native-res framebuffer; the PerMonitorV2 manifest keeps viewport==window on HiDPI
     d.window_title = "Flappy Bird — OmniKillerNexus";
     d.logger.func = slog_func;
     return d;
