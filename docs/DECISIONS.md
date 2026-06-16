@@ -76,6 +76,31 @@ Two backends now exist, both consuming the same `DrawGroup`s:
   hardware. All sokol headers are confined to `okn-render/gpu/*.cpp`; the targets
   link okn-math only (not the okn-render lib). sokol is a vcpkg dep.
 
+## ADR-0006 — The 2D vertical slice is wired end-to-end (Phase 2)
+
+**Status:** accepted (2026-06-16); Phase 2 complete
+
+The first playable line is real: input → ECS → physics → sprite → HUD → sound.
+Lives in `okn-render/include/okn/render/slice/` (header-only) + `okn-render/slice/`.
+- `SliceWorld` ties **okn-ecs** (entities + Transform2D/SpriteComp/BodyComp/PlayerTag
+  components) to **okn-physics** (Jolt): each `update()` steps physics and syncs
+  body transforms into the ECS, from which `build_sprites()` yields a SpriteBatch.
+  Player control (`move_player`/`jump_player`) + velocity-based landing detection
+  drive an `on_land` callback. (2D bodies use real Z-depth + CCD so the thin
+  z-aligned slabs don't tunnel.)
+- The **okn-ui → render link** is `hud_bridge.hpp`: it consumes `okn::ui::DrawCommand`
+  (the okn-ui render contract) and turns rect/image commands into sprite quads, so
+  the existing sprite/GPU path draws the HUD. No okn-ui lib code is needed to render
+  what okn-ui produced; the broken okn-render lib is bypassed entirely.
+- **Audio**: `okn::audio::WavDecoder` (now real) decodes a sound; the contact event
+  triggers playback (`AudioPlayback` over miniaudio in the app).
+
+Verified two ways: `okn-slice_tests` (5 cases — fall+land+sound, keyboard move,
+sprite batching, HUD bridge geometry, software-rendered scene+HUD BMP), and the
+interactive **`okn-slice_app`** (D3D11) which runs the full loop live on hardware.
+Known workaround: `okn::math::Color::from_u8` and the static Color constants are
+unimplemented stubs, so colors are built from the inline float ctor.
+
 ## ADR-0004 — Vertical slice over horizontal completeness
 
 **Status:** accepted (2026-06-16)

@@ -34,6 +34,7 @@ $targets = [ordered]@{
     "okn-physics"  = "okn-physics_tests"
     "okn-render2d" = "okn-render2d_tests"       # 2D sprite path (software backend)
     "okn-render2d-gpu" = "okn-render2d_gpu_tests" # sokol_gfx GPU backend (dummy, headless)
+    "okn-slice" = "okn-slice_tests"               # ECS+physics+sprite+UI+audio integration
 }
 
 # Locate vcvars64 (MSVC + Ninja need the developer environment).
