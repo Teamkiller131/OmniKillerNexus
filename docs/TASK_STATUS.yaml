@@ -358,24 +358,36 @@ okn-network:
   status: blocked  # 依赖 P2 层完成
 
 okn-physics:
-  status: partial
-  ccd:
-    ccd_config.hpp:    {status: completed, task: impl-p3-physics-ccd, date: 2026-05-19}
-    ccd_config.cpp:    {status: completed, task: impl-p3-physics-ccd, date: 2026-05-19}
-    ccd_toi.hpp:       {status: completed, task: impl-p3-physics-ccd, date: 2026-05-19}
-    ccd_toi.cpp:       {status: completed, task: impl-p3-physics-ccd, date: 2026-05-19}
-    ccd_dispatch.hpp:  {status: completed, task: impl-p3-physics-ccd, date: 2026-05-19}
-    ccd_dispatch.cpp:  {status: completed, task: impl-p3-physics-ccd, date: 2026-05-19}
-  cloth:
-    cloth.hpp:         {status: completed, task: impl-p3-physics-cloth, date: 2026-05-19}
-    cloth.cpp:         {status: completed, task: impl-p3-physics-cloth, date: 2026-05-19}
-    cloth_settings.hpp: {status: completed, task: impl-p3-physics-cloth, date: 2026-05-19}
-    cloth_settings.cpp: {status: completed, task: impl-p3-physics-cloth, date: 2026-05-19}
-  fluids:
-    fluid.hpp:         {status: completed, task: impl-p3-physics-fluids, date: 2026-05-19}
-    fluid.cpp:         {status: completed, task: impl-p3-physics-fluids, date: 2026-05-19}
-    fluid_settings.hpp: {status: completed, task: impl-p3-physics-fluids, date: 2026-05-19}
-    fluid_settings.cpp: {status: completed, task: impl-p3-physics-fluids, date: 2026-05-19}
+  # Jolt-backed. IPhysicsWorld is a backend-agnostic pure-virtual interface; all
+  # Jolt code is confined to src/defaults/physics_world_jolt.cpp (no third-party
+  # headers in public .hpp). The native solver/broadphase/ccd subsystems that were
+  # tracked here (ccd/cloth/fluids/etc.) were retired in favour of Jolt and deleted.
+  status: completed
+  backend: jolt  # vcpkg joltphysics 5.5.0, linked PRIVATE
+  api:
+    physics_types.hpp:  {status: completed, task: impl-p3-physics-jolt, date: 2026-06-16}
+    api/physics_world.hpp:    {status: completed, task: impl-p3-physics-jolt, date: 2026-06-16}
+    impl/physics_factory.hpp: {status: completed, task: impl-p3-physics-jolt, date: 2026-06-16}
+    dynamics/body.hpp:        {status: completed, task: impl-p3-physics-jolt, date: 2026-06-16}
+    detection/raycast.hpp:    {status: completed, task: impl-p3-physics-jolt, date: 2026-06-16}
+    shapes/shape.hpp:       {status: completed, date: 2026-06-16}
+    shapes/box.hpp:         {status: completed, date: 2026-06-16}
+    shapes/sphere.hpp:      {status: completed, date: 2026-06-16}
+    shapes/capsule.hpp:     {status: completed, date: 2026-06-16}
+    shapes/hull.hpp:        {status: completed, date: 2026-06-16}
+    shapes/mesh.hpp:        {status: completed, date: 2026-06-16}
+    shapes/cylinder.hpp:    {status: stub, note: falls back to sphere in Jolt mapping}
+    shapes/cone.hpp:        {status: stub, note: falls back to sphere in Jolt mapping}
+    shapes/heightfield.hpp: {status: stub, note: falls back to sphere in Jolt mapping}
+  src:
+    defaults/physics_world_jolt.cpp: {status: completed, task: impl-p3-physics-jolt, date: 2026-06-16, note: the Jolt backend; create/destroy body, step, gravity, raycast, energy, body control (force/impulse/velocity/transform), joints (fixed/ball/distance/hinge/slider) + per-joint collision disable; shapes box/sphere/capsule/hull/mesh}
+    dynamics/body.cpp:  {status: completed, date: 2026-06-16}
+    shapes/shapes.cpp:  {status: completed, date: 2026-06-16}
+  tests:
+    test_jolt.cpp: {status: completed, task: impl-p3-physics-jolt, date: 2026-06-16, note: 15 cases / 57 assertions — settle, 3-box + offset stacks, mass-ratio, CCD, raycast, energy, capsule, body control, joints, mesh ground}
+  next:
+    - cone/cylinder/heightfield native Jolt shape mapping
+    - CharacterVirtual, multicore JobSystem, sensors/triggers + layer filtering, joint motors/springs
 
 okn-audio:
   status: partial
