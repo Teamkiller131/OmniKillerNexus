@@ -114,6 +114,11 @@ if(OKN_BUILD_CLI)
     add_subdirectory(tools)
 endif()
 
+# Games built on the engine (demos).
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/games/flappy/CMakeLists.txt")
+    add_subdirectory(games/flappy)
+endif()
+
 # 安装/导出暂不启用，避免依赖未导出目标导致的错误
 # 若未来需要安装，请确保各模块都有 install(TARGETS ... EXPORT OmniKillerNexusTargets)
 # 并把它们加入同一个 EXPORT，再开启 OKN_ENABLE_INSTALL
