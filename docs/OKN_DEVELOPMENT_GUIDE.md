@@ -371,8 +371,9 @@ registry.register_service<ILogger>(&my_custom_logger);
 
 - C++26 标准，不使用编译器扩展（`CMAKE_CXX_EXTENSIONS OFF`）
 - 文件名：蛇形命名（`asset_registry.hpp`、`memory_tracker.cpp`）
-- 类名：蛇形命名（`class asset_registry;`）
-- 函数名：蛇形命名（`void register_service();`）
+- 类/结构体/枚举：**PascalCase**（`class AssetRegistry;`、`struct ProfileSample`、`enum class LogLevel`），接口前缀 `I`（`class ILogger`）—— 与 AGENTS.md §1.1 及现有代码一致
+- 函数/方法：蛇形命名（`void register_service();`）
+- 变量/参数/成员：蛇形命名（私有成员尾下划线表示，如 `min_level_`）
 - 模板参数：使用 `class T` 关键字
 - 命名空间：`okn::<module>`
 - 头文件防护：`#pragma once`（不使用宏防护）

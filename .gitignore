@@ -1,5 +1,6 @@
 # Build outputs
 build/
+build-*/
 out/
 dist/
 *.user
@@ -52,6 +53,12 @@ coverage/
 *.zip
 *.tar.gz
 *.7z
+
+# Crash dumps
+*.dmp
+
+# Planning scratch (omo)
+.omo/
 
 # Misc
 *.log

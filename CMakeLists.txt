@@ -1,7 +1,15 @@
 cmake_minimum_required(VERSION 3.20)
 project(OmniKillerNexus LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 23)
+# 语言标准：C++26（全引擎统一，AGENTS.md §1.1）。MSVC 没有 /std:c++23，且
+# CMake 4.x 尚未提供 CXX26↔MSVC 的映射，所以 MSVC 走下方手动注入的 /std:c++latest
+# （即 C++26 预览）；其它编译器通过 CMAKE_CXX_STANDARD 直接请求 C++26。
+# 实际生效标准为 C++26 —— 切勿误读下面的 23 为“目标 C++23”。
+if(MSVC)
+    set(CMAKE_CXX_STANDARD 23)   # CMake 将 23 映射为 /std:c++latest（见下方 add_compile_options）
+else()
+    set(CMAKE_CXX_STANDARD 26)
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
