@@ -60,6 +60,9 @@ coverage/
 # Render/test image artifacts
 *.bmp
 
+# Dear ImGui layout state (written next to the running editor/app)
+imgui.ini
+
 # Planning scratch (omo)
 .omo/
 

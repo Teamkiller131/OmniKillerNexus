@@ -2,6 +2,10 @@
   "name": "omnkillernexus",
   "version": "0.1.0",
   "description": "OmniKillerNexus commercial game engine framework",
+  "builtin-baseline": "44819aa2a6c10e56065e2b0330e7d6c89d1d2574",
+  "overrides": [
+    { "name": "implot", "version": "0.17" }
+  ],
   "dependencies": [
     "doctest",
     "mimalloc",
@@ -15,6 +19,15 @@
     "quickjs-ng",
     "joltphysics",
     "sokol",
-    "sol2"
+    "sol2",
+    { "name": "imgui", "default-features": false,
+      "features": ["docking-experimental", "freetype", "glfw-binding", "opengl3-binding"] },
+    { "name": "imgui", "default-features": false, "platform": "windows",
+      "features": ["dx11-binding", "dx12-binding"] },
+    "glfw3",
+    { "name": "glad", "features": ["loader"] },
+    "implot",
+    "imgui-node-editor",
+    "spdlog"
   ]
 }

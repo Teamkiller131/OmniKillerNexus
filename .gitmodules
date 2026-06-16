@@ -37,3 +37,6 @@
 [submodule "modules/okn-math"]
 	path = modules/okn-math
 	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-math.git
+[submodule "third_party/TeamkillerUniGUI"]
+	path = third_party/TeamkillerUniGUI
+	url = git@github.com:Teamkiller131/TeamkillerUniGUI.git

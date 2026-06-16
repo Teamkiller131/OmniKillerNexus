@@ -40,6 +40,32 @@ option(OKN_BUILD_EDITOR_EXE  "Build editor executable (from okn-editor module)" 
 option(OKN_BUILD_CLI         "Build CLI tools" ON)
 option(OKN_ENABLE_INSTALL    "Enable install/export of SDKs" OFF)  # 先关闭安装
 
+# Make the CRT explicit (dynamic /MD, matching the x64-windows vcpkg deps) so the
+# whole tree — engine, Jolt/sol2/sokol, UniGUI, ImGui — shares one runtime.
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+endif()
+
+# ── TeamkillerUniGUI: Dear ImGui editor toolkit (powers okn-editor) ──
+# Added before the modules so okn-editor can link unigui::unigui. It inherits the
+# engine's /W4 /WX; relax /WX for UniGUI's own sources (it's not /WX-clean, and
+# UNIGUI_WARNINGS_AS_ERRORS is off by design). Editor code includes <unigui/...>
+# via angle brackets, which the root's /external:anglebrackets treats as W0.
+set(UNIGUI_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
+set(UNIGUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(UNIGUI_MODULE_SQLITE  OFF CACHE BOOL "" FORCE)
+set(UNIGUI_MODULE_CONFIG  OFF CACHE BOOL "" FORCE)
+set(UNIGUI_MODULE_IPC     OFF CACHE BOOL "" FORCE)
+set(UNIGUI_MODULE_NETWORK OFF CACHE BOOL "" FORCE)
+set(UNIGUI_MODULE_TRADING OFF CACHE BOOL "" FORCE)
+set(UNIGUI_BACKEND_DX11   ON  CACHE BOOL "" FORCE)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/TeamkillerUniGUI/CMakeLists.txt")
+    add_subdirectory(third_party/TeamkillerUniGUI)
+    if(MSVC AND TARGET unigui)
+        target_compile_options(unigui PRIVATE /WX-)
+    endif()
+endif()
+
 add_subdirectory(modules/okn-asset)
 add_subdirectory(modules/okn-render)
 add_subdirectory(modules/okn-audio)
