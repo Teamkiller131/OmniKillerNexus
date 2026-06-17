@@ -69,7 +69,8 @@ namespace {
 constexpr int kMapW = 40;
 constexpr int kMapH = 30;
 constexpr float kViewTiles = 16.0f;
-constexpr float kStepSpeed = 7.0f;
+constexpr float kMoveSpeed = 4.6f;     // tiles/sec — free (non-grid) walking
+constexpr float kPlayerR = 0.34f;      // player collision half-extent (fits 1-wide gaps)
 constexpr unsigned kTexFarmer = 1;
 // fixed demo gather targets (left of the farm plot) so the autodemo is deterministic:
 // a 3-tree grove at x=13 and a 3-rock cluster at x=12, on rows 12/14/16.
@@ -104,9 +105,8 @@ struct InputMap {
 struct Game {
     std::array<Tile, kMapW * kMapH> tiles{};
     std::array<Crop, kMapW * kMapH> crops{};
-    int ptx = 20, pty = 15;
-    int fx = 0, fy = 1;
-    float pox = 0.0f, poy = 0.0f;
+    float pcx = 20.5f, pcy = 15.5f;   // continuous grid position (col, row); row increases downward
+    int fx = 0, fy = 1;               // facing (cardinal) — the action/cursor direction
     bool facing_right = true;
     Tool tool = Tool::Hoe;
     int gold = kStartGold;
@@ -147,6 +147,8 @@ struct Game {
     float demo_t = 0.0f;
     float trace_t = 0.0f;
     int sold = 0;
+    float demo_freeX = 0.0f;          // autodemo: continuous X reached by free walking
+    bool demo_collide_ok = false;     // autodemo: wall blocks the AABB, open ground doesn't
 
     Tile& at(int x, int y) { return tiles[static_cast<std::size_t>(y) * kMapW + x]; }
     Tile at(int x, int y) const { return tiles[static_cast<std::size_t>(y) * kMapW + x]; }
@@ -233,15 +235,43 @@ bool spend_energy(EAct a) {
     return true;
 }
 
-// ── grid helpers ────────────────────────────────────────────────────────────────
+// ── grid + free-movement helpers ──────────────────────────────────────────────────
 Vec2 tile_world(int tx, int ty) { return {static_cast<float>(tx) + 0.5f, -static_cast<float>(ty) - 0.5f}; }
-Vec2 player_world() { return {static_cast<float>(g.ptx) + 0.5f + g.pox, -static_cast<float>(g.pty) - 0.5f + g.poy}; }
+Vec2 player_world() { return {g.pcx, -g.pcy}; }                 // continuous world position of the player
+int cur_tx() { return static_cast<int>(std::floor(g.pcx)); }   // tile the player stands on
+int cur_ty() { return static_cast<int>(std::floor(g.pcy)); }
+int faced_tx() { return cur_tx() + g.fx; }                     // tile the player faces (action/cursor target)
+int faced_ty() { return cur_ty() + g.fy; }
 bool in_bounds(int x, int y) { return x >= 0 && y >= 0 && x < kMapW && y < kMapH; }
 bool walkable(int x, int y) {
     if (!in_bounds(x, y)) { return false; }
     if (g.npc_at(x, y) != NpcId::Count) { return false; }      // NPCs are solid
     const Tile t = g.at(x, y);
     return t == Tile::Grass || t == Tile::Soil;                // water/tree/shop/rock block
+}
+// AABB-vs-tilemap: is the player box (half-extent kPlayerR) at (cx,cy) over any solid tile?
+bool blocked_box(float cx, float cy) {
+    const int x0 = static_cast<int>(std::floor(cx - kPlayerR)), x1 = static_cast<int>(std::floor(cx + kPlayerR));
+    const int y0 = static_cast<int>(std::floor(cy - kPlayerR)), y1 = static_cast<int>(std::floor(cy + kPlayerR));
+    for (int ty = y0; ty <= y1; ++ty) {
+        for (int tx = x0; tx <= x1; ++tx) { if (!walkable(tx, ty)) { return true; } }
+    }
+    return false;
+}
+// Free movement: integrate a (col,row) direction with axis-separated collision (wall-slide).
+void move_player(float dcol, float drow, float dt) {
+    const float len = std::sqrt(dcol * dcol + drow * drow);
+    if (len < 0.0001f) { return; }
+    dcol /= len; drow /= len;
+    if (std::fabs(dcol) >= std::fabs(drow)) { g.fx = dcol > 0 ? 1 : -1; g.fy = 0; }   // face the dominant axis
+    else { g.fx = 0; g.fy = drow > 0 ? 1 : -1; }
+    if (dcol > 0.01f) { g.facing_right = true; } else if (dcol < -0.01f) { g.facing_right = false; }
+    const float step = kMoveSpeed * dt;
+    const float nx = g.pcx + dcol * step;
+    if (!blocked_box(nx, g.pcy)) { g.pcx = nx; }
+    const float ny = g.pcy + drow * step;
+    if (!blocked_box(g.pcx, ny)) { g.pcy = ny; }
+    g.hit_tx = -1; g.hit_ty = -1; g.hits = 0;   // walking cancels an in-progress chop/mine
 }
 
 // ── per-tile farming verbs (callable by input AND the autodemo) ───────────────────
@@ -325,7 +355,7 @@ bool mine(int x, int y) {
 
 // ── economy / shop ──────────────────────────────────────────────────────────────
 bool shop_adjacent() {
-    return std::abs(g.ptx - g.shopTileX) + std::abs(g.pty - g.shopTileY) == 1;
+    return std::abs(cur_tx() - g.shopTileX) + std::abs(cur_ty() - g.shopTileY) <= 1;
 }
 void open_shop() { g.panel = Panel::Shop; g.shopTab = ShopTab::Buy; g.shopCursor = 0; }
 bool buy(ItemId seed, int qty = 1) {
@@ -427,7 +457,7 @@ void check_achievements() {
 // ── dispatch verbs ────────────────────────────────────────────────────────────
 void do_action() {
     if (g.panel != Panel::None) { return; }
-    const int tx = g.ptx + g.fx, ty = g.pty + g.fy;
+    const int tx = faced_tx(), ty = faced_ty();
     if (g.npc_at(tx, ty) != NpcId::Count) { talk(g.npc_at(tx, ty)); return; }
     if (g.at(tx, ty) == Tile::Shop) { open_shop(); return; }
     if (harvest(tx, ty)) { return; }
@@ -451,16 +481,6 @@ void do_sleep() {
     g.hit_tx = -1; g.hit_ty = -1; g.hits = 0;
     push_toast("DAY STARTS RESTED", rgba(180, 220, 255));
     play(g_sleep, 0.5f);
-}
-void try_step(int dx, int dy) {
-    g.fx = dx; g.fy = dy;
-    if (dx > 0) { g.facing_right = true; } else if (dx < 0) { g.facing_right = false; }
-    const int nx = g.ptx + dx, ny = g.pty + dy;
-    if (walkable(nx, ny)) {
-        g.ptx = nx; g.pty = ny;
-        g.pox = -static_cast<float>(dx); g.poy = static_cast<float>(dy);
-    }
-    g.hit_tx = -1; g.hit_ty = -1; g.hits = 0;   // moving cancels an in-progress chop/mine
 }
 
 // ── world generation ──────────────────────────────────────────────────────────
@@ -488,7 +508,7 @@ void build_world() {
         g.at(kDemoTreeX, kDemoRows[r]) = Tile::Tree;
         g.at(kDemoRockX, kDemoRows[r]) = Tile::Rock;
     }
-    g.ptx = 20; g.pty = 15; g.pox = 0.0f; g.poy = 0.0f; g.fx = 0; g.fy = 1;
+    g.pcx = 20.5f; g.pcy = 15.5f; g.fx = 0; g.fy = 1;
 }
 
 void reset_game() {
@@ -528,9 +548,11 @@ void write_result() {
     const int fLv = g.skills[Skill::Farming].level, gLv = g.skills[Skill::Foraging].level, mLv = g.skills[Skill::Mining].level;
     const bool win = g.harvested == 5 && g.gold > kStartGold && g.inv.count(ItemId::Wood) >= 3 &&
                      g.inv.count(ItemId::Stone) >= 3 && fLv >= 2 && gLv >= 1 && mLv >= 1 &&
-                     g.itemsBought >= 1 && m.friendship >= 58 && hearts_of(m.friendship) >= 2 && g.achCount >= 1;
+                     g.itemsBought >= 1 && m.friendship >= 58 && hearts_of(m.friendship) >= 2 && g.achCount >= 1 &&
+                     g.demo_freeX > 21.0f && g.demo_collide_ok;   // free movement + wall collision both proven
     std::ofstream rf("harvest_result.txt");
     rf << (win ? "OKHARVEST WIN" : "OKHARVEST FAIL")
+       << " freeX=" << g.demo_freeX << " collide=" << (g.demo_collide_ok ? 1 : 0)
        << " gold=" << g.gold << " day=" << g.day << " harvested=" << g.harvested
        << " sold=" << g.sold << " wood=" << g.inv.count(ItemId::Wood)
        << " stone=" << g.inv.count(ItemId::Stone) << " energy=" << g.energy
@@ -548,11 +570,20 @@ void run_autodemo() {
     const int px0 = 18, py = 15, n = 5;                 // 5-wide plot on the player's row
     const int chopSteps = kDemoGather * kChopHits, gatherSteps = chopSteps + kDemoGather * kMineHits;
     // phase offsets
-    const int Walk = 3, Till = Walk + n, Plant = Till + n, Gather = Plant + gatherSteps;
+    const int Move = 4, Till = Move + n, Plant = Till + n, Gather = Plant + gatherSteps;
     const int Cycle = Gather + kRipe * (n + 1), Harv = Cycle + n, Shop = Harv + 6, Rel = Shop + 5;
 
-    if (s < Walk) { try_step(1, 0); }
-    else if (s < Till) { g.tool = Tool::Hoe; g.inv.sel = 0; till(px0 + (s - Walk), py); }
+    if (s < Move) {                                     // FREE movement + AABB-collision proof
+        move_player(1.0f, 0.0f, 0.12f);                 // walk RIGHT continuously over open grass
+        if (s == Move - 1) {
+            g.demo_freeX = g.pcx;                       // a continuous (non-grid) X was reached
+            g.demo_collide_ok =                         // a tree blocks the player box; open ground does not
+                blocked_box(static_cast<float>(kDemoTreeX) + 0.5f, static_cast<float>(kDemoRows[1]) + 0.5f) &&
+                !blocked_box(20.5f, 15.5f);
+            g.pcx = 20.5f; g.pcy = 15.5f;               // recenter for the coord-driven rest of the demo
+        }
+    }
+    else if (s < Till) { g.tool = Tool::Hoe; g.inv.sel = 0; till(px0 + (s - Move), py); }
     else if (s < Plant) { g.tool = Tool::Seed; plant(px0 + (s - Till), py); }
     else if (s < Gather) {
         const int k = s - Plant;                        // fell each of the 3 trees, then each of the 3 rocks
@@ -588,7 +619,8 @@ void run_autodemo() {
             else if (!std::strcmp(show, "ach")) { g.panel = Panel::Achievements; }
             else if (!std::strcmp(show, "rel")) { g.panel = Panel::Relationships; }
             else if (!std::strcmp(show, "shop")) { open_shop(); }
-            else if (!std::strcmp(show, "town")) { g.ptx = 23; g.pty = 9; g.pox = 0; g.poy = 0; g.fx = -1; g.fy = -1; }
+            else if (!std::strcmp(show, "town")) { g.pcx = 23.5f; g.pcy = 9.5f; g.fx = 0; g.fy = -1; }
+            else if (!std::strcmp(show, "move")) { g.pcx = 12.34f; g.pcy = 6.5f; g.fx = -1; g.fy = 0; }  // off-grid, against the pond
         }
         g.autodemo = false;
     }
@@ -602,18 +634,16 @@ void update(float dt) {
     }
     tick_toasts(dt);
 
-    // movement: slide the render offset to 0; step again when settled
-    const float decay = kStepSpeed * dt;
-    auto relax = [&](float& o) { if (o > 0) { o = std::max(0.0f, o - decay); } else if (o < 0) { o = std::min(0.0f, o + decay); } };
-    relax(g.pox); relax(g.poy);
-    const bool settled = std::fabs(g.pox) < 0.001f && std::fabs(g.poy) < 0.001f;
-
+    // FREE movement: WASD/arrows set a direction; move_player integrates it with
+    // axis-separated AABB collision (walk anywhere, slide along walls).
     if (g.autodemo) { run_autodemo(); }
-    else if (g.state == State::Playing && settled && g.panel == Panel::None) {
-        if (g.input.held(Action::Up))         { try_step(0, -1); }
-        else if (g.input.held(Action::Down))  { try_step(0, 1); }
-        else if (g.input.held(Action::Left))  { try_step(-1, 0); }
-        else if (g.input.held(Action::Right)) { try_step(1, 0); }
+    else if (g.state == State::Playing && g.panel == Panel::None) {
+        float dcol = 0.0f, drow = 0.0f;
+        if (g.input.held(Action::Up))    { drow -= 1.0f; }
+        if (g.input.held(Action::Down))  { drow += 1.0f; }
+        if (g.input.held(Action::Left))  { dcol -= 1.0f; }
+        if (g.input.held(Action::Right)) { dcol += 1.0f; }
+        move_player(dcol, drow, dt);
     }
     if (!g.autodemo && g.state == State::Playing && g.panel == Panel::None) {
         if (g.input.just(Action::Act))   { do_action(); }
@@ -629,7 +659,7 @@ void update(float dt) {
             std::ofstream f("harvest_trace.txt", std::ios::app);
             if (f) {
                 const NpcState& m = g.npc(NpcId::Mara);
-                f << "ptx=" << g.ptx << " pty=" << g.pty << " gold=" << g.gold << " day=" << g.day
+                f << "pcx=" << g.pcx << " pcy=" << g.pcy << " gold=" << g.gold << " day=" << g.day
                   << " tool=" << static_cast<int>(g.tool) << " energy=" << g.energy
                   << " clock=" << static_cast<int>(g.clock_min) << " harvested=" << g.harvested
                   << " wood=" << g.inv.count(ItemId::Wood) << " stone=" << g.inv.count(ItemId::Stone)
@@ -804,7 +834,7 @@ void render() {
         quad(world, {c.x, c.y + 0.38f}, 0.40f, 0.18f, d.hair);
         quad(world, {c.x - 0.07f, c.y + 0.27f}, 0.05f, 0.05f, rgba(30, 30, 40));
         quad(world, {c.x + 0.07f, c.y + 0.27f}, 0.05f, 0.05f, rgba(30, 30, 40));
-        if (std::max(std::abs(d.hx - g.ptx), std::abs(d.hy - g.pty)) <= 2) {
+        if (std::max(std::abs(d.hx - cur_tx()), std::abs(d.hy - cur_ty())) <= 2) {
             const int hearts = hearts_of(g.npcs[i].friendship);
             for (int hp = 0; hp < 10; ++hp) {
                 const int row = hp / 5, col = hp % 5;
@@ -816,7 +846,7 @@ void render() {
 
     // tile cursor + player
     {
-        const Vec2 fc = tile_world(g.ptx + g.fx, g.pty + g.fy);
+        const Vec2 fc = tile_world(faced_tx(), faced_ty());
         const Rgba8 cur = rgba(255, 255, 255, 110);
         quad(world, {fc.x, fc.y + 0.46f}, 1.0f, 0.08f, cur);
         quad(world, {fc.x, fc.y - 0.46f}, 1.0f, 0.08f, cur);
@@ -1097,7 +1127,7 @@ void on_event(const sapp_event* ev) {
             case SAPP_KEYCODE_LEFT_BRACKET: g.inv.cycle(-1); return;
             case SAPP_KEYCODE_RIGHT_BRACKET: g.inv.cycle(1); return;
             case SAPP_KEYCODE_F:
-                if (g.state == State::Playing && g.panel == Panel::None) { give_gift(g.npc_at(g.ptx + g.fx, g.pty + g.fy)); }
+                if (g.state == State::Playing && g.panel == Panel::None) { give_gift(g.npc_at(faced_tx(), faced_ty())); }
                 return;
             default: break;
         }
