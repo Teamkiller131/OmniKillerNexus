@@ -91,13 +91,7 @@ struct Box { Vec3 center; Vec3 half; Rgba8 color; };
 struct Coin { Vec3 pos; bool taken = false; };
 struct Goomba { u32 body = 0; Vec3 axis; float lo = 0, hi = 0; int dir = 1; bool dead = false; };
 struct Spring { Vec3 pos; Vec3 half; };   // bounce pad: land on it -> launched up
-struct SwingPlatform {                    // kinematic plank on a chain — stand on it, ride across
-    u32 plank = 0;
-    Vec3 pivot{};
-    float length = 5.9f, amp = 0.43f, freq = 0.9f;
-    Vec3 half{1.3f, 0.18f, 1.0f};
-    Vec3 prev{};
-};
+struct BridgePlank { u32 body = 0; Vec3 half{}; };   // one segment of the chained bridge
 
 struct Game {
     std::unique_ptr<IPhysicsWorld> phys;
@@ -106,7 +100,8 @@ struct Game {
     std::vector<Coin> coins;
     std::vector<Goomba> goombas;
     std::vector<Spring> springs;
-    SwingPlatform swing;              // rideable swinging platform (carries you over the pit)
+    std::vector<BridgePlank> bridge;  // chained suspension bridge across the pit
+    Vec3 bridge_left{}, bridge_right{};
     std::unordered_map<u32, Kind> kind;
     u32 player = 0;
     Vec3 spawn{0.0f, 1.6f, 6.0f};
@@ -116,7 +111,8 @@ struct Game {
     State state = State::Playing;
     InputMap input;
     bool autodemo = false;
-    bool swingtest = false;   // spawn on the swing + trace (verifies the ride-carry)
+    bool swingtest = false;   // spawn on the bridge + trace (verifies walkability)
+    bool player_jumped = false;
     float trace_t = 0.0f;
     Vec3 cam_pos{0, 10, 18};
     float cam_yaw = 0.0f;     // orbit azimuth around Y (0 = behind the player, +Z)
@@ -179,7 +175,7 @@ void build_world() {
     g.phys = okn::physics::make_jolt_physics_world();
     g.phys->set_gravity({0.0f, kGravity, 0.0f});
     g.shapes.clear(); g.blocks.clear(); g.coins.clear(); g.goombas.clear();
-    g.springs.clear(); g.kind.clear(); g.swing = SwingPlatform{};
+    g.springs.clear(); g.kind.clear(); g.bridge.clear();
     g.state = State::Playing; g.iframes = 0.0f;
 
     const Rgba8 grass = rgba(96, 170, 84), dirt = rgba(150, 110, 70), brick = rgba(186, 120, 76);
@@ -224,25 +220,52 @@ void build_world() {
     g.coins.push_back({{-12.0f, 1.3f, -8.0f}, false});
     g.coins.push_back({{-14.0f, 1.3f, -10.0f}, false});
 
-    // SWINGING PLATFORM — a kinematic plank on a chain that swings along a pendulum
-    // arc across the pit. Stand on it and it carries you to the far side (the player
-    // is parented to the plank's horizontal motion while riding). Its endpoints sit
-    // at the two pit edges (x ~ -4 and -9) at ~ground height for easy on/off.
+    // CHAINED SUSPENSION BRIDGE across the pit — dynamic plank segments joined end to
+    // end by HINGE constraints (axis Z) and anchored to a static post at each endpoint.
+    // It hangs in a soft catenary and wobbles/sags as you walk across.
     {
-        g.swing.pivot = {-6.5f, 6.0f, -8.0f};
-        g.swing.length = 5.9f; g.swing.amp = 0.43f; g.swing.freq = 0.9f;
-        g.swing.half = {1.3f, 0.18f, 1.0f};
-        const Vec3 start = g.swing.pivot + Vec3{0.0f, -g.swing.length, 0.0f};
-        auto shape = std::make_unique<okn::physics::Box>(g.swing.half);
-        RigidBody d;
-        d.type = BodyType::kKinematic;
-        d.position = start;
-        d.material.friction = 1.0f;
-        d.set_shape(shape.get());
-        g.swing.plank = g.phys->create_body(d);
-        g.shapes.push_back(std::move(shape));
-        g.kind[g.swing.plank] = Kind::Other;
-        g.swing.prev = start;
+        using okn::physics::JointDesc;
+        using okn::physics::JointType;
+        const int N = 8;
+        const float ax0 = -9.0f, ax1 = -4.0f, ay = 0.5f, bz = -8.0f, sag = 0.95f;
+        auto joint_pt = [&](int j) -> Vec3 {
+            const float t = static_cast<float>(j) / static_cast<float>(N);
+            return {ax0 + (ax1 - ax0) * t, ay - sag * std::sin(3.14159265f * t), bz};
+        };
+        g.bridge_left = joint_pt(0);
+        g.bridge_right = joint_pt(N);
+        const u32 anchorL = add_box(g.bridge_left, {0.28f, 0.45f, 1.5f}, false, Kind::Other);
+        const u32 anchorR = add_box(g.bridge_right, {0.28f, 0.45f, 1.5f}, false, Kind::Other);
+        u32 prev = anchorL;
+        for (int i = 0; i <= N; ++i) {
+            if (i < N) {
+                const Vec3 a = joint_pt(i), b = joint_pt(i + 1);
+                const Vec3 center{(a.x + b.x) * 0.5f, (a.y + b.y) * 0.5f, bz};
+                const float seglen = std::sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y));
+                const float angle = std::atan2(b.y - a.y, b.x - a.x);
+                const Vec3 half{seglen * 0.5f, 0.09f, 1.3f};
+                auto shape = std::make_unique<okn::physics::Box>(half);
+                RigidBody d;
+                d.type = BodyType::kDynamic;
+                d.position = center;
+                d.rotation = okn::math::Quat{0.0f, 0.0f, std::sin(angle * 0.5f), std::cos(angle * 0.5f)};
+                d.mass = 0.8f; d.inv_mass = 1.0f / 0.8f;
+                d.material.friction = 0.9f;
+                d.set_shape(shape.get());
+                const u32 plank = g.phys->create_body(d);
+                g.shapes.push_back(std::move(shape));
+                g.kind[plank] = Kind::Other;
+                g.bridge.push_back({plank, half});
+                JointDesc jd; jd.body_a = prev; jd.body_b = plank; jd.type = JointType::kHinge;
+                jd.anchor = a; jd.axis = {0.0f, 0.0f, 1.0f}; jd.disable_collision = true;
+                g.phys->create_joint(jd);
+                prev = plank;
+            } else {
+                JointDesc jd; jd.body_a = prev; jd.body_b = anchorR; jd.type = JointType::kHinge;
+                jd.anchor = joint_pt(N); jd.axis = {0.0f, 0.0f, 1.0f}; jd.disable_collision = true;
+                g.phys->create_joint(jd);
+            }
+        }
     }
 
     g.player = add_box(g.spawn, {kPlayerR, kPlayerH, kPlayerR}, true, Kind::Player);
@@ -306,6 +329,7 @@ void update(float dt) {
     float vy = rb->linear_velocity.y;
     const bool jump = g.input.just(Action::Jump) || (g.autodemo && !g.swingtest && gnd && vy <= 0.1f);
     if (jump && gnd) { vy = kJump; play(g_jump, 0.35f); }
+    g.player_jumped = (jump && gnd);
     g.phys->set_linear_velocity(g.player, {mv.x, vy, mv.z});
 
     // ── goombas patrol along their axis ──
@@ -326,6 +350,26 @@ void update(float dt) {
     rb = g.phys->get_body(g.player);
     g.phys->set_angular_velocity(g.player, {0, 0, 0});
     g.phys->set_transform(g.player, rb->position, okn::math::Quat{0, 0, 0, 1});
+
+    // Manually dampen the bridge planks (no damping field in the API) so the hinge
+    // chain doesn't resonate and fling the rider — it still sags + wobbles softly.
+    for (const auto& bp : g.bridge) {
+        if (auto* b = g.phys->get_body(bp.body)) {
+            g.phys->set_linear_velocity(bp.body, b->linear_velocity * 0.88f);
+            g.phys->set_angular_velocity(bp.body, b->angular_velocity * 0.82f);
+        }
+    }
+    // Even damped, a stiff hinge bridge can pop the rider upward. While the player is
+    // anywhere over the bridge span (and isn't deliberately jumping), cancel any
+    // upward launch velocity — the bridge still gives + wobbles softly underfoot, but
+    // it can never fling you off. A position zone (not a ground ray) so it still
+    // catches the player after they've already left contact.
+    if (!g.bridge.empty() && !g.player_jumped
+        && rb->position.x > g.bridge_left.x - 0.7f && rb->position.x < g.bridge_right.x + 0.7f
+        && std::abs(rb->position.z - g.bridge_left.z) < 1.7f
+        && rb->position.y < 2.0f && rb->linear_velocity.y > 0.4f) {
+        g.phys->set_linear_velocity(g.player, {rb->linear_velocity.x, 0.0f, rb->linear_velocity.z});
+    }
 
     // ── CONTACT EVENTS: stomp vs hurt ──
     for (const auto& c : g.phys->drain_contacts()) {
@@ -366,23 +410,6 @@ void update(float dt) {
             g.phys->set_linear_velocity(g.player, {rb->linear_velocity.x, kSpringBounce, rb->linear_velocity.z});
             play(g_spring, 0.5f);
         }
-    }
-
-    // ── swinging platform: drive it along the pendulum arc + carry the rider ──
-    if (g.swing.plank != 0) {
-        const float ang = g.swing.amp * std::sin(g.time * g.swing.freq);
-        const Vec3 pos = g.swing.pivot + Vec3{g.swing.length * std::sin(ang),
-                                              -g.swing.length * std::cos(ang), 0.0f};
-        const Vec3 delta = pos - g.swing.prev;
-        g.phys->set_transform(g.swing.plank, pos, okn::math::Quat{0, 0, 0, 1});
-        // If the player is standing on the plank (and not jumping off), parent them to
-        // its horizontal motion so the swing ships them across; vertical rides on contact.
-        const Vec3 feet{rb->position.x, rb->position.y - kPlayerH - 0.02f, rb->position.z};
-        const auto hit = g.phys->raycast(feet, {0.0f, -1.0f, 0.0f}, 0.25f);
-        if (hit.hit && hit.body_id == g.swing.plank && rb->linear_velocity.y < 1.5f) {
-            g.phys->set_transform(g.player, rb->position + Vec3{delta.x, 0.0f, delta.z}, okn::math::Quat{0, 0, 0, 1});
-        }
-        g.swing.prev = pos;
     }
 
     // ── win / fall ──
@@ -486,17 +513,19 @@ void render() {
         if (auto* b = g.phys->get_body(gb.body)) { draw_goomba(b->position); }
     }
     for (const auto& sp : g.springs) { draw_spring(sp.pos, sp.half); }
-    // swing platform: anchor + chain + the wooden plank
-    if (g.swing.plank != 0) {
-        g_mesh->draw_box(g.swing.pivot, {0.3f, 0.18f, 0.7f}, rgba(95, 95, 108));
-        if (auto* b = g.phys->get_body(g.swing.plank)) {
-            const Vec3 ptop = b->position + Vec3{0.0f, g.swing.half.y, 0.0f};
-            for (int i = 1; i <= 4; ++i) {
-                const float t = static_cast<float>(i) / 5.0f;
-                const Vec3 lp = g.swing.pivot * (1.0f - t) + ptop * t;
-                g_mesh->draw_box(lp, {0.07f, 0.12f, 0.07f}, rgba(120, 120, 132));
+    // chained suspension bridge: anchor posts + the sagging plank segments (at their
+    // physics rotation) + a side rope down each long edge.
+    if (!g.bridge.empty()) {
+        g_mesh->draw_box(g.bridge_left, {0.28f, 0.45f, 1.5f}, rgba(96, 96, 110));
+        g_mesh->draw_box(g.bridge_right, {0.28f, 0.45f, 1.5f}, rgba(96, 96, 110));
+        for (const auto& bp : g.bridge) {
+            if (auto* b = g.phys->get_body(bp.body)) {
+                g_mesh->draw_box(b->position, bp.half, rgba(176, 124, 74), b->rotation);   // wooden plank
+                const Rgba8 rope = rgba(70, 62, 54);
+                const Vec3 top{b->position.x, b->position.y + bp.half.y + 0.05f, b->position.z};
+                g_mesh->draw_box({top.x, top.y, top.z + bp.half.z}, {bp.half.x, 0.04f, 0.04f}, rope, b->rotation);
+                g_mesh->draw_box({top.x, top.y, top.z - bp.half.z}, {bp.half.x, 0.04f, 0.04f}, rope, b->rotation);
             }
-            g_mesh->draw_box(b->position, g.swing.half, rgba(180, 130, 80));   // wooden plank
         }
     }
     // goal: flagpole + flag
@@ -533,7 +562,7 @@ void on_init() {
     g.input.bind(Action::CamR, SAPP_KEYCODE_E, SAPP_KEYCODE_E);
     g.autodemo = (std::getenv("OKN_MARIO3D_AUTODEMO") != nullptr);
     if (std::getenv("OKN_MARIO3D_SWINGTEST") != nullptr) {   // drop the player onto the swing + trace
-        g.swingtest = true; g.autodemo = true; g.spawn = {-6.5f, 2.5f, -8.0f};
+        g.swingtest = true; g.autodemo = true; g.spawn = {-6.5f, 1.0f, -8.0f};
     }
     if (const char* v = std::getenv("OKN_MARIO3D_CAMVIEW")) {   // deterministic view for verification
         if (std::strcmp(v, "top") == 0) { g.cam_pitch = 1.40f; g.cam_dist = 18.0f; }
