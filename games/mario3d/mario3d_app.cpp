@@ -59,6 +59,7 @@ constexpr float kGravity = -24.0f;
 constexpr float kMove = 7.0f;
 constexpr float kJump = 11.5f;
 constexpr float kStompBounce = 9.0f;
+constexpr float kSpringBounce = 18.0f;   // reaches ~6.75 high — clears the tall platforms
 constexpr float kPlayerH = 0.6f;   // half height
 constexpr float kPlayerR = 0.4f;   // half x/z
 
@@ -89,6 +90,7 @@ struct InputMap {
 struct Box { Vec3 center; Vec3 half; Rgba8 color; };
 struct Coin { Vec3 pos; bool taken = false; };
 struct Goomba { u32 body = 0; Vec3 axis; float lo = 0, hi = 0; int dir = 1; bool dead = false; };
+struct Spring { Vec3 pos; Vec3 half; };   // bounce pad: land on it -> launched up
 
 struct Game {
     std::unique_ptr<IPhysicsWorld> phys;
@@ -96,6 +98,8 @@ struct Game {
     std::vector<Box> blocks;            // static visuals (ground + platforms)
     std::vector<Coin> coins;
     std::vector<Goomba> goombas;
+    std::vector<Spring> springs;
+    std::vector<u32> chain_links;     // dynamic boxes joined into a swaying chain
     std::unordered_map<u32, Kind> kind;
     u32 player = 0;
     Vec3 spawn{0.0f, 1.6f, 6.0f};
@@ -119,7 +123,7 @@ Game g;
 std::unique_ptr<MeshRenderer> g_mesh;
 okn::audio::AudioEngine g_audio;
 std::unique_ptr<okn::audio::AudioPlayback> g_pb;
-okn::audio::AudioBuffer g_jump{}, g_coin{}, g_stomp{}, g_hurt{}, g_win{};
+okn::audio::AudioBuffer g_jump{}, g_coin{}, g_stomp{}, g_hurt{}, g_win{}, g_spring{};
 
 // ── audio ─────────────────────────────────────────────────────────────────────
 std::vector<okn::audio::u8> beep(float freq, float dur, float decay, bool rising = false) {
@@ -144,14 +148,14 @@ okn::audio::AudioBuffer dec(float f, float d, float k, bool r = false) {
 void play(const okn::audio::AudioBuffer& b, float v) { if (g_pb && b.data) { g_pb->play(b, v); } }
 
 // ── world ───────────────────────────────────────────────────────────────────────
-u32 add_box(Vec3 c, Vec3 half, bool dynamic, Kind k) {
+u32 add_box(Vec3 c, Vec3 half, bool dynamic, Kind k, bool ccd = true) {
     auto shape = std::make_unique<okn::physics::Box>(half);
     RigidBody d;
     d.type = dynamic ? BodyType::kDynamic : BodyType::kStatic;
     d.position = c; d.mass = 1.0f;
     if (!dynamic) { d.inv_mass = 0.0f; }
     d.material.friction = dynamic ? 0.0f : 0.7f;
-    d.ccd_enabled = dynamic;
+    d.ccd_enabled = dynamic && ccd;   // CCD on jointed chain links is costly; skip it
     d.set_shape(shape.get());
     const u32 id = g.phys->create_body(d);
     g.shapes.push_back(std::move(shape));
@@ -166,7 +170,8 @@ void add_static(Vec3 c, Vec3 half, Rgba8 color) {
 void build_world() {
     g.phys = okn::physics::make_jolt_physics_world();
     g.phys->set_gravity({0.0f, kGravity, 0.0f});
-    g.shapes.clear(); g.blocks.clear(); g.coins.clear(); g.goombas.clear(); g.kind.clear();
+    g.shapes.clear(); g.blocks.clear(); g.coins.clear(); g.goombas.clear();
+    g.springs.clear(); g.chain_links.clear(); g.kind.clear();
     g.state = State::Playing; g.iframes = 0.0f;
 
     const Rgba8 grass = rgba(96, 170, 84), dirt = rgba(150, 110, 70), brick = rgba(186, 120, 76);
@@ -196,6 +201,33 @@ void build_world() {
     add_goomba({-4, 0.6f, -2}, {1, 0, 0}, -8, 6);
     add_goomba({4, 0.6f, -8}, {1, 0, 0}, -2, 9);
     add_goomba({1.5f, 4.5f, -11}, {1, 0, 0}, -0.4f, 3.4f);
+
+    // SPRINGS — bounce pads (recover from a fall onto the tall platforms). The one
+    // in front of the goal lets you bounce straight up onto the goal platform.
+    g.springs.push_back({{0.0f, 0.3f, -17.0f}, {0.5f, 0.3f, 0.5f}});   // goal recovery
+    g.springs.push_back({{3.5f, 0.3f, -6.0f}, {0.5f, 0.3f, 0.5f}});    // mid shortcut
+    g.springs.push_back({{-3.5f, 0.3f, -12.0f}, {0.5f, 0.3f, 0.5f}});  // mid recovery
+
+    // CHAIN — a real Jolt-jointed chain of dynamic links (ball constraints), hung from
+    // a static anchor and started leaning so it sways. Showcases the engine's joints.
+    {
+        using okn::physics::JointDesc;
+        using okn::physics::JointType;
+        const Vec3 top{-7.0f, 7.5f, -8.0f};
+        u32 prev = add_box(top, {0.18f, 0.18f, 0.18f}, false, Kind::Other);   // static anchor
+        Vec3 pp = top;
+        for (int i = 0; i < 5; ++i) {
+            const Vec3 pos = pp + Vec3{0.16f, -0.5f, 0.0f};                   // lean -> swings
+            const u32 link = add_box(pos, {0.13f, 0.2f, 0.13f}, true, Kind::Other, /*ccd=*/false);
+            JointDesc jd;
+            jd.body_a = prev; jd.body_b = link; jd.type = JointType::kBall;
+            jd.anchor = (pp + pos) * 0.5f;
+            jd.disable_collision = true;
+            g.phys->create_joint(jd);
+            g.chain_links.push_back(link);
+            prev = link; pp = pos;
+        }
+    }
 
     g.player = add_box(g.spawn, {kPlayerR, kPlayerH, kPlayerR}, true, Kind::Player);
 }
@@ -308,9 +340,28 @@ void update(float dt) {
         if ((coin.pos - rb->position).length() < 0.9f) { coin.taken = true; ++g.coins_got; g.score += 50; play(g_coin, 0.4f); }
     }
 
+    // ── springs: launch up when you land on one ──
+    for (const auto& sp : g.springs) {
+        const float topy = sp.pos.y + sp.half.y;
+        const float feet = rb->position.y - kPlayerH;
+        if (std::fabs(rb->position.x - sp.pos.x) < sp.half.x + kPlayerR &&
+            std::fabs(rb->position.z - sp.pos.z) < sp.half.z + kPlayerR &&
+            feet < topy + 0.18f && feet > topy - 0.5f && rb->linear_velocity.y < 1.0f) {
+            g.phys->set_linear_velocity(g.player, {rb->linear_velocity.x, kSpringBounce, rb->linear_velocity.z});
+            play(g_spring, 0.5f);
+        }
+    }
+
     // ── win / fall ──
-    if ((g.goal - rb->position).length() < 2.8f) { g.state = State::Win; play(g_win, 0.6f); }   // flagpole touch
-    if (rb->position.y < -6.0f) { --g.lives; if (g.lives <= 0) { g.state = State::GameOver; } else { respawn(); } }
+    if ((g.goal - rb->position).length() < 2.8f) {   // flagpole touch
+        g.state = State::Win; play(g_win, 0.6f);
+        if (g.autodemo) { std::ofstream("mario3d_result.txt") << "WIN"; }
+    }
+    if (rb->position.y < -6.0f) {
+        --g.lives;
+        if (g.lives <= 0) { g.state = State::GameOver; if (g.autodemo) { std::ofstream("mario3d_result.txt") << "GAMEOVER z=" << rb->position.z; } }
+        else { respawn(); }
+    }
 
     // ── orbit chase camera (yaw/pitch/dist are player-controllable) ──
     const float cp = std::cos(g.cam_pitch), sp = std::sin(g.cam_pitch);
@@ -367,6 +418,10 @@ void draw_coin(const Vec3& pos, float spin) {
     g_mesh->draw_box(pos, {0.30f, 0.30f, 0.05f}, rgba(255, 205, 50), spin);   // spinning disc
     g_mesh->draw_box(pos, {0.15f, 0.15f, 0.07f}, rgba(210, 160, 25), spin);   // inset face
 }
+void draw_spring(const Vec3& pos, const Vec3& half) {
+    g_mesh->draw_box(pos + Vec3{0, -half.y * 0.4f, 0}, {half.x, half.y * 0.6f, half.z}, rgba(60, 70, 92));           // base
+    g_mesh->draw_box(pos + Vec3{0, half.y * 0.45f, 0}, {half.x * 0.85f, half.y * 0.4f, half.z * 0.85f}, rgba(230, 80, 70)); // top plate
+}
 
 // ── render ─────────────────────────────────────────────────────────────────────
 void render() {
@@ -397,6 +452,10 @@ void render() {
         if (gb.dead) { continue; }
         if (auto* b = g.phys->get_body(gb.body)) { draw_goomba(b->position); }
     }
+    for (const auto& sp : g.springs) { draw_spring(sp.pos, sp.half); }
+    for (const u32 link : g.chain_links) {
+        if (auto* b = g.phys->get_body(link)) { g_mesh->draw_box(b->position, {0.13f, 0.2f, 0.13f}, rgba(120, 120, 132)); }
+    }
     // goal: flagpole + flag
     g_mesh->draw_box(g.goal + Vec3{0, 1.5f, 0}, {0.10f, 2.2f, 0.10f}, rgba(235, 235, 235));
     g_mesh->draw_box(g.goal + Vec3{0.55f, 2.9f, 0}, {0.6f, 0.42f, 0.06f}, rgba(70, 205, 95));
@@ -420,6 +479,7 @@ void on_init() {
         g_pb = std::make_unique<okn::audio::AudioPlayback>(g_audio);
         g_jump = dec(680, 0.10f, 1.4f); g_coin = dec(1050, 0.10f, 1.2f);
         g_stomp = dec(240, 0.12f, 1.0f); g_hurt = dec(180, 0.30f, 0.8f); g_win = dec(700, 0.45f, 0.7f, true);
+        g_spring = dec(420, 0.18f, 0.9f, true);   // boing
     }
     g.input.bind(Action::Left, SAPP_KEYCODE_A, SAPP_KEYCODE_LEFT);
     g.input.bind(Action::Right, SAPP_KEYCODE_D, SAPP_KEYCODE_RIGHT);
@@ -476,7 +536,7 @@ void on_frame() {
 }
 
 void on_cleanup() {
-    for (auto* b : {&g_jump, &g_coin, &g_stomp, &g_hurt, &g_win}) { if (b->data) { delete[] b->data; b->data = nullptr; } }
+    for (auto* b : {&g_jump, &g_coin, &g_stomp, &g_hurt, &g_win, &g_spring}) { if (b->data) { delete[] b->data; b->data = nullptr; } }
     g_pb.reset();
     if (g_audio.is_initialized()) { g_audio.shutdown(); }
     if (g_mesh) { g_mesh->shutdown(); g_mesh.reset(); }
