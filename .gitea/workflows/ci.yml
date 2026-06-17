@@ -1,0 +1,24 @@
+# OmniKillerNexus CI — runs the engine test gate (all module suites) on push/PR.
+#
+# Requires a SELF-HOSTED Windows runner with MSVC (Visual Studio Build Tools),
+# vcpkg, Ninja and CMake on PATH — see docs/gitea_runner_setup.md. The gate script
+# locates vcvars itself and drives a manifest-mode vcpkg build.
+name: ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test-gate:
+    runs-on: windows
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Engine test gate (13 module suites)
+        shell: pwsh
+        run: ./scripts/run_tests_all.ps1 -BuildDir build-ci
