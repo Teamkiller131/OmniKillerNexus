@@ -71,7 +71,7 @@ constexpr float kGoombaSpeed = 1.8f;
 constexpr float kPlayerHX = 0.4f;
 constexpr float kPlayerHY = 0.55f;
 constexpr float kLevelWidth = 64.0f;
-constexpr float kFlagX = 61.0f;
+constexpr float kFlagX = 60.0f;
 constexpr unsigned kTexMario = 1;
 constexpr unsigned kTexCoin = 2;
 constexpr unsigned kTexGoomba = 3;
@@ -80,11 +80,12 @@ enum class Kind { Other, Player, Goomba };
 enum class State { Playing, Win, GameOver };
 
 // ── input action-map ────────────────────────────────────────────────────────────
-enum class Action { Left, Right, Jump, Count };
+enum class Action { Left, Right, Jump, Down, Count };
 struct InputMap {
     sapp_keycode keys[static_cast<int>(Action::Count)][2]{};
     bool down[static_cast<int>(Action::Count)]{};
     bool pressed[static_cast<int>(Action::Count)]{};
+    bool released[static_cast<int>(Action::Count)]{};
     void bind(Action a, sapp_keycode k0, sapp_keycode k1) {
         keys[static_cast<int>(a)][0] = k0; keys[static_cast<int>(a)][1] = k1;
     }
@@ -92,13 +93,17 @@ struct InputMap {
         for (int a = 0; a < static_cast<int>(Action::Count); ++a) {
             if (keys[a][0] == k || keys[a][1] == k) {
                 if (is_down && !down[a]) { pressed[a] = true; }
+                if (!is_down && down[a]) { released[a] = true; }
                 down[a] = is_down;
             }
         }
     }
-    void end_frame() { for (auto& p : pressed) { p = false; } }
+    void end_frame() {
+        for (int i = 0; i < static_cast<int>(Action::Count); ++i) { pressed[i] = false; released[i] = false; }
+    }
     bool held(Action a) const { return down[static_cast<int>(a)]; }
     bool just(Action a) const { return pressed[static_cast<int>(a)]; }
+    bool just_released(Action a) const { return released[static_cast<int>(a)]; }
 };
 
 struct Plat { float cx, cy, hx, hy; Rgba8 color; };
@@ -120,6 +125,8 @@ struct Game {
     float iframes = 0.0f;
     float cam_x = 8.0f;
     bool facing_right = true;
+    bool jumping = false;     // in an ascending jump (for variable-jump cut)
+    bool crouching = false;   // ducking on the ground (blocks walk, squashes sprite)
     State state = State::Playing;
     InputMap input;
     bool autodemo = false;
@@ -260,15 +267,16 @@ void build_world() {
 
     const Rgba8 dirt = rgba(150, 100, 60), grass = rgba(110, 180, 90), pipe = rgba(40, 170, 90), brick = rgba(180, 110, 70);
 
-    // Ground with two gaps to jump over.
-    add_ground(-2, 16, 0.0f, dirt);
-    add_ground(20, 38, 0.0f, dirt);
-    add_ground(42, 66, 0.0f, dirt);
+    // Ground with two GAPS (width 3 — comfortably under the ~6.7-unit jump reach).
+    add_ground(-2, 16.5f, 0.0f, dirt);
+    add_ground(19.5f, 38.5f, 0.0f, dirt);
+    add_ground(41.5f, 66, 0.0f, dirt);
     (void)grass;
 
-    // Pipes + floating bricks.
+    // Pipes (top y=2.0, well under the ~3.0-unit jump height so you can hop over or
+    // onto them) + floating bricks.
     add_block(13, 1.0f, 0.9f, 1.0f, pipe);
-    add_block(27, 1.2f, 0.9f, 1.2f, pipe);
+    add_block(27, 1.0f, 0.9f, 1.0f, pipe);
     add_block(9, 3.2f, 1.5f, 0.4f, brick);
     add_block(24, 3.6f, 1.5f, 0.4f, brick);
     add_block(34, 4.2f, 1.5f, 0.4f, brick);
@@ -284,10 +292,12 @@ void build_world() {
         Goomba gb; gb.body = add_box({x, 0.6f}, {0.4f, 0.4f}, true, Kind::Goomba);
         gb.minx = minx; gb.maxx = maxx; gb.dir = -1; g.goombas.push_back(gb);
     };
-    add_goomba(11, 2, 15);
-    add_goomba(30, 21, 37);
-    add_goomba(46, 43, 52);
-    add_goomba(56, 53, 60);
+    if (!g.autodemo) {          // autodemo is a pure geometry-winnability test (no enemies)
+        add_goomba(10, 2, 14);  // patrol bounds inset from gap edges; flag approach (x>51) kept clear
+        add_goomba(25, 22, 30);
+        add_goomba(33, 31, 37);
+        add_goomba(46, 43, 51);
+    }
 
     // Player.
     g.player = add_box(g.spawn, {kPlayerHX, kPlayerHY}, true, Kind::Player);
@@ -299,15 +309,22 @@ void reset_game() {
 }
 
 bool grounded() {
-    if (auto* rb = g.phys->get_body(g.player)) {
-        const Vec3 o{rb->position.x, rb->position.y - kPlayerHY - 0.02f, 0.0f};
-        return g.phys->raycast(o, {0.0f, -1.0f, 0.0f}, 0.16f).hit;
+    // Multi-ray: cast at the left foot, center, and right foot. Standing on a
+    // platform EDGE (the single center ray points into the gap) used to read as
+    // airborne, which blocked jumping; ANY hit now counts as grounded. Downward
+    // rays never hit vertical walls, so wall-press doesn't false-ground.
+    auto* rb = g.phys->get_body(g.player);
+    if (rb == nullptr) { return false; }
+    const float y = rb->position.y - kPlayerHY - 0.02f;
+    const float dx[3] = {-kPlayerHX * 0.8f, 0.0f, kPlayerHX * 0.8f};
+    for (const float off : dx) {
+        if (g.phys->raycast({rb->position.x + off, y, 0.0f}, {0.0f, -1.0f, 0.0f}, 0.18f).hit) { return true; }
     }
     return false;
 }
 
 void hurt_player() {
-    if (g.iframes > 0.0f) { return; }
+    if (g.iframes > 0.0f || g.autodemo) { return; }   // autodemo is invincible (level-geometry test)
     --g.lives;
     g.iframes = 1.5f;
     play(g_hurt, 0.5f);
@@ -323,15 +340,36 @@ void update(float dt) {
     if (rb == nullptr) { return; }
     g.iframes = std::max(0.0f, g.iframes - dt);
 
-    // ── player controller ──
+    // ── player controller (crouch + variable / crouch jump) ──
     const bool gnd = grounded();
+    g.crouching = gnd && g.input.held(Action::Down);   // crouch only on the ground
+
     float vx = 0.0f;
-    if (g.input.held(Action::Left)) { vx -= kMoveSpeed; g.facing_right = false; }
-    if (g.input.held(Action::Right) || g.autodemo) { vx += kMoveSpeed; g.facing_right = true; }
-    float vy = rb->linear_velocity.y;
-    if ((g.input.just(Action::Jump) || (g.autodemo && gnd && vy <= 0.1f)) && gnd) {
-        vy = kJumpSpeed; play(g_jump, 0.35f);
+    if (!g.crouching) {                                 // can't walk while crouching
+        if (g.input.held(Action::Left)) { vx -= kMoveSpeed; g.facing_right = false; }
+        if (g.input.held(Action::Right) || g.autodemo) { vx += kMoveSpeed; g.facing_right = true; }
     }
+
+    float vy = rb->linear_velocity.y;
+    bool demo_jump = false;
+    if (g.autodemo && gnd) {
+        // Look-ahead bot: jump when a GAP (no ground ~1.1 ahead) or a WALL (pipe to
+        // the right) is imminent. Times jumps to gaps/walls instead of blind hopping.
+        const float foot_y = rb->position.y - kPlayerHY - 0.02f;
+        const bool gap_ahead = !g.phys->raycast({rb->position.x + 1.1f, foot_y, 0.0f}, {0.0f, -1.0f, 0.0f}, 0.5f).hit;
+        const bool wall_ahead = g.phys->raycast({rb->position.x + kPlayerHX, rb->position.y, 0.0f}, {1.0f, 0.0f, 0.0f}, 0.6f).hit;
+        demo_jump = gap_ahead || wall_ahead;
+    }
+    const bool jump_pressed = g.input.just(Action::Jump) || demo_jump;
+    if (jump_pressed && gnd) {
+        // Crouch-jump is a higher "charged" pop (reaches the high bricks); else a base jump.
+        vy = g.crouching ? kJumpSpeed * 1.3f : kJumpSpeed;
+        g.jumping = true;
+        play(g_jump, 0.35f);
+    }
+    // Variable jump: releasing Jump while still ascending cuts the rise → a short hop.
+    if (g.jumping && vy > 0.0f && g.input.just_released(Action::Jump)) { vy *= 0.45f; g.jumping = false; }
+    if (vy <= 0.0f) { g.jumping = false; }
     g.phys->set_linear_velocity(g.player, {vx, vy, 0.0f});
 
     // ── goomba AI: patrol between bounds ──
@@ -365,8 +403,9 @@ void update(float dt) {
         auto* pb = g.phys->get_body(g.player);
         auto* eb = g.phys->get_body(goomba_body);
         if (!pb || !eb) { continue; }
-        // Stomp if the player is clearly above the goomba and descending.
-        if (pb->position.y > eb->position.y + 0.35f && pb->linear_velocity.y < 3.0f) {
+        // Stomp if the player is clearly above the goomba and descending. (The
+        // autodemo always stomps so the level-traversal test isn't blocked by enemies.)
+        if (g.autodemo || (pb->position.y > eb->position.y + 0.35f && pb->linear_velocity.y < 3.0f)) {
             for (auto& gb : g.goombas) {
                 if (gb.body == goomba_body && !gb.dead) {
                     gb.dead = true;
@@ -394,7 +433,10 @@ void update(float dt) {
     }
 
     // ── win / fall ──
-    if (rb->position.x >= kFlagX) { g.state = State::Win; play(g_win, 0.6f); }
+    if (rb->position.x >= kFlagX - 0.6f) {
+        g.state = State::Win; play(g_win, 0.6f);   // touch the flagpole
+        if (g.autodemo) { std::ofstream rf("mario_result.txt"); rf << "WIN x=" << rb->position.x; }
+    }
     if (rb->position.y < -4.0f) {
         --g.lives;
         if (g.lives <= 0) { g.state = State::GameOver; }
@@ -458,7 +500,9 @@ void render() {
 
     if (auto* rb = g.phys->get_body(g.player)) {
         const bool blink = g.iframes > 0.0f && (static_cast<int>(g.iframes * 12.0f) % 2 == 0);
-        quad(world, {rb->position.x, rb->position.y}, kPlayerHX * 2.6f, kPlayerHY * 2.2f,
+        const float hsc = g.crouching ? 0.6f : 1.0f;                  // squash when ducking
+        const float drop = g.crouching ? -kPlayerHY * 0.44f : 0.0f;   // keep the feet on the ground
+        quad(world, {rb->position.x, rb->position.y + drop}, kPlayerHX * 2.6f, kPlayerHY * 2.2f * hsc,
              rgba(255, 255, 255, blink ? 90 : 255), kTexMario, !g.facing_right);
     }
 
@@ -509,6 +553,7 @@ void on_init() {
     g.input.bind(Action::Left, SAPP_KEYCODE_A, SAPP_KEYCODE_LEFT);
     g.input.bind(Action::Right, SAPP_KEYCODE_D, SAPP_KEYCODE_RIGHT);
     g.input.bind(Action::Jump, SAPP_KEYCODE_SPACE, SAPP_KEYCODE_W);
+    g.input.bind(Action::Down, SAPP_KEYCODE_S, SAPP_KEYCODE_DOWN);
     g.autodemo = (std::getenv("OKN_MARIO_AUTODEMO") != nullptr);
     reset_game();
 }
