@@ -99,7 +99,7 @@ struct Game {
     std::unordered_map<u32, Kind> kind;
     u32 player = 0;
     Vec3 spawn{0.0f, 1.6f, 6.0f};
-    Vec3 goal{0.0f, 6.4f, -28.0f};
+    Vec3 goal{0.0f, 7.0f, -20.0f};
     int score = 0, coins_got = 0, lives = 3;
     float iframes = 0.0f;
     State state = State::Playing;
@@ -111,6 +111,8 @@ struct Game {
     float cam_pitch = 0.5f;   // orbit elevation
     float cam_dist = 13.0f;   // orbit distance (wheel zoom)
     bool cam_drag = false;    // mouse-drag orbiting
+    float time = 0.0f;        // for coin spin/bob
+    float player_yaw = 0.0f;  // model faces the move direction
 };
 
 Game g;
@@ -169,28 +171,31 @@ void build_world() {
 
     const Rgba8 grass = rgba(96, 170, 84), dirt = rgba(150, 110, 70), brick = rgba(186, 120, 76);
 
-    add_static({0, -1, -10}, {16, 1, 22}, grass);                 // big ground (y top = 0)
+    add_static({0, -1, -8}, {16, 1, 18}, grass);                  // big ground (y top = 0)
 
-    // A climbing path of platforms toward the goal (-Z, stepping up).
-    add_static({0, 0.75f, 0}, {2.5f, 0.4f, 2.0f}, dirt);
-    add_static({4, 1.75f, -5}, {2.2f, 0.4f, 2.0f}, brick);
-    add_static({-3, 3.0f, -10}, {2.2f, 0.4f, 2.0f}, dirt);
-    add_static({2, 4.2f, -16}, {2.4f, 0.4f, 2.2f}, brick);
-    add_static({0, 6.0f, -28}, {4.0f, 0.4f, 4.0f}, dirt);          // goal platform
+    // A climbing path — every jump is <= ~5 units in X-Z (reach is ~6.7) and <= ~1.2
+    // up; the final hop to the goal is now 4 units (was a 12-unit, impossible gap).
+    add_static({0.0f, 0.75f, 1.0f}, {2.2f, 0.4f, 1.8f}, dirt);     // p1
+    add_static({1.5f, 1.75f, -3.0f}, {2.0f, 0.4f, 1.8f}, brick);   // p2
+    add_static({-1.5f, 2.9f, -7.0f}, {2.0f, 0.4f, 1.8f}, dirt);    // p3
+    add_static({1.5f, 4.0f, -11.0f}, {2.0f, 0.4f, 1.8f}, brick);   // p4
+    add_static({0.0f, 5.1f, -15.0f}, {2.2f, 0.4f, 1.8f}, dirt);    // p5
+    add_static({0.0f, 6.0f, -20.0f}, {3.5f, 0.4f, 2.0f}, brick);   // goal platform (clean gap from p5)
 
-    // Coins along the route.
-    const Vec3 cpos[] = {{0, 1.8f, 0}, {4, 2.8f, -5}, {-3, 4.0f, -10}, {2, 5.3f, -16},
-                         {0, 1.5f, -3}, {6, 1.5f, -2}, {-6, 1.5f, -6}, {0, 7.1f, -28}};
+    // Coins above each platform + a couple on the ground.
+    const Vec3 cpos[] = {{0.0f, 1.7f, 1.0f}, {1.5f, 2.7f, -3.0f}, {-1.5f, 3.9f, -7.0f},
+                         {1.5f, 5.0f, -11.0f}, {0.0f, 6.1f, -15.0f}, {0.0f, 7.3f, -20.0f},
+                         {3.5f, 1.3f, 3.0f}, {-3.5f, 1.3f, 0.0f}};
     for (const Vec3 p : cpos) { g.coins.push_back({p, false}); }
 
-    // Goombas patrolling on the ground (along X) and a platform.
+    // Goombas patrolling on the ground (along X) and on a platform.
     auto add_goomba = [&](Vec3 c, Vec3 axis, float lo, float hi) {
         Goomba gb; gb.body = add_box(c, {0.4f, 0.4f, 0.4f}, true, Kind::Goomba);
         gb.axis = axis; gb.lo = lo; gb.hi = hi; gb.dir = 1; g.goombas.push_back(gb);
     };
     add_goomba({-4, 0.6f, -2}, {1, 0, 0}, -8, 6);
-    add_goomba({5, 0.6f, -8}, {1, 0, 0}, -2, 9);
-    add_goomba({2, 4.9f, -16}, {0, 0, 1}, -18, -14);
+    add_goomba({4, 0.6f, -8}, {1, 0, 0}, -2, 9);
+    add_goomba({1.5f, 4.5f, -11}, {1, 0, 0}, -0.4f, 3.4f);
 
     g.player = add_box(g.spawn, {kPlayerR, kPlayerH, kPlayerR}, true, Kind::Player);
 }
@@ -243,6 +248,13 @@ void update(float dt) {
     if (g.input.held(Action::Left)) { sax -= 1.0f; }
     Vec3 mv = fwd * fax + rightv * sax;
     if (mv.length() > 0.001f) { mv = mv.normalized() * kMove; }
+    if (mv.length() > 0.1f) {                       // turn the model toward the move dir
+        const float target = std::atan2(mv.x, mv.z);
+        float diff = target - g.player_yaw;
+        while (diff > 3.14159f) { diff -= 6.28318f; }
+        while (diff < -3.14159f) { diff += 6.28318f; }
+        g.player_yaw += diff * std::min(1.0f, dt * 12.0f);
+    }
     float vy = rb->linear_velocity.y;
     const bool jump = g.input.just(Action::Jump) || (g.autodemo && gnd && vy <= 0.1f);
     if (jump && gnd) { vy = kJump; play(g_jump, 0.35f); }
@@ -297,7 +309,7 @@ void update(float dt) {
     }
 
     // ── win / fall ──
-    if ((g.goal - rb->position).length() < 2.2f) { g.state = State::Win; play(g_win, 0.6f); }
+    if ((g.goal - rb->position).length() < 2.8f) { g.state = State::Win; play(g_win, 0.6f); }   // flagpole touch
     if (rb->position.y < -6.0f) { --g.lives; if (g.lives <= 0) { g.state = State::GameOver; } else { respawn(); } }
 
     // ── orbit chase camera (yaw/pitch/dist are player-controllable) ──
@@ -317,6 +329,43 @@ void update(float dt) {
                        << " coins=" << g.coins_got << " lives=" << g.lives << " state=" << static_cast<int>(g.state) << "\n"; }
         }
     }
+}
+
+// ── voxel-style models, composed from lit boxes ──────────────────────────────────
+Vec3 ry(const Vec3& o, float c, float s) { return {o.x * c + o.z * s, o.y, -o.x * s + o.z * c}; }
+void part(const Vec3& base, float yaw, float c, float s, const Vec3& off, const Vec3& half, Rgba8 col) {
+    g_mesh->draw_box(base + ry(off, c, s), half, col, yaw);
+}
+void draw_mario(const Vec3& center, float yaw) {
+    const float c = std::cos(yaw), s = std::sin(yaw);
+    const Rgba8 red = rgba(220, 50, 45), blue = rgba(50, 80, 200), skin = rgba(245, 200, 150),
+                dark = rgba(28, 24, 24), brown = rgba(90, 55, 35);
+    part(center, yaw, c, s, {0, -0.30f, 0}, {0.27f, 0.30f, 0.23f}, blue);            // overalls
+    part(center, yaw, c, s, {-0.15f, -0.56f, 0.02f}, {0.10f, 0.10f, 0.13f}, brown);  // shoe L
+    part(center, yaw, c, s, {0.15f, -0.56f, 0.02f}, {0.10f, 0.10f, 0.13f}, brown);   // shoe R
+    part(center, yaw, c, s, {0, 0.10f, 0}, {0.29f, 0.22f, 0.25f}, red);              // shirt
+    part(center, yaw, c, s, {-0.35f, 0.08f, 0}, {0.08f, 0.17f, 0.12f}, red);         // arm L
+    part(center, yaw, c, s, {0.35f, 0.08f, 0}, {0.08f, 0.17f, 0.12f}, red);          // arm R
+    part(center, yaw, c, s, {0, 0.45f, 0}, {0.23f, 0.20f, 0.21f}, skin);             // head
+    part(center, yaw, c, s, {0, 0.66f, 0.02f}, {0.26f, 0.10f, 0.23f}, red);          // cap
+    part(center, yaw, c, s, {0, 0.60f, 0.21f}, {0.20f, 0.05f, 0.10f}, red);          // brim
+    part(center, yaw, c, s, {-0.10f, 0.45f, 0.20f}, {0.04f, 0.05f, 0.03f}, dark);    // eye L
+    part(center, yaw, c, s, {0.10f, 0.45f, 0.20f}, {0.04f, 0.05f, 0.03f}, dark);     // eye R
+}
+void draw_goomba(const Vec3& center) {
+    const Rgba8 body = rgba(142, 86, 46), top = rgba(112, 66, 34), band = rgba(232, 206, 166),
+                dark = rgba(24, 20, 20), foot = rgba(58, 36, 22);
+    g_mesh->draw_box(center + Vec3{0, 0.02f, 0}, {0.42f, 0.30f, 0.40f}, body);
+    g_mesh->draw_box(center + Vec3{0, 0.30f, 0}, {0.32f, 0.12f, 0.30f}, top);
+    g_mesh->draw_box(center + Vec3{0, -0.06f, 0.36f}, {0.30f, 0.15f, 0.05f}, band);
+    g_mesh->draw_box(center + Vec3{-0.13f, 0.04f, 0.40f}, {0.05f, 0.09f, 0.03f}, dark);
+    g_mesh->draw_box(center + Vec3{0.13f, 0.04f, 0.40f}, {0.05f, 0.09f, 0.03f}, dark);
+    g_mesh->draw_box(center + Vec3{-0.22f, -0.34f, 0.08f}, {0.12f, 0.07f, 0.12f}, foot);
+    g_mesh->draw_box(center + Vec3{0.22f, -0.34f, 0.08f}, {0.12f, 0.07f, 0.12f}, foot);
+}
+void draw_coin(const Vec3& pos, float spin) {
+    g_mesh->draw_box(pos, {0.30f, 0.30f, 0.05f}, rgba(255, 205, 50), spin);   // spinning disc
+    g_mesh->draw_box(pos, {0.15f, 0.15f, 0.07f}, rgba(210, 160, 25), spin);   // inset face
 }
 
 // ── render ─────────────────────────────────────────────────────────────────────
@@ -339,18 +388,22 @@ void render() {
 
     g_mesh->begin(cam);
     for (const auto& b : g.blocks) { g_mesh->draw_box(b.center, b.half, b.color); }
-    for (const auto& c : g.coins) { if (!c.taken) { g_mesh->draw_box(c.pos, {0.28f, 0.28f, 0.28f}, rgba(255, 215, 70)); } }
+    for (std::size_t i = 0; i < g.coins.size(); ++i) {
+        if (g.coins[i].taken) { continue; }
+        const float bob = std::sin(g.time * 2.5f + static_cast<float>(i)) * 0.12f;
+        draw_coin(g.coins[i].pos + Vec3{0, bob, 0}, g.time * 3.0f);
+    }
     for (const auto& gb : g.goombas) {
         if (gb.dead) { continue; }
-        if (auto* b = g.phys->get_body(gb.body)) { g_mesh->draw_box(b->position, {0.4f, 0.4f, 0.4f}, rgba(140, 85, 45)); }
+        if (auto* b = g.phys->get_body(gb.body)) { draw_goomba(b->position); }
     }
-    // goal pillar
-    g_mesh->draw_box(g.goal, {0.3f, 2.0f, 0.3f}, rgba(220, 220, 220));
-    g_mesh->draw_box(g.goal + Vec3{0.6f, 1.4f, 0.0f}, {0.7f, 0.5f, 0.1f}, rgba(80, 210, 100));
-    // player (blink on i-frames)
+    // goal: flagpole + flag
+    g_mesh->draw_box(g.goal + Vec3{0, 1.5f, 0}, {0.10f, 2.2f, 0.10f}, rgba(235, 235, 235));
+    g_mesh->draw_box(g.goal + Vec3{0.55f, 2.9f, 0}, {0.6f, 0.42f, 0.06f}, rgba(70, 205, 95));
+    // player (Mario model; flicker on i-frames)
     if (rb) {
-        const bool blink = g.iframes > 0.0f && (static_cast<int>(g.iframes * 12.0f) % 2 == 0);
-        g_mesh->draw_box(rb->position, {kPlayerR, kPlayerH, kPlayerR}, blink ? rgba(255, 180, 170) : rgba(220, 60, 50));
+        const bool blink = g.iframes > 0.0f && (static_cast<int>(g.iframes * 14.0f) % 2 == 0);
+        if (!blink) { draw_mario(rb->position, g.player_yaw); }
     }
 
     sg_end_pass();
@@ -416,6 +469,7 @@ void on_event(const sapp_event* ev) {
 void on_frame() {
     float dt = static_cast<float>(sapp_frame_duration());
     dt = std::clamp(dt, 0.0f, 1.0f / 30.0f);
+    g.time += dt;   // coin spin/bob advances regardless of game state
     update(dt);
     render();
     g.input.end_frame();
