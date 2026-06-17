@@ -26,6 +26,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <memory>
 #include <unordered_map>
@@ -64,7 +65,7 @@ constexpr float kPlayerR = 0.4f;   // half x/z
 enum class Kind { Other, Player, Goomba };
 enum class State { Playing, Win, GameOver };
 
-enum class Action { Left, Right, Fwd, Back, Jump, Count };
+enum class Action { Left, Right, Fwd, Back, Jump, CamL, CamR, Count };
 struct InputMap {
     sapp_keycode keys[static_cast<int>(Action::Count)][2]{};
     bool down[static_cast<int>(Action::Count)]{};
@@ -106,6 +107,10 @@ struct Game {
     bool autodemo = false;
     float trace_t = 0.0f;
     Vec3 cam_pos{0, 10, 18};
+    float cam_yaw = 0.0f;     // orbit azimuth around Y (0 = behind the player, +Z)
+    float cam_pitch = 0.5f;   // orbit elevation
+    float cam_dist = 13.0f;   // orbit distance (wheel zoom)
+    bool cam_drag = false;    // mouse-drag orbiting
 };
 
 Game g;
@@ -223,16 +228,25 @@ void update(float dt) {
     g.iframes = std::max(0.0f, g.iframes - dt);
     const bool gnd = grounded();
 
-    // ── player controller (X-Z move, Y jump) ──
-    float vx = 0.0f, vz = 0.0f;
-    if (g.input.held(Action::Left)) { vx -= kMove; }
-    if (g.input.held(Action::Right)) { vx += kMove; }
-    if (g.input.held(Action::Fwd) || g.autodemo) { vz -= kMove; }   // -Z is "into" the level
-    if (g.input.held(Action::Back)) { vz += kMove; }
+    // ── camera orbit via keyboard (mouse drag + wheel handled in on_event) ──
+    if (g.input.held(Action::CamL)) { g.cam_yaw -= 1.8f * dt; }
+    if (g.input.held(Action::CamR)) { g.cam_yaw += 1.8f * dt; }
+
+    // ── player controller — CAMERA-RELATIVE move (X-Z), Y jump ──
+    const float sy = std::sin(g.cam_yaw), cyaw = std::cos(g.cam_yaw);
+    const Vec3 fwd{-sy, 0.0f, -cyaw};     // "into the screen" (away from the camera)
+    const Vec3 rightv{cyaw, 0.0f, -sy};
+    float fax = 0.0f, sax = 0.0f;
+    if (g.input.held(Action::Fwd) || g.autodemo) { fax += 1.0f; }
+    if (g.input.held(Action::Back)) { fax -= 1.0f; }
+    if (g.input.held(Action::Right)) { sax += 1.0f; }
+    if (g.input.held(Action::Left)) { sax -= 1.0f; }
+    Vec3 mv = fwd * fax + rightv * sax;
+    if (mv.length() > 0.001f) { mv = mv.normalized() * kMove; }
     float vy = rb->linear_velocity.y;
     const bool jump = g.input.just(Action::Jump) || (g.autodemo && gnd && vy <= 0.1f);
     if (jump && gnd) { vy = kJump; play(g_jump, 0.35f); }
-    g.phys->set_linear_velocity(g.player, {vx, vy, vz});
+    g.phys->set_linear_velocity(g.player, {mv.x, vy, mv.z});
 
     // ── goombas patrol along their axis ──
     for (auto& gb : g.goombas) {
@@ -286,9 +300,13 @@ void update(float dt) {
     if ((g.goal - rb->position).length() < 2.2f) { g.state = State::Win; play(g_win, 0.6f); }
     if (rb->position.y < -6.0f) { --g.lives; if (g.lives <= 0) { g.state = State::GameOver; } else { respawn(); } }
 
-    // ── chase camera ──
-    const Vec3 want = rb->position + Vec3{0.0f, 7.0f, 12.0f};
-    g.cam_pos = g.cam_pos + (want - g.cam_pos) * std::min(1.0f, dt * 6.0f);   // smooth follow
+    // ── orbit chase camera (yaw/pitch/dist are player-controllable) ──
+    const float cp = std::cos(g.cam_pitch), sp = std::sin(g.cam_pitch);
+    const Vec3 offset{g.cam_dist * cp * std::sin(g.cam_yaw),
+                      g.cam_dist * sp,
+                      g.cam_dist * cp * std::cos(g.cam_yaw)};
+    const Vec3 want = rb->position + offset;
+    g.cam_pos = g.cam_pos + (want - g.cam_pos) * std::min(1.0f, dt * 10.0f);   // smooth follow
 
     if (g.autodemo) {
         g.trace_t += dt;
@@ -355,18 +373,43 @@ void on_init() {
     g.input.bind(Action::Fwd, SAPP_KEYCODE_W, SAPP_KEYCODE_UP);
     g.input.bind(Action::Back, SAPP_KEYCODE_S, SAPP_KEYCODE_DOWN);
     g.input.bind(Action::Jump, SAPP_KEYCODE_SPACE, SAPP_KEYCODE_SPACE);
+    g.input.bind(Action::CamL, SAPP_KEYCODE_Q, SAPP_KEYCODE_Q);
+    g.input.bind(Action::CamR, SAPP_KEYCODE_E, SAPP_KEYCODE_E);
     g.autodemo = (std::getenv("OKN_MARIO3D_AUTODEMO") != nullptr);
+    if (const char* v = std::getenv("OKN_MARIO3D_CAMVIEW")) {   // deterministic view for verification
+        if (std::strcmp(v, "top") == 0) { g.cam_pitch = 1.40f; g.cam_dist = 18.0f; }
+        else if (std::strcmp(v, "side") == 0) { g.cam_yaw = 1.5708f; g.cam_pitch = 0.45f; }
+        else if (std::strcmp(v, "front") == 0) { g.cam_yaw = 3.14159f; g.cam_pitch = 0.45f; }
+    }
     g.cam_pos = g.spawn + Vec3{0, 7, 12};
     reset_game();
 }
 
 void on_event(const sapp_event* ev) {
     if (ev->type == SAPP_EVENTTYPE_KEY_DOWN && !ev->key_repeat) {
-        if (ev->key_code == SAPP_KEYCODE_ESCAPE) { sapp_request_quit(); return; }
-        if (ev->key_code == SAPP_KEYCODE_R) { reset_game(); return; }
+        switch (ev->key_code) {
+            case SAPP_KEYCODE_ESCAPE: sapp_request_quit(); return;
+            case SAPP_KEYCODE_R: reset_game(); return;
+            case SAPP_KEYCODE_1: g.cam_yaw = 0.0f; g.cam_pitch = 0.50f; g.cam_dist = 13.0f; return;       // chase
+            case SAPP_KEYCODE_2: g.cam_pitch = 1.40f; g.cam_dist = 17.0f; return;                          // top-down
+            case SAPP_KEYCODE_3: g.cam_yaw = 3.14159f; g.cam_pitch = 0.45f; g.cam_dist = 13.0f; return;    // front
+            case SAPP_KEYCODE_4: g.cam_yaw = 1.5708f; g.cam_pitch = 0.50f; g.cam_dist = 13.0f; return;     // side
+            default: break;
+        }
         g.input.on_key(ev->key_code, true);
     } else if (ev->type == SAPP_EVENTTYPE_KEY_UP) {
         g.input.on_key(ev->key_code, false);
+    } else if (ev->type == SAPP_EVENTTYPE_MOUSE_DOWN) {
+        g.cam_drag = true;
+    } else if (ev->type == SAPP_EVENTTYPE_MOUSE_UP) {
+        g.cam_drag = false;
+    } else if (ev->type == SAPP_EVENTTYPE_MOUSE_MOVE) {
+        if (g.cam_drag) {                                   // drag to orbit
+            g.cam_yaw -= ev->mouse_dx * 0.006f;
+            g.cam_pitch = std::clamp(g.cam_pitch + ev->mouse_dy * 0.006f, 0.12f, 1.45f);
+        }
+    } else if (ev->type == SAPP_EVENTTYPE_MOUSE_SCROLL) {   // wheel to zoom
+        g.cam_dist = std::clamp(g.cam_dist - ev->scroll_y * 1.2f, 4.0f, 30.0f);
     }
 }
 
