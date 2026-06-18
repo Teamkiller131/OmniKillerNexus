@@ -1,70 +1,128 @@
-﻿# OmniKillerNexus
+# OmniKillerNexus
 
-顶层聚合工程，整合 okn-* 全家桶，产物包括：
-- **okn-client-sdk**：客户端开发库（render/ui/audio/ecs/script/network/asset/platform）。
-- **okn-server-sdk**：服务端开发库（network/ecs/script/asset/platform）。
-- **okn-editor-sdk**：编辑器扩展开发库（editor + 全模块桥接）。
-- **okn-editor-app**：编辑器可执行（定义于 `modules/okn-editor`）。
-- **CLI 工具**：可选构建，位于 `tools/`。
+A modular **C++26 game-engine framework** organized as a root aggregator repo
+plus 13 `okn-*` module submodules, the `third_party/TeamkillerUniGUI` editor
+toolkit, and a `games/` tree of **complete, playable demo games** that double as
+the engine's acceptance tests.
 
-## 目录结构
-- `modules/`：各子模块（以子模块或子仓库形式存在）
-    - `okn-asset/`
-    - `okn-render/`
-    - `okn-audio/`
-    - `okn-ecs/`
-    - `okn-script/`
-    - `okn-ui/`
-    - `okn-network/`
-    - `okn-editor/`（含 okn-editor-app 入口）
-    - `okn-platform/`
-- `tools/`：CLI 工具源及 CMake。
-- `cmake/`：CMake config 模板等。
-- `external/`：第三方依赖占位。
-- `sdk/`：SDK 打包相关占位。
-- `dist/`：构建输出占位。
-- `docs/`：文档占位。
+Its one validated design principle: **buy undifferentiated infrastructure, build
+only game glue.** Jolt (physics), sokol (GPU + windowing), miniaudio (audio),
+sol2/Lua (scripting), stb/assimp (assets) and Dear ImGui (editor) are the
+load-bearing third-party; the engine is the glue and the games.
 
-## 子模块添加示例
-```bash
-git submodule add <repo-url> modules/okn-asset
-# 其他模块同理
+> **Status — honest.** The **2D vertical slice is closed end-to-end** and several
+> small games ship on it. It's *demo-grade*: real where the games exercise it,
+> stub or dead where they don't. It builds small 2D (and some 3D) games **today**;
+> it can't yet *ship* a polished, complete one — see the [roadmap](docs/ROADMAP.md).
+> **Trust the test gate, not status labels** (`docs/TASK_STATUS.yaml`'s `completed`
+> markers are aspirational scaffolding — the audited truth is
+> [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)).
+
+The closed line:
+
+```
+input → ECS → Jolt physics (+ contact events) → 2D sprite render (software + sokol/D3D11 GPU)
+      → audio (miniaudio + WAV + bus mixer) → Lua scripting (sol2, hot-reload)
+      → ImGui/UniGUI editor → native binary save/load
+```
+
+---
+
+## Games (the engine's real acceptance tests)
+
+7 complete games across 5 genres prove the render/input/audio stack is
+genre-agnostic and physics is opt-in. Full details + how to run: **[docs/GAMES.md](docs/GAMES.md)**.
+
+| Game | Genre | What it proves | Physics |
+|---|---|---|---|
+| **flappy** | arcade | the 2D GPU sprite path builds a real game | none |
+| **knockdown** | physics puzzle | Jolt **contact events** as gameplay triggers | Jolt |
+| **platformer** | 2D platformer | character controller + input map + **disk PNG** assets + save | Jolt |
+| **mario** | side-scroller | **multi-texture** batching + stomp/hurt via contacts | Jolt |
+| **mario3d** | 3D platformer | the **3D mesh path** + joints + kinematic platforms | Jolt (3D) |
+| **harvest** | grid farming / RPG-sim | a whole game with **no physics** (free-move + AABB) + deep sim systems | none |
+| **voidborne** | management sim | a **Dear ImGui / UniGUI** draw-list world + panels, JSON data | none |
+
+---
+
+## Quick start
+
+```bat
+git clone <repo-url> OmniKillerNexus && cd OmniKillerNexus
 git submodule update --init --recursive
-```
-若目录已有同名仓库残留，可先删除目录或加 `--force`。
 
-## 构建要求
-- CMake ≥ 3.20
-- C++26 编译器
-- Ninja / Make / MSVC 均可
+:: load MSVC (adjust to your VS install), then configure into build-phys
+"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"
+cmake -S . -B build-phys -G Ninja -DCMAKE_BUILD_TYPE=Debug ^
+  -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake
 
-## 顶层 CMake 选项
-- `OKN_ENABLE_CLIENT_SDK` (ON)
-- `OKN_ENABLE_SERVER_SDK` (ON)
-- `OKN_ENABLE_EDITOR_SDK` (ON)
-- `OKN_BUILD_EDITOR_EXE` (ON) —— 使用子模块中定义的 `okn-editor-app`
-- `OKN_BUILD_CLI` (ON)
-- `OKN_ENABLE_INSTALL` (OFF 默认；未为各模块配置 install 时请保持关闭)
+cmake --build build-phys -j                  :: build everything
+pwsh scripts/run_tests_all.ps1               :: run the 13-suite test gate (all green)
 
-## 快速构建
-```bash
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
-cmake --build build -j
+cmake --build build-phys --target flappy     :: build + play a game
+build-phys\bin\flappy.exe
 ```
 
-## 可执行与库
-- 可执行：`okn-editor-app`（由 `modules/okn-editor` 定义）
-- 接口库（INTERFACE）：`okn-client-sdk`, `okn-server-sdk`, `okn-editor-sdk`
-    - 注意：安装导出目前默认关闭，如需安装，需要在各模块补充 `install(TARGETS ... EXPORT OmniKillerNexusTargets)` 并开启 `OKN_ENABLE_INSTALL`.
+Full build / test / run / screenshot instructions: **[docs/BUILD.md](docs/BUILD.md)**.
+(Use a fresh `build-phys/` dir — a stale `build/` here pins a deleted MSVC toolset.)
 
-## CLI 工具
-- 见 `tools/` 下的 CMakeLists，可按开关选择构建单一 `okn-cli` 或拆分若干子工具（asset/shader/script/net/audio/ui）。
+---
 
-## 常见问题
-- **重复目标名**：确保各模块的库/样例/测试目标名使用各自前缀（如 `okn-asset`, `okn-asset_samples`），不要复用 `okn-editor` 等名字。
-- **找不到 editor main**：`okn-editor-app` 的入口在 `modules/okn-editor/src/main.cpp`。顶层不再重复定义入口。
-- **安装导出报错**：保持 `OKN_ENABLE_INSTALL=OFF`，待各模块补齐 install 规则后再开启。
+## Repository layout
 
-## 开发提示
-- 将第三方依赖放入 `external/`，或使用 FetchContent/CPM。
-- 在 CI 或本地多配置构建时，使用独立的 `-B` 构建目录（如 `build-debug`, `build-release`）。
+```
+OmniKillerNexus/
+├── modules/            13 okn-* engine module submodules (see below)
+├── games/              flappy · knockdown · platformer · mario · mario3d · harvest · voidborne
+├── third_party/
+│   └── TeamkillerUniGUI   Dear ImGui app/widget toolkit (powers okn-editor + voidborne)
+├── tools/              CLI tools (asset/shader/script/…)
+├── docs/               the documentation set (below)
+├── scripts/            run_tests_all.ps1 (the CI gate)
+├── CMakeLists.txt      root aggregator: SDK targets + add_subdirectory(modules/games)
+└── vcpkg.json          third-party manifest
+```
+
+---
+
+## The modules
+
+13 submodules in four layers. **Authoritative per-module state, the render
+routes, and the dependency map: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).**
+
+| Layer | Modules | Headline state |
+|---|---|---|
+| **0 — foundation** | `okn-core` · `okn-math` · `okn-memory` | substantial, fully tested |
+| **1 — platform** | `okn-platform` | substantial (OS threads/fs/input/crash) |
+| **2 — services** | `okn-ecs` · `okn-asset` | partial (sparse-set World + serialization; import spine) |
+| **3 — features** | `okn-render` · `okn-physics` · `okn-audio` · `okn-script` · `okn-network` | physics **verified** (Jolt); render's 2D/3D/slice paths real; audio/script partial; network deferred |
+| **4 — integration** | `okn-ui` · `okn-editor` · `tools/` | UI widgets real (mouse-only); editor on Dear ImGui |
+
+The real rendering lives in **three header-first paths inside `okn-render` that
+bypass its (dead) GPU lib**: the **2D sprite path**, the **3D mesh path**, and
+the **vertical slice** (ECS+physics+audio+Lua glue). See ARCHITECTURE.md §6.
+
+---
+
+## Documentation
+
+| Doc | What it covers |
+|---|---|
+| **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Authoritative: every module's real state, the render routes, dependency map, SDK targets, dead code. **Start here for "how it works."** |
+| **[docs/BUILD.md](docs/BUILD.md)** | Build, the 13-suite test gate, running games, the screenshot harness, CI. |
+| **[docs/GAMES.md](docs/GAMES.md)** | The 7 demo games + the reusable game patterns. |
+| **[docs/ROADMAP.md](docs/ROADMAP.md)** | The authoritative forward plan (P5–P9) + the buy-vs-build ledger. |
+| **[docs/DECISIONS.md](docs/DECISIONS.md)** | ADR log — language standard, naming, the Jolt/sokol/sol2/ImGui pivots. |
+| **[docs/patterns/service_registry.md](docs/patterns/service_registry.md)** | The interface/implementation-separation pattern (okn-core). |
+| **[docs/gitea_runner_setup.md](docs/gitea_runner_setup.md)** | CI runner setup. |
+| `AGENTS.md` | Contributor constitution (conventions + workflow). |
+
+---
+
+## Conventions (summary)
+
+C++26, no compiler extensions. **PascalCase** types (`AssetRegistry`), `I`-prefix
+interfaces (`ILogger`), **snake_case** functions/members (trailing `_` on private
+members), snake_case file names, `okn::<module>` namespaces, `#pragma once`. Full
+rules in `AGENTS.md`; the authoritative decisions in
+[docs/DECISIONS.md](docs/DECISIONS.md).

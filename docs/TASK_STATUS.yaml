@@ -1,6 +1,20 @@
 # OmniKillerNexus 全模块文件级开发状态追踪
 # 状态值: completed | in_progress | pending | stub
 # 验证 Agent 在验证通过后更新本文件
+#
+# ============================================================================
+# ⚠  READ THIS FIRST — these labels are NOT a reliability signal.
+# ============================================================================
+# A 2026-06 code audit + build/test calibration found these `completed` markers
+# are ASPIRATIONAL SCAFFOLDING: they mean "a file exists", NOT "the feature is
+# real and works". A large fraction of the "completed" tree is comment-only
+# stubs. For the TRUE, audited per-module state and the live render/game routes,
+# read  docs/ARCHITECTURE.md  (authoritative) and trust the test gate
+# (scripts/run_tests_all.ps1, 13 suites green). The forward plan is in
+# docs/ROADMAP.md; the buy-vs-build pivots (Qt→ImGui, QuickJS/Python→sol2,
+# D3D12→sokol) are in docs/DECISIONS.md. When this file disagrees with
+# ARCHITECTURE.md, ARCHITECTURE.md wins.
+# ============================================================================
 
 # ============================================================
 # Layer 0: 基础设施
