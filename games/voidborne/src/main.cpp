@@ -159,6 +159,9 @@ struct Game {
     float pcx = 3.5f, pcy = 8.5f;       // continuous tile position
     int fx = 0, fy = -1;                // facing
     float playerWalk = 0;               // walk-cycle phase (advances while moving)
+    float camX = 0, camY = 0;           // smoothed camera (Phase 6)
+    bool camInit = false;               // snap the camera on the first frame of a deck
+    float deckFade = 0;                 // 1→0 fade-in when a deck loads
 
     // ── settlement bookkeeping (for the HUD + verification) ──
     float lastFoodDelta = 0, lastO2Delta = 0;
@@ -804,6 +807,7 @@ void build_deck(int d) {
     }
     g.elevX = 2; g.elevY = corr;
     g.pcx = 3.5f; g.pcy = static_cast<float>(corr) + 0.5f;   // spawn beside the elevator
+    g.camInit = false; g.deckFade = 1.0f;                    // snap camera + fade the new deck in
     place_npcs();
 }
 int room_of(int tx, int ty) {
@@ -975,7 +979,10 @@ void draw_world() {
         return std::clamp(playerPx - view * 0.5f, 0.0f, full - view);
     };
     const float fullW = g.deckW * kTile, fullH = g.deckH * kTile;
-    const float camx = camAxis(g.pcx * kTile, fullW, viewW), camy = camAxis(g.pcy * kTile, fullH, viewH);
+    const float tcamx = camAxis(g.pcx * kTile, fullW, viewW), tcamy = camAxis(g.pcy * kTile, fullH, viewH);
+    if (!g.camInit) { g.camX = tcamx; g.camY = tcamy; g.camInit = true; }            // snap on a new deck
+    else { const float ck = std::min(1.0f, ImGui::GetIO().DeltaTime * 8.0f); g.camX += (tcamx - g.camX) * ck; g.camY += (tcamy - g.camY) * ck; }
+    const float camx = g.camX, camy = g.camY;
     const float ox = std::floor(p0.x - camx), oy = std::floor(p0.y + hud - camy);   // snap to whole pixels
     auto sx = [&](float c) { return ox + c * kTile; };
     auto sy = [&](float r) { return oy + r * kTile; };
@@ -1211,6 +1218,25 @@ void draw_world() {
     const int s = station_at_player();
     if (near_elevator()) { dl->AddText(ImVec2(pc.x - 36, pc.y - kTile * 1.35f), IM_COL32(255, 240, 160, 255), "[E] Elevator"); }
     else if (s >= 0) { const std::string t = "[E] " + g.rooms[static_cast<std::size_t>(s)].name; dl->AddText(ImVec2(pc.x - 34, pc.y - kTile * 1.35f), IM_COL32(255, 240, 160, 255), t.c_str()); }
+
+    // ── Phase 6: atmosphere — drifting dust motes, vignette, deck-change fade ──
+    const float vw = sz.x, vh = sz.y, wt = p0.y + hud, tt = static_cast<float>(ImGui::GetTime());
+    for (int i = 0; i < 48; ++i) {                                   // floating dust motes (screen-space)
+        unsigned hh = vbhash(static_cast<unsigned>(i) * 2654435761U);
+        const float bx = static_cast<float>(hh % 1000) / 1000.0f; hh = vbhash(hh);
+        const float by = static_cast<float>(hh % 1000) / 1000.0f; hh = vbhash(hh);
+        const float spd = 5.0f + static_cast<float>(hh % 100) * 0.18f;
+        const float mx = p0.x + std::fmod(bx * vw + tt * spd, vw);
+        const float my = wt + std::fmod(by * (vh - hud) + tt * spd * 0.35f, vh - hud);
+        dl->AddRectFilled(ImVec2(mx, my), ImVec2(mx + 2, my + 2), IM_COL32(200, 215, 235, 18 + static_cast<int>(hh % 26)));
+    }
+    const ImU32 vd = IM_COL32(0, 0, 0, 105), vt = IM_COL32(0, 0, 0, 0);   // vignette
+    const float vb = 86.0f;
+    dl->AddRectFilledMultiColor(ImVec2(p0.x, wt), ImVec2(p0.x + vw, wt + vb), vd, vd, vt, vt);
+    dl->AddRectFilledMultiColor(ImVec2(p0.x, p0.y + vh - vb), ImVec2(p0.x + vw, p0.y + vh), vt, vt, vd, vd);
+    dl->AddRectFilledMultiColor(ImVec2(p0.x, wt), ImVec2(p0.x + vb, p0.y + vh), vd, vt, vt, vd);
+    dl->AddRectFilledMultiColor(ImVec2(p0.x + vw - vb, wt), ImVec2(p0.x + vw, p0.y + vh), vt, vd, vd, vt);
+    if (g.deckFade > 0.001f) { dl->AddRectFilled(ImVec2(p0.x, wt), ImVec2(p0.x + vw, p0.y + vh), IM_COL32(4, 6, 12, static_cast<int>(g.deckFade * 230.0f))); }
 
     dl->Flags = saved;   // restore AA for the HUD/panels
 }
@@ -1712,6 +1738,7 @@ void draw_frame() {
     handle_input(dt);
     update_doors(dt);
     update_crew(dt);
+    g.deckFade = std::max(0.0f, g.deckFade - dt * 2.2f);
     draw_world();
     draw_hud();
     if (g.elevatorOpen) { draw_elevator_overlay(); }
