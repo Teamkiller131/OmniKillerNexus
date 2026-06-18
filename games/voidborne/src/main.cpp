@@ -83,9 +83,9 @@ struct TradeOffer { std::string id, name; int foodCost = 0, rawCost = 0, medicin
 
 constexpr int kPop = 300;               // souls aboard
 constexpr int kPlots = 8;               // ecology-bay plots
-constexpr float kTile = 38.0f;          // ship-world tile size (px)
+constexpr float kTile = 34.0f;          // ship-world tile size (px)
 constexpr float kPlayerR = 0.32f;       // player collision half-extent (tiles)
-constexpr float kMoveSpeed = 4.4f;      // tiles/sec
+constexpr float kMoveSpeed = 5.2f;      // tiles/sec (the deck is big)
 
 // One ecology plot.
 struct Plot {
@@ -95,28 +95,20 @@ struct Plot {
     bool ripe = false;
 };
 
-// Top-down deck: '#'=wall, '.'=floor, 'D'=ecology-bay door (functional),
-// 'd'=stub door, '@'=player spawn. 28×16.
-const char* kDeck[] = {
-    "############################",
-    "#..........................#",
-    "#..######.......######.....#",
-    "#..#....#.......#....#......#",
-    "#..#.bb.#.......#.ee.#......#",
-    "#..#.bb.#.......#.ee.#......#",
-    "#..###D###......###d###.....#",
-    "#..........................#",
-    "#..........................#",
-    "#..........................#",
-    "#..######.......######.....#",
-    "#..#....#.......#....#......#",
-    "#..#.rr.#.......#.gg.#......#",
-    "#..#....#.......#....#......#",
-    "#..###d###..@...###d###.....#",
-    "############################",
+// ── large, scrolling ship deck (Stardew-scale): a 5x3 grid of rooms joined by
+//    corridors, generated procedurally into a char grid. ──
+constexpr int kRoomCols = 5, kRoomRows = 3, kGap = 4, kRoomW = 15, kRoomH = 15;
+constexpr int kDeckW = 1 + kGap + kRoomCols * (kRoomW + kGap);   // 100
+constexpr int kDeckH = 1 + kGap + kRoomRows * (kRoomH + kGap);   // 62
+
+struct Room {
+    int x0 = 0, y0 = 0, x1 = 0, y1 = 0, doorx = 0, doory = 0;
+    std::string name;
+    int panel = -1;            // 0 bay,1 eng,2 log,3 mfg,4 sci,5 crew,6 captain,7 nav, -1 decor
+    ImU32 floorCol = IM_COL32(24, 28, 38, 255);
+    ImU32 labelCol = IM_COL32(200, 210, 220, 255);
+    bool isVoid = false;       // Bay G — glows once the seed is discovered
 };
-constexpr int kDeckH = 16, kDeckW = 28;
-constexpr int kBayDoorX = 6, kBayDoorY = 6;   // the functional door
 
 struct Game {
     std::vector<CropDef> cropDefs;
@@ -137,8 +129,11 @@ struct Game {
     bool inBay = false;                 // bay panel open?
 
     // ── ship world / player ──
-    float pcx = 12.5f, pcy = 14.5f;     // continuous tile position
+    std::vector<std::string> deck;      // generated tilemap ('#' wall, '.' floor)
+    std::vector<Room> rooms;            // room rects + doors + which panel they open
+    float pcx = 50.5f, pcy = 30.5f;     // continuous tile position (central corridor)
     int fx = 0, fy = -1;                // facing
+    int nearStation = -1;               // room index whose console the player is at, or -1
 
     // ── settlement bookkeeping (for the HUD + verification) ──
     float lastFoodDelta = 0, lastO2Delta = 0;
@@ -538,8 +533,8 @@ void advance_time(float dt) {
 
 // ── ship-world helpers ──
 char deck_at(int x, int y) {
-    if (x < 0 || y < 0 || x >= kDeckW || y >= kDeckH) { return '#'; }
-    return kDeck[y][x];
+    if (x < 0 || y < 0 || y >= static_cast<int>(g.deck.size()) || x >= static_cast<int>(g.deck[static_cast<std::size_t>(y)].size())) { return '#'; }
+    return g.deck[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)];
 }
 bool walkable_tile(int x, int y) { const char c = deck_at(x, y); return c != '#'; }
 bool blocked_box(float cx, float cy) {
@@ -560,63 +555,138 @@ void move_player(float dcol, float drow, float dt) {
     const float ny = g.pcy + drow * step;
     if (!blocked_box(g.pcx, ny)) { g.pcy = ny; }
 }
-bool at_bay_door() {
+// Procedurally generate the large deck: a 5x3 grid of department rooms joined by
+// corridors. Each room is a walled rectangle with a south-facing door + a console.
+void build_deck() {
+    g.deck.assign(kDeckH, std::string(static_cast<std::size_t>(kDeckW), '.'));
+    for (int x = 0; x < kDeckW; ++x) { g.deck[0][static_cast<std::size_t>(x)] = '#'; g.deck[static_cast<std::size_t>(kDeckH - 1)][static_cast<std::size_t>(x)] = '#'; }
+    for (int y = 0; y < kDeckH; ++y) { g.deck[static_cast<std::size_t>(y)][0] = '#'; g.deck[static_cast<std::size_t>(y)][static_cast<std::size_t>(kDeckW - 1)] = '#'; }
+    g.rooms.clear();
+    struct Spec { const char* name; int panel; ImU32 fc, lc; bool vd; };
+    const Spec spec[15] = {
+        {"BRIDGE",          6, IM_COL32(50, 36, 52, 255), IM_COL32(210, 150, 220, 255), false},
+        {"NAVIGATION",      7, IM_COL32(30, 40, 58, 255), IM_COL32(120, 180, 230, 255), false},
+        {"RESEARCH",        4, IM_COL32(30, 44, 58, 255), IM_COL32(120, 180, 230, 255), false},
+        {"MEDICAL",        -1, IM_COL32(46, 30, 34, 255), IM_COL32(230, 140, 150, 255), false},
+        {"CRYO VAULT",     -1, IM_COL32(28, 40, 46, 255), IM_COL32(150, 200, 210, 255), false},
+        {"MANUFACTURING",   3, IM_COL32(54, 44, 30, 255), IM_COL32(220, 170, 110, 255), false},
+        {"MESS HALL",      -1, IM_COL32(44, 40, 30, 255), IM_COL32(210, 200, 150, 255), false},
+        {"ENGINEERING",     1, IM_COL32(54, 44, 30, 255), IM_COL32(220, 170, 110, 255), false},
+        {"CREW QUARTERS",   5, IM_COL32(36, 38, 46, 255), IM_COL32(200, 205, 215, 255), false},
+        {"LOGISTICS",       2, IM_COL32(40, 46, 34, 255), IM_COL32(170, 210, 140, 255), false},
+        {"ECOLOGY BAY A",   0, IM_COL32(28, 56, 40, 255), IM_COL32(120, 220, 150, 255), false},
+        {"HYDROPONICS B",  -1, IM_COL32(28, 52, 42, 255), IM_COL32(120, 210, 160, 255), false},
+        {"HYDROPONICS C",  -1, IM_COL32(28, 52, 42, 255), IM_COL32(120, 210, 160, 255), false},
+        {"CREW QUARTERS B",-1, IM_COL32(36, 38, 46, 255), IM_COL32(200, 205, 215, 255), false},
+        {"BAY G",          -1, IM_COL32(36, 28, 48, 255), IM_COL32(180, 130, 220, 255), true},
+    };
+    int idx = 0;
+    for (int rr = 0; rr < kRoomRows; ++rr) {
+        for (int cc = 0; cc < kRoomCols; ++cc) {
+            const int x0 = 1 + kGap + cc * (kRoomW + kGap), y0 = 1 + kGap + rr * (kRoomH + kGap);
+            const int x1 = x0 + kRoomW - 1, y1 = y0 + kRoomH - 1;
+            for (int x = x0; x <= x1; ++x) { g.deck[static_cast<std::size_t>(y0)][static_cast<std::size_t>(x)] = '#'; g.deck[static_cast<std::size_t>(y1)][static_cast<std::size_t>(x)] = '#'; }
+            for (int y = y0; y <= y1; ++y) { g.deck[static_cast<std::size_t>(y)][static_cast<std::size_t>(x0)] = '#'; g.deck[static_cast<std::size_t>(y)][static_cast<std::size_t>(x1)] = '#'; }
+            const int dx = (x0 + x1) / 2, dy = y1;     // 2-wide south door
+            g.deck[static_cast<std::size_t>(dy)][static_cast<std::size_t>(dx)] = '.';
+            g.deck[static_cast<std::size_t>(dy)][static_cast<std::size_t>(dx + 1)] = '.';
+            Room R; R.x0 = x0; R.y0 = y0; R.x1 = x1; R.y1 = y1; R.doorx = dx; R.doory = dy;
+            const Spec& s = spec[idx];
+            R.name = s.name; R.panel = s.panel; R.floorCol = s.fc; R.labelCol = s.lc; R.isVoid = s.vd;
+            g.rooms.push_back(R);
+            ++idx;
+        }
+    }
+    g.pcx = 40.5f; g.pcy = 40.5f;   // central corridor intersection
+}
+int room_of(int tx, int ty) {
+    for (int i = 0; i < static_cast<int>(g.rooms.size()); ++i) {
+        const Room& r = g.rooms[static_cast<std::size_t>(i)];
+        if (tx > r.x0 && tx < r.x1 && ty > r.y0 && ty < r.y1) { return i; }
+    }
+    return -1;
+}
+int station_at_player() {
     const int tx = static_cast<int>(std::floor(g.pcx)), ty = static_cast<int>(std::floor(g.pcy));
-    return std::abs(tx - kBayDoorX) <= 1 && std::abs(ty - kBayDoorY) <= 1;
+    for (int i = 0; i < static_cast<int>(g.rooms.size()); ++i) {
+        const Room& r = g.rooms[static_cast<std::size_t>(i)];
+        if (r.panel >= 0 && std::abs(tx - r.doorx) <= 1 && std::abs(ty - r.doory) <= 1) { return i; }
+    }
+    return -1;
+}
+void open_panel(int p) {
+    switch (p) {
+        case 0: g.inBay = true; break;     case 1: g.inEng = true; break;     case 2: g.inLog = true; break;
+        case 3: g.inMfg = true; break;     case 4: g.inSci = true; break;     case 5: g.inCrew = true; break;
+        case 6: g.inCaptain = true; break; case 7: g.inStarmap = true; break;
+    }
 }
 
 // ── rendering ──────────────────────────────────────────────────────────────────
 void draw_world() {
     const ImGuiViewport* vp = ImGui::GetMainViewport();
     ImDrawList* dl = ImGui::GetBackgroundDrawList();
-    dl->AddRectFilled(vp->Pos, ImVec2(vp->Pos.x + vp->Size.x, vp->Pos.y + vp->Size.y), IM_COL32(8, 10, 16, 255));
+    const ImVec2 p0 = vp->Pos, sz = vp->Size;
+    dl->AddRectFilled(p0, ImVec2(p0.x + sz.x, p0.y + sz.y), IM_COL32(6, 8, 14, 255));
 
-    const float ox = vp->Pos.x + (vp->Size.x - kDeckW * kTile) * 0.5f;
-    const float oy = vp->Pos.y + 96.0f;   // below the HUD
+    // camera follows the player, clamped to the deck; the world scrolls under a fixed HUD.
+    const float hud = 96.0f, viewW = sz.x, viewH = sz.y - hud;
+    float camx = std::clamp(g.pcx * kTile - viewW * 0.5f, 0.0f, std::max(0.0f, kDeckW * kTile - viewW));
+    float camy = std::clamp(g.pcy * kTile - viewH * 0.5f, 0.0f, std::max(0.0f, kDeckH * kTile - viewH));
+    const float ox = p0.x - camx, oy = p0.y + hud - camy;
     auto sx = [&](float c) { return ox + c * kTile; };
     auto sy = [&](float r) { return oy + r * kTile; };
 
-    for (int y = 0; y < kDeckH; ++y) {
-        for (int x = 0; x < kDeckW; ++x) {
-            const char c = deck_at(x, y);
-            const ImVec2 a(sx(static_cast<float>(x)), sy(static_cast<float>(y)));
+    // view-cull: only the visible tile window
+    const int x0 = std::max(0, static_cast<int>(camx / kTile));
+    const int x1 = std::min(kDeckW - 1, static_cast<int>((camx + viewW) / kTile) + 1);
+    const int y0 = std::max(0, static_cast<int>(camy / kTile));
+    const int y1 = std::min(kDeckH - 1, static_cast<int>((camy + viewH) / kTile) + 1);
+    for (int ty = y0; ty <= y1; ++ty) {
+        for (int tx = x0; tx <= x1; ++tx) {
+            const ImVec2 a(sx(static_cast<float>(tx)), sy(static_cast<float>(ty)));
             const ImVec2 b(a.x + kTile, a.y + kTile);
+            if (deck_at(tx, ty) == '#') { dl->AddRectFilled(a, b, IM_COL32(40, 48, 62, 255)); dl->AddRect(a, b, IM_COL32(58, 70, 90, 70)); continue; }
+            const int ri = room_of(tx, ty);
             ImU32 col;
-            if (c == '#') { col = IM_COL32(40, 48, 62, 255); }
-            else if (c == 'b') { col = IM_COL32(28, 56, 40, 255); }      // ecology bay floor
-            else if (c == 'e') { col = IM_COL32(54, 44, 30, 255); }      // engineering
-            else if (c == 'r') { col = IM_COL32(30, 44, 58, 255); }      // research
-            else if (c == 'g') { col = IM_COL32(50, 36, 52, 255); }      // bridge
-            else if (c == 'D' || c == 'd') { col = IM_COL32(120, 96, 40, 255); }  // door
-            else { col = ((x + y) & 1) ? IM_COL32(24, 28, 38, 255) : IM_COL32(20, 24, 33, 255); }
+            if (ri >= 0) { col = g.rooms[static_cast<std::size_t>(ri)].floorCol; if (g.rooms[static_cast<std::size_t>(ri)].isVoid && g.voidDiscovered) { col = IM_COL32(64, 38, 86, 255); } }
+            else { col = ((tx + ty) & 1) ? IM_COL32(22, 26, 34, 255) : IM_COL32(18, 22, 30, 255); }
             dl->AddRectFilled(a, b, col);
-            if (c == '#') { dl->AddRect(a, b, IM_COL32(58, 70, 90, 120)); }
         }
     }
-    // room labels
-    auto label = [&](float cx, float cy, const char* t, ImU32 col) {
-        dl->AddText(ImVec2(sx(cx), sy(cy)), col, t);
-    };
-    label(3.6f, 3.4f, "ECOLOGY", IM_COL32(120, 220, 150, 255));
-    label(16.4f, 3.4f, "ENGINE", IM_COL32(220, 170, 110, 255));
-    label(3.7f, 11.4f, "RESEARCH", IM_COL32(120, 180, 230, 255));
-    label(16.7f, 11.4f, "BRIDGE", IM_COL32(210, 150, 220, 255));
-
+    // doors + room consoles/furniture + labels
+    for (const Room& r : g.rooms) {
+        if (r.x1 < x0 || r.x0 > x1 || r.y1 < y0 || r.y0 > y1) { continue; }   // cull off-screen rooms
+        const ImVec2 da(sx(static_cast<float>(r.doorx)), sy(static_cast<float>(r.doory)));
+        dl->AddRectFilled(da, ImVec2(da.x + kTile * 2, da.y + kTile),
+                          r.panel >= 0 ? IM_COL32(120, 96, 40, 255) : IM_COL32(70, 70, 80, 255));
+        // a console terminal just inside the door for functional departments
+        if (r.panel >= 0) {
+            const float cx = sx(static_cast<float>(r.doorx) - 0.1f), cy = sy(static_cast<float>(r.doory) - 1.7f);
+            dl->AddRectFilled(ImVec2(cx, cy), ImVec2(cx + kTile * 1.3f, cy + kTile * 0.95f), IM_COL32(54, 78, 96, 255));
+            dl->AddRectFilled(ImVec2(cx + 2, cy + 2), ImVec2(cx + kTile * 1.3f - 2, cy + kTile * 0.42f), IM_COL32(80, 190, 200, 210));
+        }
+        // lockers/beds at the upper corners
+        for (int sidx = 0; sidx < 2; ++sidx) {
+            const float fxp = sx(static_cast<float>(sidx == 0 ? r.x0 + 1.4f : r.x1 - 2.4f)), fyp = sy(static_cast<float>(r.y0) + 1.6f);
+            dl->AddRectFilled(ImVec2(fxp, fyp), ImVec2(fxp + kTile, fyp + kTile * 1.8f), IM_COL32(58, 64, 76, 255));
+        }
+        dl->AddText(ImVec2(sx(static_cast<float>(r.x0) + 1.2f), sy(static_cast<float>(r.y0) + 0.6f)), r.labelCol, r.name.c_str());
+        if (r.isVoid && g.voidDiscovered) {
+            dl->AddText(ImVec2(sx((r.x0 + r.x1) * 0.5f - 2.0f), sy((r.y0 + r.y1) * 0.5f)), IM_COL32(205, 130, 235, 255), "* void seed *");
+        }
+    }
     // player
     const ImVec2 pc(sx(g.pcx), sy(g.pcy));
-    dl->AddCircleFilled(pc, kTile * 0.34f, IM_COL32(235, 240, 255, 255));
-    dl->AddCircleFilled(pc, kTile * 0.34f, IM_COL32(70, 130, 220, 90));
-    dl->AddCircle(pc, kTile * 0.34f, IM_COL32(40, 60, 110, 255), 0, 2.0f);
-    // facing pip
-    dl->AddCircleFilled(ImVec2(pc.x + g.fx * kTile * 0.28f, pc.y + g.fy * kTile * 0.28f),
-                        kTile * 0.08f, IM_COL32(50, 70, 120, 255));
-
-    // interaction prompt at the bay door
-    const ImVec2 doorc(sx(kBayDoorX + 0.5f), sy(kBayDoorY + 0.5f));
-    if (at_bay_door()) {
-        dl->AddText(ImVec2(doorc.x - 36, doorc.y - kTile), IM_COL32(255, 240, 160, 255), "[E] Ecology Bay");
-    } else {
-        dl->AddText(ImVec2(doorc.x - 18, doorc.y - kTile), IM_COL32(160, 200, 170, 180), "BAY");
+    dl->AddCircleFilled(pc, kTile * 0.36f, IM_COL32(235, 240, 255, 255));
+    dl->AddCircleFilled(pc, kTile * 0.36f, IM_COL32(70, 130, 220, 90));
+    dl->AddCircle(pc, kTile * 0.36f, IM_COL32(40, 60, 110, 255), 0, 2.0f);
+    dl->AddCircleFilled(ImVec2(pc.x + g.fx * kTile * 0.30f, pc.y + g.fy * kTile * 0.30f), kTile * 0.09f, IM_COL32(50, 70, 120, 255));
+    // interaction prompt
+    const int s = station_at_player();
+    if (s >= 0) {
+        const std::string t = "[E] " + g.rooms[static_cast<std::size_t>(s)].name;
+        dl->AddText(ImVec2(pc.x - 34, pc.y - kTile * 1.15f), IM_COL32(255, 240, 160, 255), t.c_str());
     }
 }
 
@@ -1055,7 +1125,10 @@ void handle_input(float dt) {
     if (ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_LeftArrow)) { dcol -= 1; }
     if (ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_RightArrow)) { dcol += 1; }
     move_player(dcol, drow, dt);
-    if (ImGui::IsKeyPressed(ImGuiKey_E, false) && at_bay_door()) { g.inBay = true; }
+    if (ImGui::IsKeyPressed(ImGuiKey_E, false)) {
+        const int s = station_at_player();
+        if (s >= 0) { open_panel(g.rooms[static_cast<std::size_t>(s)].panel); }
+    }
 }
 
 // Flat, square, "pixel-terminal" styling on top of UniGUI's theme.
@@ -1171,6 +1244,8 @@ int main(int argc, char* argv[]) {
         return good ? 0 : 1;
     }
     if (autodemo) { run_autodemo(); return ok ? 0 : 1; }
+
+    build_deck();   // generate the large scrolling ship deck
 
     // screenshot hooks: OKN_VB_SHOW=<panel> opens a panel with demo state so captures
     // show each milestone alive.
