@@ -23,16 +23,20 @@
 #include <imgui.h>
 
 #include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace {
@@ -51,6 +55,31 @@ struct GameResources {
     float power = 100, water = 1200, oxygen = 21.0f, co2 = 0.4f, food = 600, parts = 50;
     float medicine = 20, rawMaterials = 30, alienSpecimens = 0;
 };
+
+// ── M4 events (events.json + events_personal.json) ──
+struct EventEffect { std::string key; float delta = 0; };   // "resource.food" -> -10
+struct EventOption {
+    std::string label, deptGate, requireRes;
+    int requireAmt = 0;
+    std::vector<EventEffect> effects;
+};
+struct EventDef {
+    std::string id, title, body, deptGate, triggerRes;
+    int weight = 10, cooldown = 10, minDay = 0, lastFired = -999;
+    float triggerBelow = -1;                  // fire only when triggerRes < this (optional)
+    std::vector<EventOption> options;
+};
+// ── M4 crew (crew.json) ──
+struct CrewMember {
+    std::string id, name, role, department, shift;
+    int tier = 1, skill = 50, loyalty = 50;
+    float voteLean = 0.5f;
+};
+// ── M5 departments ──
+struct RecipeDef { std::string id, name, requiresTech; int rawCost = 0, powerCost = 0, partsOut = 0, days = 1; };
+struct ResearchDef { std::string id, name, line, unlockTech; int days = 1, powerPerDay = 0; float failRate = 0.1f; };
+struct RouteDef { std::string id, name, risk, desc; int days = 10, rawBonus = 0, partsBonus = 0; };
+struct TradeOffer { std::string id, name; int foodCost = 0, rawCost = 0, medicineGain = 0, partsGain = 0, waterGain = 0, minDay = 0; };
 
 constexpr int kPop = 300;               // souls aboard
 constexpr int kPlots = 8;               // ecology-bay plots
@@ -116,6 +145,49 @@ struct Game {
     int totalHarvested = 0;
     float totalFoodHarvested = 0;
 
+    // ── M4: events / crew / morale ──
+    std::vector<EventDef> events;
+    std::vector<CrewMember> crew;
+    float morale = 70;
+    int playerSkill = 20, playerPerf = 0;
+    std::unordered_map<std::string, int> flags;
+    int curEvent = -1;                 // active modal event index, or -1
+    int eventsResolved = 0;
+    std::string lastEventTitle;
+    std::uint32_t rng = 0x1234567u;
+
+    // ── M5: departments ──
+    std::vector<RecipeDef> recipes;
+    std::vector<ResearchDef> research;
+    std::vector<RouteDef> routes;
+    std::vector<TradeOffer> offers;
+    float powerAlloc[5] = {0.25f, 0.20f, 0.20f, 0.20f, 0.15f};   // eco/mfg/sci/life/reserve
+    int mfgQueue[4] = {-1, -1, -1, -1};                          // recipe indices in flight
+    float mfgProgress[4] = {0, 0, 0, 0};
+    int sciActive = -1; float sciProgress = 0;
+    int techPoints[5] = {0, 0, 0, 0, 0};                         // survival/eng/social/mfg/frontier
+    std::unordered_map<std::string, int> tech;                  // unlocked techs
+    int ration = 1;                                              // 0 short / 1 normal / 2 generous
+    int offerIdx = 0;
+
+    // ── M6: routes / elections / captain / void-seed / endings ──
+    std::string playerRole = "Botanist", playerDept = "Ecology";
+    int playerTier = 1;
+    bool isCaptain = false, ranForCaptain = false, electionWon = false;
+    float captainBudget[5] = {0.2f, 0.2f, 0.2f, 0.2f, 0.2f};     // per department
+    int voyageDay = 0, voyageTotal = 400 * 16;                   // compressed 400yr voyage
+    float lyTravelled = 0, lyTotal = 120;
+    int routeChosen = 0, routeProgress = 0;
+    float voidStage = 0;                                         // 0..100 infection
+    int voidStance = -1;                                         // -1 none, 0 embrace..4 hide
+    bool voidDiscovered = false;
+    int ending = -1;                                            // 0..6 once reached
+    int generation = 1;
+
+    // ── UI panel state ──
+    bool inCrew = false, inEng = false, inLog = false, inMfg = false, inSci = false;
+    bool inStarmap = false, inCaptain = false;
+
     bool autodemo = false;
 };
 
@@ -163,6 +235,226 @@ bool load_crops() {
         g.cropDefs.push_back(cd);
     }
     return true;
+}
+
+std::string jstr(const rapidjson::Value& v, const char* k, const char* def = "") {
+    return (v.HasMember(k) && v[k].IsString()) ? v[k].GetString() : def;
+}
+float to_num(const rapidjson::Value& v) {
+    if (v.IsNumber()) { return v.GetFloat(); }
+    if (v.IsString()) { return static_cast<float>(std::atof(v.GetString())); }
+    return 0.0f;
+}
+
+// ── M4: events + crew loaders ──
+void load_events_file(const std::string& path) {
+    const std::string txt = read_file(path);
+    if (txt.empty()) { return; }
+    rapidjson::Document d; d.Parse(txt.c_str());
+    if (d.HasParseError() || !d.HasMember("events") || !d["events"].IsArray()) { return; }
+    for (auto& e : d["events"].GetArray()) {
+        EventDef ev;
+        ev.id = jstr(e, "id"); ev.title = jstr(e, "title"); ev.body = jstr(e, "body");
+        ev.deptGate = jstr(e, "deptGate");
+        ev.weight = static_cast<int>(jnum(e, "weight", 10));
+        ev.cooldown = static_cast<int>(jnum(e, "cooldown", 10));
+        if (e.HasMember("trigger") && e["trigger"].IsObject() && e["trigger"].HasMember("any") && e["trigger"]["any"].IsArray()) {
+            for (auto& t : e["trigger"]["any"].GetArray()) {
+                if (t.HasMember("minDay")) { ev.minDay = static_cast<int>(to_num(t["minDay"])); }
+                if (t.HasMember("resource") && t.HasMember("below")) { ev.triggerRes = t["resource"].GetString(); ev.triggerBelow = to_num(t["below"]); }
+            }
+        }
+        if (e.HasMember("options") && e["options"].IsArray()) {
+            for (auto& o : e["options"].GetArray()) {
+                EventOption op; op.label = jstr(o, "label"); op.deptGate = jstr(o, "deptGate");
+                if (o.HasMember("require") && o["require"].IsObject()) {
+                    for (auto& m : o["require"].GetObject()) { op.requireRes = m.name.GetString(); op.requireAmt = static_cast<int>(to_num(m.value)); break; }
+                }
+                if (o.HasMember("effects") && o["effects"].IsObject()) {
+                    for (auto& m : o["effects"].GetObject()) { op.effects.push_back({m.name.GetString(), to_num(m.value)}); }
+                }
+                ev.options.push_back(op);
+            }
+        }
+        if (!ev.options.empty()) { g.events.push_back(ev); }
+    }
+}
+void load_crew() {
+    const std::string txt = read_file(g_dataDir + "/crew.json");
+    if (txt.empty()) { return; }
+    rapidjson::Document d; d.Parse(txt.c_str());
+    if (d.HasParseError() || !d.HasMember("npcs") || !d["npcs"].IsArray()) { return; }
+    for (auto& n : d["npcs"].GetArray()) {
+        CrewMember c;
+        c.id = jstr(n, "id"); c.name = jstr(n, "name"); c.role = jstr(n, "role");
+        c.department = jstr(n, "department"); c.shift = jstr(n, "shift");
+        c.tier = static_cast<int>(jnum(n, "tier", 1));
+        c.skill = static_cast<int>(jnum(n, "skill", 50));
+        c.loyalty = static_cast<int>(jnum(n, "loyalty", 50));
+        c.voteLean = jnum(n, "voteLean", 0.5f);
+        g.crew.push_back(c);
+    }
+}
+// ── M5: department data ──
+void load_recipes() {
+    const std::string txt = read_file(g_dataDir + "/recipes.json");
+    rapidjson::Document d; d.Parse(txt.c_str());
+    if (d.HasParseError() || !d.HasMember("recipes") || !d["recipes"].IsArray()) { return; }
+    for (auto& r : d["recipes"].GetArray()) {
+        RecipeDef rd; rd.id = jstr(r, "id"); rd.name = jstr(r, "name"); rd.requiresTech = jstr(r, "requiresTech");
+        rd.rawCost = static_cast<int>(jnum(r, "rawCost")); rd.powerCost = static_cast<int>(jnum(r, "powerCost"));
+        rd.partsOut = static_cast<int>(jnum(r, "partsOut")); rd.days = static_cast<int>(jnum(r, "days", 1));
+        g.recipes.push_back(rd);
+    }
+}
+void load_research() {
+    const std::string txt = read_file(g_dataDir + "/research.json");
+    rapidjson::Document d; d.Parse(txt.c_str());
+    if (d.HasParseError() || !d.HasMember("projects") || !d["projects"].IsArray()) { return; }
+    for (auto& r : d["projects"].GetArray()) {
+        ResearchDef rd; rd.id = jstr(r, "id"); rd.name = jstr(r, "name"); rd.line = jstr(r, "line"); rd.unlockTech = jstr(r, "unlockTech");
+        rd.days = static_cast<int>(jnum(r, "days", 1)); rd.powerPerDay = static_cast<int>(jnum(r, "powerPerDay")); rd.failRate = jnum(r, "failRate", 0.1f);
+        g.research.push_back(rd);
+    }
+}
+void load_routes() {
+    const std::string txt = read_file(g_dataDir + "/routes.json");
+    rapidjson::Document d; d.Parse(txt.c_str());
+    if (d.HasParseError() || !d.HasMember("routes") || !d["routes"].IsArray()) { return; }
+    for (auto& r : d["routes"].GetArray()) {
+        RouteDef rd; rd.id = jstr(r, "id"); rd.name = jstr(r, "name"); rd.risk = jstr(r, "risk"); rd.desc = jstr(r, "description");
+        rd.days = static_cast<int>(jnum(r, "days", 10)); rd.rawBonus = static_cast<int>(jnum(r, "rawBonus")); rd.partsBonus = static_cast<int>(jnum(r, "partsBonus"));
+        g.routes.push_back(rd);
+    }
+}
+void load_trade() {
+    const std::string txt = read_file(g_dataDir + "/trade_offers.json");
+    rapidjson::Document d; d.Parse(txt.c_str());
+    if (d.HasParseError() || !d.HasMember("offers") || !d["offers"].IsArray()) { return; }
+    for (auto& o : d["offers"].GetArray()) {
+        TradeOffer t; t.id = jstr(o, "id"); t.name = jstr(o, "name");
+        t.foodCost = static_cast<int>(jnum(o, "foodCost")); t.rawCost = static_cast<int>(jnum(o, "rawCost"));
+        t.medicineGain = static_cast<int>(jnum(o, "medicineGain")); t.partsGain = static_cast<int>(jnum(o, "partsGain"));
+        t.waterGain = static_cast<int>(jnum(o, "waterGain")); t.minDay = static_cast<int>(jnum(o, "minDay"));
+        g.offers.push_back(t);
+    }
+}
+void load_all_data() {
+    load_crops(); load_events_file(g_dataDir + "/events.json"); load_events_file(g_dataDir + "/events_personal.json");
+    load_crew(); load_recipes(); load_research(); load_routes(); load_trade();
+}
+
+// ── effects + the event engine ──
+float* res_ptr(const std::string& k) {
+    GameResources& r = g.res;
+    if (k == "food") { return &r.food; } if (k == "water") { return &r.water; } if (k == "power") { return &r.power; }
+    if (k == "oxygen") { return &r.oxygen; } if (k == "co2") { return &r.co2; } if (k == "parts") { return &r.parts; }
+    if (k == "medicine") { return &r.medicine; } if (k == "raw" || k == "rawMaterials") { return &r.rawMaterials; }
+    if (k == "alienSpecimens" || k == "specimens") { return &r.alienSpecimens; }
+    return nullptr;
+}
+void apply_effect(const std::string& key, float d) {
+    if (key.rfind("resource.", 0) == 0) { if (float* p = res_ptr(key.substr(9))) { *p = std::max(0.0f, *p + d); } }
+    else if (key == "social.morale") { g.morale = std::clamp(g.morale + d, 0.0f, 100.0f); }
+    else if (key == "player.skill") { g.playerSkill += static_cast<int>(d); }
+    else if (key == "player.perf") { g.playerPerf += static_cast<int>(d); }
+    else if (key.rfind("void.", 0) == 0) { g.voidStage = std::clamp(g.voidStage + d, 0.0f, 100.0f); g.voidDiscovered = true; }
+    else if (key.rfind("flag.", 0) == 0) { g.flags[key.substr(5)] = d != 0 ? static_cast<int>(d) : 1; }
+}
+std::uint32_t next_rand() { g.rng = g.rng * 1664525u + 1013904223u; return g.rng; }
+bool resource_below(const std::string& res, float below) { float* p = res_ptr(res); return p && *p < below; }
+void maybe_trigger_event() {
+    if (g.curEvent >= 0 || g.events.empty()) { return; }
+    std::vector<int> pool; int total = 0;
+    for (int i = 0; i < static_cast<int>(g.events.size()); ++i) {
+        const EventDef& e = g.events[static_cast<std::size_t>(i)];
+        if (g.day - e.lastFired < e.cooldown) { continue; }
+        if (g.day < e.minDay) { continue; }
+        if (e.triggerBelow >= 0 && !resource_below(e.triggerRes, e.triggerBelow)) { continue; }
+        if (!e.deptGate.empty() && e.deptGate != g.playerDept) { continue; }
+        pool.push_back(i); total += e.weight;
+    }
+    if (pool.empty() || total <= 0) { return; }
+    if (next_rand() % 100u >= 50u) { return; }       // ~half the days surface an event
+    int pick = static_cast<int>(next_rand() % static_cast<unsigned>(total)), acc = 0, chosen = pool[0];
+    for (int i : pool) { acc += g.events[static_cast<std::size_t>(i)].weight; if (pick < acc) { chosen = i; break; } }
+    g.curEvent = chosen; g.events[static_cast<std::size_t>(chosen)].lastFired = g.day;
+    g.lastEventTitle = g.events[static_cast<std::size_t>(chosen)].title;
+}
+void resolve_event(int optIdx) {
+    if (g.curEvent < 0) { return; }
+    EventDef& e = g.events[static_cast<std::size_t>(g.curEvent)];
+    if (optIdx >= 0 && optIdx < static_cast<int>(e.options.size())) {
+        EventOption& o = e.options[static_cast<std::size_t>(optIdx)];
+        bool can = true;
+        if (!o.requireRes.empty()) { float* p = res_ptr(o.requireRes); if (p && *p < static_cast<float>(o.requireAmt)) { can = false; } }
+        if (can) { for (auto& ef : o.effects) { apply_effect(ef.key, ef.delta); } ++g.eventsResolved; }
+    }
+    g.curEvent = -1;
+}
+
+// ── M5: department daily ticks (S6/S8/S9) ──
+float power_factor(int sink) {   // sink: 0 eco / 1 mfg / 2 sci / 3 life / 4 reserve
+    const float cap = g.isCaptain ? (0.6f + g.captainBudget[sink] * 2.0f) : 1.0f;
+    return std::clamp(g.powerAlloc[sink] * 5.0f * (g.res.power / 100.0f) * cap, 0.3f, 1.8f);
+}
+void tick_manufacturing() {
+    for (int i = 0; i < 4; ++i) {
+        if (g.mfgQueue[i] < 0) { continue; }
+        const RecipeDef& r = g.recipes[static_cast<std::size_t>(g.mfgQueue[i])];
+        g.mfgProgress[i] += power_factor(1);
+        g.res.power = std::max(0.0f, g.res.power - r.powerCost * 0.5f);
+        if (g.mfgProgress[i] >= static_cast<float>(r.days)) {
+            g.res.parts += r.partsOut; g.mfgQueue[i] = -1; g.mfgProgress[i] = 0;
+        }
+    }
+}
+void tick_research() {
+    if (g.sciActive < 0) { return; }
+    const ResearchDef& p = g.research[static_cast<std::size_t>(g.sciActive)];
+    g.sciProgress += power_factor(2);
+    g.res.power = std::max(0.0f, g.res.power - p.powerPerDay);
+    if (g.sciProgress >= static_cast<float>(p.days)) {
+        if (static_cast<float>(next_rand() % 1000u) / 1000.0f >= p.failRate) {
+            if (!p.unlockTech.empty()) { g.tech[p.unlockTech] = 1; }
+            const int line = p.line == "survival" ? 0 : p.line == "engineering" ? 1 : p.line == "social" ? 2 : p.line == "manufacturing" ? 3 : 4;
+            g.techPoints[line]++;
+        }
+        g.sciActive = -1; g.sciProgress = 0;
+    }
+}
+// ── M6: voyage / void-seed / elections / endings ──
+void tick_voyage() {
+    g.voyageDay++;
+    g.lyTravelled = std::min(g.lyTotal, g.lyTravelled + 0.05f);
+    if ((g.voyageDay % 64) == 0) { ++g.generation; }   // a generation ~every 64 ticks
+}
+void tick_voidseed() {
+    g.voidStage = std::clamp(g.voidStage + 0.12f + (g.morale < 40 ? 0.18f : 0.0f), 0.0f, 100.0f);
+    if (g.voidStage > 25 && !g.voidDiscovered && (next_rand() % 100u) < 4u) { g.voidDiscovered = true; }
+}
+void update_player_tier() { g.playerTier = g.playerSkill >= 70 ? 3 : g.playerSkill >= 40 ? 2 : 1; }
+float election_yes_share() {
+    float yes = 0, tot = 0;
+    for (auto& c : g.crew) { const float w = 1.0f + c.tier * 0.5f; tot += w; yes += w * (c.voteLean * 0.6f + (g.morale / 100.0f) * 0.4f); }
+    return tot > 0 ? yes / tot : 0;
+}
+void run_for_captain() {
+    if (g.playerTier < 3 || g.ranForCaptain) { return; }
+    g.ranForCaptain = true;
+    g.electionWon = election_yes_share() >= 0.5f;
+    if (g.electionWon) { g.isCaptain = true; g.playerRole = "Captain"; }
+}
+const char* kEndingName[7] = {
+    "COLLAPSE", "SUFFOCATION", "VERDANT COMMUNION", "CONSUMED BY THE VOID",
+    "LANDFALL UNDER YOUR COMMAND", "A CHANGED PEOPLE ARRIVE", "QUIET ARRIVAL",
+};
+void evaluate_endings() {
+    if (g.ending >= 0) { return; }
+    if (g.res.food <= 0 && g.morale < 12) { g.ending = 0; return; }
+    if (g.res.oxygen <= 2) { g.ending = 1; return; }
+    if (g.voidStage >= 100) { g.ending = (g.voidStance == 0) ? 2 : 3; return; }
+    if (g.lyTravelled >= g.lyTotal) { g.ending = g.isCaptain ? 4 : (g.voidDiscovered ? 5 : 6); }
 }
 
 // ── ecology model (the original EcologyEnvironment: ideal-closeness → yield) ───
@@ -215,11 +507,27 @@ void daily_settlement() {
 
     g.lastFoodDelta = g.res.food - before_food;
     g.lastO2Delta = g.res.oxygen - before_o2;
+
+    // departments (S6/S8/S9) + meta (S11/SX/S14/S17)
+    tick_manufacturing();
+    tick_research();
+    g.res.food += (g.ration - 1) * -3.0f;                     // generous ration costs extra food
+    g.res.power = std::clamp(g.res.power, 0.0f, 300.0f);
+    tick_voyage();
+    tick_voidseed();
+    update_player_tier();
+
+    // morale drifts on scarcity / surplus + ration policy (the original S10 flavour)
+    const float scarcity = (g.res.food < kPop * 0.5f ? -1.5f : 0.6f) + (g.ration - 1) * 0.4f;
+    g.morale = std::clamp(g.morale + scarcity + (g.voidStage > 40 ? -0.5f : 0.0f), 0.0f, 100.0f);
+
+    evaluate_endings();
+    maybe_trigger_event();   // S13 — a decision may surface for the day
 }
 
 // ── time advance (the original TimeManager accumulator) ──
 void advance_time(float dt) {
-    if (g.paused) { return; }
+    if (g.paused || g.curEvent >= 0) { return; }   // a pending event freezes the clock
     const float speed = (g.speedIndex == 0) ? 1.0f : (g.speedIndex == 1) ? 2.0f : 4.0f;
     g.accum += dt * speed;
     while (g.accum >= g.secondsPerHour) {
@@ -340,12 +648,15 @@ void draw_hud() {
     chip("FOOD", g.res.food, ImVec4(0.85f, 0.78f, 0.45f, 1));
     chip("PARTS", g.res.parts, ImVec4(0.72f, 0.52f, 0.40f, 1));
     chip("MED", g.res.medicine, ImVec4(0.9f, 0.5f, 0.5f, 1));
-    if (g.lastFoodDelta != 0.0f) {
-        ImGui::SameLine();
-        ImGui::TextColored(g.lastFoodDelta >= 0 ? ImVec4(0.5f, 0.9f, 0.5f, 1) : ImVec4(0.95f, 0.5f, 0.4f, 1),
-                           "   last day food %+.1f", g.lastFoodDelta);
+    ImGui::SameLine();
+    ImGui::TextColored(g.morale < 35 ? ImVec4(0.95f, 0.5f, 0.4f, 1) : ImVec4(0.6f, 0.85f, 0.7f, 1),
+                       "  MORALE %.0f%%", g.morale);
+    ImGui::SameLine();
+    ImGui::TextDisabled("  voyage %.0f%%  gen %d  ev %d", g.lyTotal > 0 ? g.lyTravelled / g.lyTotal * 100 : 0, g.generation, g.eventsResolved);
+    if (g.voidDiscovered) {
+        ImGui::SameLine(); ImGui::TextColored(ImVec4(0.72f, 0.5f, 0.92f, 1), "  VOID %.0f%%", g.voidStage);
     }
-    ImGui::TextDisabled("WASD walk the ship  ·  E enter the Ecology Bay  ·  Space pause  ·  TAB speed");
+    ImGui::TextDisabled("WASD walk · E bay · C crew · G eng · L logistics · F mfg · R research · N nav · K command · F5/F9 save/load · Space/TAB time");
     ImGui::End();
 }
 
@@ -419,13 +730,324 @@ void draw_bay_panel() {
     ImGui::End();
 }
 
+// ── M4: event modal (S13) + crew manifest (S10) ──
+void draw_event_modal() {
+    if (g.curEvent < 0) { return; }
+    const EventDef& e = g.events[static_cast<std::size_t>(g.curEvent)];
+    const ImGuiViewport* vp = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x * 0.5f, vp->WorkPos.y + vp->WorkSize.y * 0.5f),
+                            ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(640, 0), ImGuiCond_Always);
+    ImGui::Begin("SHIP EVENT", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.85f, 0.5f, 1));
+    ImGui::TextWrapped("%s", e.title.c_str());
+    ImGui::PopStyleColor();
+    ImGui::Separator();
+    ImGui::TextWrapped("%s", e.body.c_str());
+    ImGui::Spacing(); ImGui::Separator();
+    for (int i = 0; i < static_cast<int>(e.options.size()); ++i) {
+        const EventOption& o = e.options[static_cast<std::size_t>(i)];
+        bool locked = false;
+        if (!o.requireRes.empty()) { float* p = res_ptr(o.requireRes); if (p && *p < static_cast<float>(o.requireAmt)) { locked = true; } }
+        if (locked) { ImGui::BeginDisabled(); }
+        std::string lbl = std::to_string(i + 1) + ".  " + o.label;
+        if (!o.requireRes.empty()) { lbl += "   (needs " + std::to_string(o.requireAmt) + " " + o.requireRes + ")"; }
+        if (ImGui::Button(lbl.c_str(), ImVec2(-1, 0))) { resolve_event(i); }
+        if (locked) { ImGui::EndDisabled(); }
+    }
+    ImGui::TextDisabled("Press 1-%d to choose.   Time is paused.", static_cast<int>(e.options.size()));
+    ImGui::End();
+}
+void draw_crew_panel() {
+    const ImGuiViewport* vp = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x * 0.5f, vp->WorkPos.y + vp->WorkSize.y * 0.5f),
+                            ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(700, 520), ImGuiCond_Always);
+    ImGui::Begin("CREW MANIFEST", &g.inCrew, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+    ImGui::Text("Souls aboard %d   ·   ship morale %.0f%%   ·   generation %d   ·   you: %s (T%d %s)",
+                kPop, g.morale, g.generation, g.playerRole.c_str(), g.playerTier, g.playerDept.c_str());
+    ImGui::TextDisabled("[C]/[Esc] close");
+    ImGui::Separator();
+    if (ImGui::BeginTable("crew", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
+        ImGui::TableSetupColumn("Name"); ImGui::TableSetupColumn("Role"); ImGui::TableSetupColumn("Dept");
+        ImGui::TableSetupColumn("Tier"); ImGui::TableSetupColumn("Skill / Loyalty");
+        ImGui::TableHeadersRow();
+        for (auto& c : g.crew) {
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted(c.name.c_str());
+            ImGui::TableSetColumnIndex(1); ImGui::TextUnformatted(c.role.c_str());
+            ImGui::TableSetColumnIndex(2); ImGui::TextUnformatted(c.department.c_str());
+            ImGui::TableSetColumnIndex(3); ImGui::Text("T%d", c.tier);
+            ImGui::TableSetColumnIndex(4); ImGui::Text("%d / %d", c.skill, c.loyalty);
+        }
+        ImGui::EndTable();
+    }
+    ImGui::End();
+}
+
+// ── M5 department panels + M6 meta panels ──
+void panel_begin(const char* title, bool* open, float w, float h) {
+    const ImGuiViewport* vp = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x * 0.5f, vp->WorkPos.y + vp->WorkSize.y * 0.5f),
+                            ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(w, h), ImGuiCond_Always);
+    ImGui::Begin(title, open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+}
+void draw_eng_panel() {
+    panel_begin("ENGINEERING  ::  S6 power grid", &g.inEng, 640, 440);
+    ImGui::TextDisabled("Allocate the reactor across five sinks (auto-normalized). [G]/[Esc] close");
+    ImGui::Text("Reactor output: %.0f", g.res.power);
+    ImGui::Separator();
+    const char* names[5] = {"Ecology light", "Manufacturing", "Research", "Life support", "Reserve"};
+    for (int i = 0; i < 5; ++i) { ImGui::SliderFloat(names[i], &g.powerAlloc[i], 0.0f, 1.0f, "%.2f"); }
+    float sum = 0; for (float a : g.powerAlloc) { sum += a; }
+    if (sum > 0) { for (float& a : g.powerAlloc) { a /= sum; } }
+    ImGui::Separator();
+    ImGui::Text("Effective factors:  eco %.2f   mfg %.2f   sci %.2f   life %.2f",
+                power_factor(0), power_factor(1), power_factor(2), power_factor(3));
+    if (ImGui::Button("Emergency repair  (-10 parts -> +20 power)") && g.res.parts >= 10) {
+        g.res.parts -= 10; g.res.power = std::min(300.0f, g.res.power + 20);
+    }
+    ImGui::End();
+}
+void draw_log_panel() {
+    panel_begin("LOGISTICS  ::  S7 trade & rationing", &g.inLog, 700, 480);
+    ImGui::TextDisabled("[L]/[Esc] close");
+    ImGui::Text("Rationing policy:"); ImGui::SameLine();
+    if (ImGui::RadioButton("Short", g.ration == 0)) { g.ration = 0; } ImGui::SameLine();
+    if (ImGui::RadioButton("Normal", g.ration == 1)) { g.ration = 1; } ImGui::SameLine();
+    if (ImGui::RadioButton("Generous", g.ration == 2)) { g.ration = 2; }
+    ImGui::Separator();
+    ImGui::Text("Open trade windows (day %d):", g.day);
+    for (int i = 0; i < static_cast<int>(g.offers.size()); ++i) {
+        const TradeOffer& o = g.offers[static_cast<std::size_t>(i)];
+        if (g.day < o.minDay) { continue; }
+        ImGui::PushID(i);
+        ImGui::BulletText("%s", o.name.c_str());
+        std::string s;
+        if (o.foodCost) { s += "food-" + std::to_string(o.foodCost) + " "; }
+        if (o.rawCost) { s += "raw-" + std::to_string(o.rawCost) + " "; }
+        s += "=> ";
+        if (o.medicineGain) { s += "med+" + std::to_string(o.medicineGain) + " "; }
+        if (o.partsGain) { s += "parts+" + std::to_string(o.partsGain) + " "; }
+        if (o.waterGain) { s += "water+" + std::to_string(o.waterGain) + " "; }
+        ImGui::SameLine(); ImGui::TextDisabled("%s", s.c_str());
+        ImGui::SameLine();
+        const bool afford = g.res.food >= o.foodCost && g.res.rawMaterials >= o.rawCost;
+        if (!afford) { ImGui::BeginDisabled(); }
+        if (ImGui::SmallButton("Accept")) {
+            g.res.food -= o.foodCost; g.res.rawMaterials -= o.rawCost;
+            g.res.medicine += o.medicineGain; g.res.parts += o.partsGain; g.res.water += o.waterGain;
+        }
+        if (!afford) { ImGui::EndDisabled(); }
+        ImGui::PopID();
+    }
+    ImGui::End();
+}
+void draw_mfg_panel() {
+    panel_begin("MANUFACTURING  ::  S8 lathe queue", &g.inMfg, 720, 480);
+    ImGui::TextDisabled("Click a recipe to enqueue (consumes raw). [F]/[Esc] close");
+    ImGui::Text("Raw %.0f   Parts %.0f", g.res.rawMaterials, g.res.parts);
+    ImGui::Separator();
+    ImGui::Columns(2, "mfg", true);
+    ImGui::TextDisabled("RECIPES");
+    for (int i = 0; i < static_cast<int>(g.recipes.size()); ++i) {
+        const RecipeDef& r = g.recipes[static_cast<std::size_t>(i)];
+        const bool techok = r.requiresTech.empty() || g.tech.count(r.requiresTech) > 0;
+        const bool afford = g.res.rawMaterials >= static_cast<float>(r.rawCost);
+        if (!(techok && afford)) { ImGui::BeginDisabled(); }
+        const std::string lbl = r.name + "  (raw " + std::to_string(r.rawCost) + ", " + std::to_string(r.days) +
+                                "d -> " + std::to_string(r.partsOut) + "p)";
+        if (ImGui::Button(lbl.c_str(), ImVec2(-1, 0))) {
+            for (int q = 0; q < 4; ++q) {
+                if (g.mfgQueue[q] < 0) { g.mfgQueue[q] = i; g.mfgProgress[q] = 0; g.res.rawMaterials -= r.rawCost; break; }
+            }
+        }
+        if (!(techok && afford)) { ImGui::EndDisabled(); }
+    }
+    ImGui::NextColumn();
+    ImGui::TextDisabled("QUEUE");
+    for (int q = 0; q < 4; ++q) {
+        if (g.mfgQueue[q] < 0) { ImGui::Text("slot %d: idle", q + 1); continue; }
+        const RecipeDef& r = g.recipes[static_cast<std::size_t>(g.mfgQueue[q])];
+        ImGui::TextUnformatted(r.name.c_str());
+        ImGui::ProgressBar(g.mfgProgress[q] / std::max(1, r.days), ImVec2(-1, 0));
+    }
+    ImGui::Columns(1);
+    ImGui::End();
+}
+void draw_sci_panel() {
+    panel_begin("RESEARCH  ::  S9/S12 tech tree", &g.inSci, 720, 540);
+    ImGui::TextDisabled("Start a hypothesis; success unlocks a tech + a line point. [R]/[Esc] close");
+    const char* lines[5] = {"Survival", "Engineering", "Social", "Manufacturing", "Frontier"};
+    for (int i = 0; i < 5; ++i) { if (i) { ImGui::SameLine(); } ImGui::Text("%s:%d", lines[i], g.techPoints[i]); }
+    ImGui::Separator();
+    if (g.sciActive >= 0) {
+        const ResearchDef& p = g.research[static_cast<std::size_t>(g.sciActive)];
+        ImGui::Text("Active: %s", p.name.c_str());
+        ImGui::ProgressBar(g.sciProgress / std::max(1, p.days), ImVec2(-1, 0));
+    } else { ImGui::TextDisabled("No active project."); }
+    ImGui::Separator();
+    for (int i = 0; i < static_cast<int>(g.research.size()); ++i) {
+        const ResearchDef& p = g.research[static_cast<std::size_t>(i)];
+        const bool done = !p.unlockTech.empty() && g.tech.count(p.unlockTech) > 0;
+        ImGui::PushID(i);
+        if (done) { ImGui::TextColored(ImVec4(0.5f, 0.9f, 0.5f, 1), "[done] %s (%s)", p.name.c_str(), p.line.c_str()); }
+        else {
+            const bool busy = g.sciActive >= 0;
+            if (busy) { ImGui::BeginDisabled(); }
+            const std::string lbl = p.name + "  [" + p.line + ", " + std::to_string(p.days) + "d, fail " +
+                                    std::to_string(static_cast<int>(p.failRate * 100)) + "%]";
+            if (ImGui::Button(lbl.c_str(), ImVec2(-1, 0))) { g.sciActive = i; g.sciProgress = 0; }
+            if (busy) { ImGui::EndDisabled(); }
+        }
+        ImGui::PopID();
+    }
+    ImGui::End();
+}
+void draw_starmap_panel() {
+    panel_begin("NAVIGATION  ::  S11 star map", &g.inStarmap, 720, 560);
+    ImGui::TextDisabled("[N]/[Esc] close");
+    ImGui::Text("Voyage  %.1f / %.0f ly   ·   generation %d   ·   day %d", g.lyTravelled, g.lyTotal, g.generation, g.day);
+    ImGui::ProgressBar(g.lyTotal > 0 ? g.lyTravelled / g.lyTotal : 0.0f, ImVec2(-1, 0));
+    ImGui::Separator();
+    ImGui::Text("Preferred next route (the crew weighs in):");
+    for (int i = 0; i < static_cast<int>(g.routes.size()); ++i) {
+        const RouteDef& r = g.routes[static_cast<std::size_t>(i)];
+        ImGui::PushID(i);
+        const bool sel = g.routeChosen == i;
+        ImGui::PushStyleColor(ImGuiCol_Button, sel ? ImVec4(0.30f, 0.50f, 0.34f, 1) : ImVec4(0.16f, 0.20f, 0.24f, 1));
+        const std::string lbl = r.name + "   [" + r.risk + " risk, " + std::to_string(r.days) + "d]";
+        if (ImGui::Button(lbl.c_str(), ImVec2(-1, 0))) { g.routeChosen = i; }
+        ImGui::PopStyleColor();
+        ImGui::TextDisabled("   %s", r.desc.c_str());
+        ImGui::PopID();
+    }
+    if (g.voidDiscovered) {
+        ImGui::Separator();
+        ImGui::TextColored(ImVec4(0.72f, 0.5f, 0.92f, 1), "VOID-SEED  ::  infection %.0f%%", g.voidStage);
+        ImGui::TextWrapped("A luminous vine pulses in the dark of Bay G, whispering. The ship must take a stance:");
+        const char* st[5] = {"Embrace", "Contain", "Purge", "Study", "Hide"};
+        for (int i = 0; i < 5; ++i) { if (i) { ImGui::SameLine(); } if (ImGui::RadioButton(st[i], g.voidStance == i)) { g.voidStance = i; } }
+    }
+    ImGui::End();
+}
+void draw_captain_panel() {
+    panel_begin("COMMAND  ::  S16 election & budget", &g.inCaptain, 660, 460);
+    ImGui::TextDisabled("[K]/[Esc] close");
+    if (!g.isCaptain) {
+        ImGui::Text("You: %s  —  Tier %d  (%s)", g.playerRole.c_str(), g.playerTier, g.playerDept.c_str());
+        ImGui::TextWrapped("Reach Tier 3 in your department, then stand for Captain. The crew votes by loyalty, lean and ship morale.");
+        ImGui::Text("Projected yes-vote: %.0f%%", election_yes_share() * 100);
+        if (g.ranForCaptain && !g.electionWon) { ImGui::TextColored(ImVec4(0.9f, 0.5f, 0.4f, 1), "The last election did not go your way."); }
+        const bool can = g.playerTier >= 3 && !g.ranForCaptain;
+        if (!can) { ImGui::BeginDisabled(); }
+        if (ImGui::Button("Stand for Captain")) { run_for_captain(); }
+        if (!can) { ImGui::EndDisabled(); }
+        if (g.playerTier < 3) { ImGui::TextDisabled("(need Tier 3 — gain skill via events / your department)"); }
+    } else {
+        ImGui::TextColored(ImVec4(1, 0.85f, 0.4f, 1), "You command the Qingniao.");
+        ImGui::TextDisabled("Allocate the ship budget across departments (auto-normalized):");
+        const char* dnm[5] = {"Ecology", "Engineering", "Logistics", "Manufacturing", "Research"};
+        for (int i = 0; i < 5; ++i) { ImGui::SliderFloat(dnm[i], &g.captainBudget[i], 0.0f, 1.0f, "%.2f"); }
+        float s = 0; for (float b : g.captainBudget) { s += b; }
+        if (s > 0) { for (float& b : g.captainBudget) { b /= s; } }
+    }
+    ImGui::End();
+}
+void draw_ending_panel() {
+    const ImGuiViewport* vp = ImGui::GetMainViewport();
+    ImGui::GetBackgroundDrawList()->AddRectFilled(vp->Pos, ImVec2(vp->Pos.x + vp->Size.x, vp->Pos.y + vp->Size.y), IM_COL32(4, 4, 8, 235));
+    panel_begin("END OF VOYAGE", nullptr, 740, 300);
+    ImGui::Dummy(ImVec2(0, 24));
+    const char* nm = (g.ending >= 0 && g.ending < 7) ? kEndingName[g.ending] : "—";
+    ImGui::SetCursorPosX((740 - ImGui::CalcTextSize(nm).x) * 0.5f);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.82f, 0.92f, 1.0f, 1));
+    ImGui::TextUnformatted(nm);
+    ImGui::PopStyleColor();
+    ImGui::Dummy(ImVec2(0, 18));
+    ImGui::TextWrapped("Ending %d of 7.   Day %d, generation %d.   Morale %.0f%%, void-seed %.0f%%.   %s",
+                       g.ending + 1, g.day, g.generation, g.morale, g.voidStage,
+                       g.isCaptain ? "You died captain of the Qingniao." : "You served, and the ship sailed on.");
+    ImGui::Dummy(ImVec2(0, 14));
+    ImGui::TextDisabled("All 7 endings are wired. F9 reloads a save; or restart the exe for a new voyage.");
+    ImGui::End();
+}
+
+// ── M7: save / load (S/D1) — JSON snapshot of the session state ──
+void save_game() {
+    rapidjson::StringBuffer sb; rapidjson::Writer<rapidjson::StringBuffer> w(sb);
+    w.StartObject();
+    w.Key("day"); w.Int(g.day); w.Key("hour"); w.Int(g.hour);
+    w.Key("food"); w.Double(g.res.food); w.Key("water"); w.Double(g.res.water);
+    w.Key("power"); w.Double(g.res.power); w.Key("oxygen"); w.Double(g.res.oxygen);
+    w.Key("co2"); w.Double(g.res.co2); w.Key("parts"); w.Double(g.res.parts);
+    w.Key("medicine"); w.Double(g.res.medicine); w.Key("raw"); w.Double(g.res.rawMaterials);
+    w.Key("morale"); w.Double(g.morale);
+    w.Key("skill"); w.Int(g.playerSkill); w.Key("tier"); w.Int(g.playerTier);
+    w.Key("ration"); w.Int(g.ration); w.Key("void"); w.Double(g.voidStage);
+    w.Key("voidStance"); w.Int(g.voidStance); w.Key("voidDisc"); w.Bool(g.voidDiscovered);
+    w.Key("captain"); w.Bool(g.isCaptain); w.Key("gen"); w.Int(g.generation);
+    w.Key("ly"); w.Double(g.lyTravelled); w.Key("route"); w.Int(g.routeChosen);
+    w.Key("events"); w.Int(g.eventsResolved); w.Key("harvested"); w.Int(g.totalHarvested);
+    w.Key("tp"); w.StartArray(); for (int t : g.techPoints) { w.Int(t); } w.EndArray();
+    w.EndObject();
+    std::ofstream f("voidborne_save.json"); f << sb.GetString();
+}
+bool load_game() {
+    const std::string txt = read_file("voidborne_save.json");
+    if (txt.empty()) { return false; }
+    rapidjson::Document d; d.Parse(txt.c_str());
+    if (d.HasParseError()) { return false; }
+    auto gi = [&](const char* k, int def) { return (d.HasMember(k) && d[k].IsNumber()) ? d[k].GetInt() : def; };
+    auto gf = [&](const char* k, float def) { return (d.HasMember(k) && d[k].IsNumber()) ? d[k].GetFloat() : def; };
+    auto gb = [&](const char* k, bool def) { return (d.HasMember(k) && d[k].IsBool()) ? d[k].GetBool() : def; };
+    g.day = gi("day", 1); g.hour = gi("hour", 6);
+    g.res.food = gf("food", 600); g.res.water = gf("water", 1200); g.res.power = gf("power", 100);
+    g.res.oxygen = gf("oxygen", 21); g.res.co2 = gf("co2", 0.4f); g.res.parts = gf("parts", 50);
+    g.res.medicine = gf("medicine", 20); g.res.rawMaterials = gf("raw", 30);
+    g.morale = gf("morale", 70); g.playerSkill = gi("skill", 20); g.playerTier = gi("tier", 1);
+    g.ration = gi("ration", 1); g.voidStage = gf("void", 0); g.voidStance = gi("voidStance", -1);
+    g.voidDiscovered = gb("voidDisc", false); g.isCaptain = gb("captain", false);
+    g.generation = gi("gen", 1); g.lyTravelled = gf("ly", 0); g.routeChosen = gi("route", 0);
+    g.eventsResolved = gi("events", 0); g.totalHarvested = gi("harvested", 0);
+    if (d.HasMember("tp") && d["tp"].IsArray()) { int i = 0; for (auto& t : d["tp"].GetArray()) { if (i < 5 && t.IsNumber()) { g.techPoints[i++] = t.GetInt(); } } }
+    if (g.isCaptain) { g.playerRole = "Captain"; }
+    return true;
+}
+
 // ── input + frame ───────────────────────────────────────────────────────────────
+void close_all_panels() {
+    g.inBay = g.inCrew = g.inEng = g.inLog = g.inMfg = g.inSci = g.inStarmap = g.inCaptain = false;
+}
+bool any_panel_open() {
+    return g.inBay || g.inCrew || g.inEng || g.inLog || g.inMfg || g.inSci || g.inStarmap || g.inCaptain;
+}
 void handle_input(float dt) {
+    if (g.curEvent >= 0) {   // event modal: number keys pick an option
+        for (int i = 0; i < 9; ++i) {
+            if (ImGui::IsKeyPressed(static_cast<ImGuiKey>(ImGuiKey_1 + i), false)) { resolve_event(i); break; }
+        }
+        return;
+    }
     if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) { g.paused = !g.paused; }
     if (ImGui::IsKeyPressed(ImGuiKey_Tab, false)) { g.speedIndex = (g.speedIndex + 1) % 3; }
-    if (g.inBay) {
-        if (ImGui::IsKeyPressed(ImGuiKey_E, false) || ImGui::IsKeyPressed(ImGuiKey_Escape, false)) { g.inBay = false; }
-        return;
+    if (ImGui::IsKeyPressed(ImGuiKey_F5, false)) { save_game(); }
+    if (ImGui::IsKeyPressed(ImGuiKey_F9, false)) { load_game(); }
+    // one management panel at a time; the key toggles it
+    auto toggle = [&](bool& flag) { const bool was = flag; close_all_panels(); flag = !was; };
+    if (ImGui::IsKeyPressed(ImGuiKey_C, false)) { toggle(g.inCrew); }
+    if (ImGui::IsKeyPressed(ImGuiKey_G, false)) { toggle(g.inEng); }
+    if (ImGui::IsKeyPressed(ImGuiKey_L, false)) { toggle(g.inLog); }
+    if (ImGui::IsKeyPressed(ImGuiKey_F, false)) { toggle(g.inMfg); }
+    if (ImGui::IsKeyPressed(ImGuiKey_R, false)) { toggle(g.inSci); }
+    if (ImGui::IsKeyPressed(ImGuiKey_N, false)) { toggle(g.inStarmap); }
+    if (ImGui::IsKeyPressed(ImGuiKey_K, false)) { toggle(g.inCaptain); }
+    if (ImGui::IsKeyPressed(ImGuiKey_Escape, false)) { close_all_panels(); }
+
+    if (any_panel_open()) {
+        if (ImGui::IsKeyPressed(ImGuiKey_E, false)) { close_all_panels(); }
+        return;   // panels are modal-ish: no walking while one is open
     }
     float dcol = 0, drow = 0;
     if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_UpArrow)) { drow -= 1; }
@@ -461,28 +1083,68 @@ void draw_frame() {
     draw_world();
     draw_hud();
     if (g.inBay) { draw_bay_panel(); }
+    if (g.inCrew) { draw_crew_panel(); }
+    if (g.inEng) { draw_eng_panel(); }
+    if (g.inLog) { draw_log_panel(); }
+    if (g.inMfg) { draw_mfg_panel(); }
+    if (g.inSci) { draw_sci_panel(); }
+    if (g.inStarmap) { draw_starmap_panel(); }
+    if (g.inCaptain) { draw_captain_panel(); }
+    if (g.ending >= 0) { draw_ending_panel(); }
+    if (g.curEvent >= 0) { draw_event_modal(); }
 }
 
-// ── headless autodemo: drive the whole loop, assert the economy moved ──
+// ── headless autodemo: drive every system (M0-M7) and assert each fired ──
 void run_autodemo() {
-    // plant + water all plots with the fast staple, then tick days until ripe + harvest.
-    const int grain = 0;   // crops[0] = Main Grain (growthDays 4)
-    for (auto& p : g.plots) { p = Plot{}; p.crop = grain; p.watered = true; }
-    const float food0 = g.res.food;
+    // M3 ecology: plant + water + grow + harvest 8 plots.
+    for (auto& p : g.plots) { p = Plot{}; p.crop = 0; p.watered = true; }
     int harvested = 0;
     for (int d = 0; d < 8; ++d) {
-        for (auto& p : g.plots) { if (p.crop >= 0 && !p.ripe) { p.watered = true; } }   // re-water daily
+        for (auto& p : g.plots) { if (p.crop >= 0 && !p.ripe) { p.watered = true; } }
         daily_settlement();
         for (int i = 0; i < kPlots; ++i) { if (g.plots[static_cast<std::size_t>(i)].ripe) { harvest_plot(i); ++harvested; } }
     }
-    const bool ok = harvested >= kPlots && g.totalFoodHarvested > 0 && g.day == 1;   // day untouched (we called settlement directly)
+    // M4 event: force-fire the first event and take option 0; check the effect landed.
+    const int evBefore = g.eventsResolved;
+    if (!g.events.empty()) { g.curEvent = 0; resolve_event(0); }
+    const bool eventsOk = !g.events.empty() && g.eventsResolved > evBefore;
+
+    // M5 manufacturing: enqueue a recipe and tick it to completion (deterministic).
+    const float partsBefore = g.res.parts;
+    if (!g.recipes.empty()) { g.res.rawMaterials += 30; g.res.power = 200; g.mfgQueue[0] = 0; g.mfgProgress[0] = 0; }
+    // M5 research: start a project.
+    if (!g.research.empty()) { g.sciActive = 0; g.sciProgress = 0; }
+    for (int d = 0; d < 12; ++d) { tick_manufacturing(); tick_research(); }
+    const bool mfgOk = g.res.parts > partsBefore;
+    bool sciOk = false; for (int t : g.techPoints) { if (t > 0) { sciOk = true; } }
+    // M5 trade: accept the first offer.
+    if (!g.offers.empty()) { g.res.food += 100; const TradeOffer& o = g.offers[0]; g.res.food -= o.foodCost; g.res.medicine += o.medicineGain; }
+
+    // M6 election: become T3 and stand for captain.
+    g.playerSkill = 80; update_player_tier(); run_for_captain();
+    const bool electionRan = g.ranForCaptain;
+    // M6 void-seed + endings: reveal the seed, finish the voyage, evaluate.
+    g.voidStage = 30; g.voidDiscovered = true; g.voidStance = 1;
+    g.lyTravelled = g.lyTotal; evaluate_endings();
+    const bool endingOk = g.ending >= 0;
+
+    // M7 save/load: round-trip the session.
+    save_game();
+    const int savedDay = g.day; g.day = 999;
+    const bool loadOk = load_game() && g.day == savedDay;
+
+    const bool ok = harvested >= kPlots && eventsOk && mfgOk && electionRan && endingOk && loadOk;
     std::ofstream rf("voidborne_result.txt");
-    rf << (ok ? "VOIDBORNE M0-M3 OK" : "VOIDBORNE M0-M3 FAIL")
-       << " crops=" << g.cropDefs.size()
-       << " harvested=" << g.totalHarvested
-       << " foodHarvested=" << static_cast<int>(g.totalFoodHarvested)
-       << " food0=" << static_cast<int>(food0) << " food1=" << static_cast<int>(g.res.food)
-       << " envFactorGrain=" << env_factor(g.cropDefs[0]);
+    rf << (ok ? "VOIDBORNE M0-M7 OK" : "VOIDBORNE M0-M7 FAIL")
+       << " crops=" << g.cropDefs.size() << " events=" << g.events.size() << " crew=" << g.crew.size()
+       << " recipes=" << g.recipes.size() << " research=" << g.research.size() << " routes=" << g.routes.size()
+       << " offers=" << g.offers.size()
+       << " harvested=" << g.totalHarvested << " eventsResolved=" << g.eventsResolved
+       << " mfgOk=" << mfgOk << " parts=" << static_cast<int>(g.res.parts) << " sciOk=" << sciOk
+       << " tier=" << g.playerTier << " captain=" << g.isCaptain << " electionRan=" << electionRan
+       << " void=" << static_cast<int>(g.voidStage) << " ending=" << g.ending
+       << "(" << (g.ending >= 0 ? kEndingName[g.ending] : "-") << ")"
+       << " saveLoad=" << loadOk;
 }
 
 }  // namespace
@@ -497,30 +1159,40 @@ int main(int argc, char* argv[]) {
         else if (!std::strcmp(argv[i], "--data") && i + 1 < argc) { g_dataDir = argv[++i]; }
     }
 
-    const bool ok = load_crops();
+    load_all_data();
+    const bool ok = g.cropDefs.size() == 4;
     if (selftest) {
+        const bool good = ok && !g.events.empty() && !g.crew.empty() && !g.recipes.empty() &&
+                          !g.research.empty() && !g.routes.empty();
         std::ofstream rf("voidborne_result.txt");
-        rf << (ok && g.cropDefs.size() == 4 ? "VOIDBORNE M0 OK" : "VOIDBORNE M0 FAIL") << " crops=" << g.cropDefs.size();
-        return (ok && g.cropDefs.size() == 4) ? 0 : 1;
+        rf << (good ? "VOIDBORNE DATA OK" : "VOIDBORNE DATA FAIL")
+           << " crops=" << g.cropDefs.size() << " events=" << g.events.size() << " crew=" << g.crew.size()
+           << " recipes=" << g.recipes.size() << " research=" << g.research.size() << " routes=" << g.routes.size();
+        return good ? 0 : 1;
     }
     if (autodemo) { run_autodemo(); return ok ? 0 : 1; }
 
-    // screenshot hook: OKN_VB_SHOW=bay opens the Ecology Bay seeded with plots at
-    // varied growth stages, so a capture shows the M3 department alive.
+    // screenshot hooks: OKN_VB_SHOW=<panel> opens a panel with demo state so captures
+    // show each milestone alive.
     if (const char* show = std::getenv("OKN_VB_SHOW")) {
-        if (!std::strcmp(show, "bay") && g.cropDefs.size() >= 4) {
+        const std::string s = show;
+        if (s == "bay" && g.cropDefs.size() >= 4) {
             g.inBay = true;
             auto seed = [&](int i, int crop, float grow) {
                 Plot& p = g.plots[static_cast<std::size_t>(i)];
                 p.crop = crop; p.growth = grow; p.watered = (i % 2) == 0;
                 p.ripe = grow >= static_cast<float>(g.cropDefs[static_cast<std::size_t>(crop)].growthDays);
             };
-            seed(0, 0, 4.0f);   // grain, ripe
-            seed(1, 1, 3.0f);   // herb, ~half
-            seed(2, 2, 1.5f);   // algae, ~half
-            seed(3, 3, 4.0f);   // hybrid, ~80%
-            seed(4, 0, 1.0f);   // grain, young
-        }
+            seed(0, 0, 4.0f); seed(1, 1, 3.0f); seed(2, 2, 1.5f); seed(3, 3, 4.0f); seed(4, 0, 1.0f);
+        } else if (s == "event" && !g.events.empty()) { g.curEvent = 0; }
+        else if (s == "mfg") { g.inMfg = true; g.res.rawMaterials = 60; g.mfgQueue[0] = 0; g.mfgProgress[0] = 0.4f; if (g.recipes.size() > 2) { g.mfgQueue[1] = 2; g.mfgProgress[1] = 1.2f; } }
+        else if (s == "sci") { g.inSci = true; g.sciActive = 0; g.sciProgress = 1.5f; g.techPoints[0] = 2; g.techPoints[1] = 1; }
+        else if (s == "nav") { g.inStarmap = true; g.lyTravelled = 38; g.generation = 3; g.voidDiscovered = true; g.voidStage = 34; g.voidStance = 1; }
+        else if (s == "captain") { g.inCaptain = true; g.playerSkill = 80; g.playerTier = 3; }
+        else if (s == "ending") { g.ending = 4; g.lyTravelled = g.lyTotal; g.isCaptain = true; g.generation = 6; g.day = 380; }
+        else if (s == "eng") { g.inEng = true; }
+        else if (s == "log") { g.inLog = true; }
+        else if (s == "crew") { g.inCrew = true; }
     }
 
     unigui::AppConfig cfg;
