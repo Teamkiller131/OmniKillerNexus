@@ -121,7 +121,12 @@ struct Room {
     ImU32 labelCol = IM_COL32(200, 210, 220, 255);
     bool isVoid = false;       // Hydro Bay G glows once the seed is discovered
 };
-struct WorldNpc { float x = 0, y = 0, phase = 0; int fx = 0, fy = 1; ImU32 color = IM_COL32(150, 150, 170, 255); std::string name; };
+struct WorldNpc {
+    float x = 0, y = 0, phase = 0; int fx = 0, fy = 1;
+    ImU32 color = IM_COL32(150, 150, 170, 255), hair = 0, skin = 0;
+    float walk = 0, homeX = 0, homeY = 0;       // walk-cycle phase + wander anchor
+    std::string name;
+};
 constexpr int kStartDeck = 3;   // habitation, like the original
 
 struct Game {
@@ -153,6 +158,7 @@ struct Game {
     std::vector<WorldNpc> npcsHere;     // crew standing on the current deck
     float pcx = 3.5f, pcy = 8.5f;       // continuous tile position
     int fx = 0, fy = -1;                // facing
+    float playerWalk = 0;               // walk-cycle phase (advances while moving)
 
     // ── settlement bookkeeping (for the HUD + verification) ──
     float lastFoodDelta = 0, lastO2Delta = 0;
@@ -600,6 +606,7 @@ void move_player(float dcol, float drow, float dt) {
     if (!blocked_box(nx, g.pcy) && !crew_blocks(nx, g.pcy, g.pcx, g.pcy)) { g.pcx = nx; }
     const float ny = g.pcy + drow * step;
     if (!blocked_box(g.pcx, ny) && !crew_blocks(g.pcx, ny, g.pcx, g.pcy)) { g.pcy = ny; }
+    g.playerWalk = std::fmod(g.playerWalk + step, 1000.0f);   // advance walk cycle while moving
 }
 // Animate every door: slide open when the player or a crew member is near, else shut.
 void update_doors(float dt) {
@@ -614,6 +621,25 @@ void update_doors(float dt) {
         }
         r.doorOpen += ((nearDoor ? 1.0f : 0.0f) - r.doorOpen) * k;
         r.doorOpen = std::clamp(r.doorOpen, 0.0f, 1.0f);
+    }
+}
+// Gentle crew life: each NPC drifts on a small orbit around its spawn, only ever
+// stepping onto walkable floor, facing its motion and advancing its walk cycle.
+void update_crew(float dt) {
+    (void)dt;
+    const float t = static_cast<float>(ImGui::GetTime());
+    for (WorldNpc& n : g.npcsHere) {
+        const float r = 1.1f;
+        const float cx = n.homeX + std::sin(t * 0.45f + n.phase) * r;
+        const float cy = n.homeY + std::cos(t * 0.37f + n.phase * 1.4f) * r * 0.8f;
+        if (tile_solid(static_cast<int>(std::floor(cx)), static_cast<int>(std::floor(cy)))) { continue; }   // never drift into a wall
+        const float dx = cx - n.x, dy = cy - n.y, d2 = dx * dx + dy * dy;
+        if (d2 > 2.0e-5f) {
+            if (std::fabs(dx) >= std::fabs(dy)) { n.fx = dx > 0 ? 1 : -1; n.fy = 0; }
+            else { n.fx = 0; n.fy = dy > 0 ? 1 : -1; }
+            n.walk = std::fmod(n.walk + std::sqrt(d2) * 6.0f, 1000.0f);
+        }
+        n.x = cx; n.y = cy;
     }
 }
 // ── the 6-deck blueprint (a port of the original ShipFloorCatalog) ──
@@ -685,8 +711,14 @@ void place_npcs() {
         while (si < spots.size() && (!walkable_tile(static_cast<int>(spots[si].x), static_cast<int>(spots[si].y))
                                      || deck_at(static_cast<int>(spots[si].x), static_cast<int>(spots[si].y)) == 'D')) { ++si; }
         if (si >= spots.size()) { break; }
+        static const ImU32 kHair[] = { IM_COL32(74, 56, 44, 255), IM_COL32(28, 26, 30, 255), IM_COL32(158, 120, 64, 255),
+                                       IM_COL32(126, 62, 40, 255), IM_COL32(186, 188, 192, 255), IM_COL32(70, 48, 78, 255) };
+        static const ImU32 kSkin[] = { IM_COL32(242, 210, 174, 255), IM_COL32(214, 170, 128, 255),
+                                       IM_COL32(178, 130, 96, 255), IM_COL32(140, 100, 72, 255), IM_COL32(250, 224, 198, 255) };
         WorldNpc n; n.x = spots[si].x; n.y = spots[si].y; n.phase = static_cast<float>(i) * 1.7f;
+        n.homeX = n.x; n.homeY = n.y;
         n.color = dept_color(g.crew[static_cast<std::size_t>(i)].department);
+        n.hair = kHair[static_cast<std::size_t>(i) % 6]; n.skin = kSkin[static_cast<std::size_t>(i * 3 + 1) % 5];
         n.name = g.crew[static_cast<std::size_t>(i)].name; n.fy = (i & 1) ? 1 : -1;
         g.npcsHere.push_back(n); ++si;
     }
@@ -877,19 +909,25 @@ void hull_window(ImDrawList* dl, ImVec2 a, ImVec2 b, int tx, int ty, float drift
     dl->AddRectFilled(ImVec2(a.x + 2, a.y + 2), ImVec2(b.x - 2, a.y + 4), IM_COL32(70, 80, 104, 255));   // top sill highlight
 }
 // 8x11 top-down crew sprite. keys: 0 clear,1 hair,2 skin,3 uniform,4 sheen,5 pants,6 eye,7 boots
-const char* kCrewPx[11] = {
-    "01111110", "12222221", "12622621", "12222221", "03333330",
+const char* kCrewPx[11] = {       // eyes/legs are drawn separately (facing + walk cycle)
+    "01111110", "12222221", "12222221", "12222221", "03333330",
     "33333333", "34333343", "33333333", "03333330", "05500550", "07700770",
 };
-void draw_character(ImDrawList* dl, ImVec2 c, float s, ImU32 uniform, int fx, int fy, bool isPlayer) {
-    (void)fx; (void)fy;
-    constexpr int W = 8, H = 11;
+// Pixel crew sprite with 4-direction facing, a walk cycle, and per-character palette.
+void draw_character(ImDrawList* dl, ImVec2 c, float s, ImU32 uniform, int fx, int fy,
+                    bool isPlayer, float walk = 0.0f, ImU32 hairCol = 0, ImU32 skinCol = 0) {
+    constexpr int W = 8;
     const float px = std::max(2.0f, std::floor(s / 8.0f));
-    const float ox = std::floor(c.x - W * px * 0.5f), oy = std::floor(c.y - H * px * 0.82f);
-    dl->AddRectFilled(ImVec2(ox + px, oy + H * px), ImVec2(ox + (W - 1) * px, oy + H * px + px), IM_COL32(0, 0, 0, 70));   // shadow
-    const ImU32 hair = IM_COL32(74, 56, 44, 255), skin = IM_COL32(240, 208, 172, 255), pants = IM_COL32(46, 50, 62, 255),
-                eye = IM_COL32(32, 30, 38, 255), boots = IM_COL32(58, 44, 32, 255), sheen = lighten(uniform, 44);
-    for (int r = 0; r < H; ++r) {
+    const float ox = std::floor(c.x - W * px * 0.5f), oy = std::floor(c.y - 11 * px * 0.82f);
+    const ImU32 hair = hairCol ? hairCol : IM_COL32(74, 56, 44, 255);
+    const ImU32 skin = skinCol ? skinCol : IM_COL32(240, 208, 172, 255);
+    const ImU32 pants = IM_COL32(46, 50, 62, 255), eye = IM_COL32(32, 30, 38, 255),
+                boots = IM_COL32(58, 44, 32, 255), sheen = lighten(uniform, 44);
+    const int dir = fx > 0 ? 3 : fx < 0 ? 2 : fy < 0 ? 1 : 0;          // 0 down,1 up,2 left,3 right
+    const int stepf = (walk > 0.001f) ? (static_cast<int>(walk * 2.5f) & 1) : -1;   // -1 idle
+    dl->AddRectFilled(ImVec2(ox + px, oy + 11 * px), ImVec2(ox + (W - 1) * px, oy + 11 * px + px), IM_COL32(0, 0, 0, 70));   // shadow
+    // body bitmap rows 0..8 (legs/boots drawn below for the walk cycle)
+    for (int r = 0; r < 9; ++r) {
         for (int cc = 0; cc < W; ++cc) {
             const char k = kCrewPx[r][cc];
             if (k == '0') { continue; }
@@ -898,6 +936,24 @@ void draw_character(ImDrawList* dl, ImVec2 c, float s, ImU32 uniform, int fx, in
             const float qx = ox + cc * px, qy = oy + r * px;
             dl->AddRectFilled(ImVec2(qx, qy), ImVec2(qx + px + 0.6f, qy + px + 0.6f), col);
         }
+    }
+    // legs + boots with a 2-frame walk shuffle (one leg lifts as it steps)
+    auto leg = [&](int col, float lift) {
+        const float qx = ox + col * px, qy = oy + 9 * px - lift;
+        dl->AddRectFilled(ImVec2(qx, qy), ImVec2(qx + 2 * px + 0.6f, qy + px + 0.6f), pants);
+        dl->AddRectFilled(ImVec2(qx, qy + px), ImVec2(qx + 2 * px + 0.6f, qy + 2 * px + 0.6f), boots);
+    };
+    const float lift = px * 0.5f;
+    leg(1, stepf == 0 ? lift : 0.0f);
+    leg(5, stepf == 1 ? lift : 0.0f);
+    // facing overlay: eyes shifted toward the look direction, or back-of-head hair when facing up
+    if (dir == 1) {
+        for (int r = 1; r <= 3; ++r) { for (int cc = 1; cc <= 6; ++cc) { const float qx = ox + cc * px, qy = oy + r * px; dl->AddRectFilled(ImVec2(qx, qy), ImVec2(qx + px + 0.6f, qy + px + 0.6f), hair); } }
+    } else {
+        const int ex = dir == 2 ? 1 : dir == 3 ? 3 : 2;
+        const float ey = oy + 2 * px;
+        auto pip = [&](int col) { const float qx = ox + col * px; dl->AddRectFilled(ImVec2(qx, ey), ImVec2(qx + px + 0.6f, ey + px + 0.6f), eye); };
+        pip(ex); pip(ex + 3);
     }
     if (isPlayer) {     // bright pixel beacon over the head
         dl->AddRectFilled(ImVec2(ox + 3 * px, oy - px * 2.0f), ImVec2(ox + 5 * px, oy - px), IM_COL32(150, 220, 255, 255));
@@ -1141,7 +1197,7 @@ void draw_world() {
     for (const WorldNpc& n : g.npcsHere) {
         if (n.x < x0 - 1 || n.x > x1 + 1 || n.y < y0 - 1 || n.y > y1 + 1) { continue; }
         const float bob = std::sin(tnow * 2.2f + n.phase) * 0.05f;
-        draw_character(dl, ImVec2(sx(n.x), sy(n.y + bob)), kTile, n.color, n.fx, n.fy, false);
+        draw_character(dl, ImVec2(sx(n.x), sy(n.y + bob)), kTile, n.color, n.fx, n.fy, false, n.walk, n.hair, n.skin);
         if (std::max(std::fabs(n.x - g.pcx), std::fabs(n.y - g.pcy)) <= 3.0f) {
             const float tw = ImGui::CalcTextSize(n.name.c_str()).x;
             const ImVec2 tp(std::floor(sx(n.x) - tw * 0.5f), std::floor(sy(n.y) - kTile * 1.05f));
@@ -1150,7 +1206,7 @@ void draw_world() {
         }
     }
     // player
-    draw_character(dl, ImVec2(sx(g.pcx), sy(g.pcy)), kTile, IM_COL32(96, 174, 214, 255), g.fx, g.fy, true);
+    draw_character(dl, ImVec2(sx(g.pcx), sy(g.pcy)), kTile, IM_COL32(96, 174, 214, 255), g.fx, g.fy, true, g.playerWalk, IM_COL32(60, 44, 72, 255), IM_COL32(238, 206, 170, 255));
     const ImVec2 pc(sx(g.pcx), sy(g.pcy));
     const int s = station_at_player();
     if (near_elevator()) { dl->AddText(ImVec2(pc.x - 36, pc.y - kTile * 1.35f), IM_COL32(255, 240, 160, 255), "[E] Elevator"); }
@@ -1655,6 +1711,7 @@ void draw_frame() {
     advance_time(dt);
     handle_input(dt);
     update_doors(dt);
+    update_crew(dt);
     draw_world();
     draw_hud();
     if (g.elevatorOpen) { draw_elevator_overlay(); }
