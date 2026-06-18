@@ -83,9 +83,10 @@ struct TradeOffer { std::string id, name; int foodCost = 0, rawCost = 0, medicin
 
 constexpr int kPop = 300;               // souls aboard
 constexpr int kPlots = 8;               // ecology-bay plots
-constexpr float kTile = 34.0f;          // ship-world tile size (px)
+constexpr float kTile = 32.0f;          // ship-world tile size (px) — /8 = 4px art pixels
 constexpr float kPlayerR = 0.32f;       // player collision half-extent (tiles)
-constexpr float kMoveSpeed = 5.2f;      // tiles/sec (the deck is big)
+constexpr float kMoveSpeed = 9.0f;      // tiles/sec — brisk
+constexpr float kMapScale = 1.8f;       // enlarge every deck blueprint
 
 // One ecology plot.
 struct Plot {
@@ -650,7 +651,8 @@ void place_npcs() {
 void build_deck(int d) {
     g.curDeck = std::clamp(d, 0, static_cast<int>(g.decks.size()) - 1);
     const DeckDef& def = g.decks[static_cast<std::size_t>(g.curDeck)];
-    const int W = def.width, H = def.height;
+    const int W = static_cast<int>(std::lround(def.width * kMapScale));
+    const int H = static_cast<int>(std::lround(def.height * kMapScale));
     g.deckW = W; g.deckH = H;
     g.deck.assign(static_cast<std::size_t>(H), std::string(static_cast<std::size_t>(W), '.'));
     for (int x = 0; x < W; ++x) { g.deck[0][static_cast<std::size_t>(x)] = '#'; g.deck[static_cast<std::size_t>(H - 1)][static_cast<std::size_t>(x)] = '#'; }
@@ -661,7 +663,8 @@ void build_deck(int d) {
     auto pack = [&](const std::vector<RoomSpec>& specs, int ty, int th, bool doorNorth) {
         int x = 5;
         for (const RoomSpec& s : specs) {
-            const int x0 = x, y0 = ty, x1 = x + s.width - 1, y1 = ty + th - 1;
+            const int rw = std::max(5, static_cast<int>(std::lround(s.width * kMapScale)));
+            const int x0 = x, y0 = ty, x1 = x + rw - 1, y1 = ty + th - 1;
             if (x1 >= W - 1) { break; }
             for (int xx = x0; xx <= x1; ++xx) { g.deck[static_cast<std::size_t>(y0)][static_cast<std::size_t>(xx)] = '#'; g.deck[static_cast<std::size_t>(y1)][static_cast<std::size_t>(xx)] = '#'; }
             for (int yy = y0; yy <= y1; ++yy) { g.deck[static_cast<std::size_t>(yy)][static_cast<std::size_t>(x0)] = '#'; g.deck[static_cast<std::size_t>(yy)][static_cast<std::size_t>(x1)] = '#'; }
@@ -673,7 +676,7 @@ void build_deck(int d) {
             R.floorCol = deck_floor(def.accent, s.kind); R.labelCol = def.accent;
             if (s.kind == RoomKind::Hydro) { R.isVoid = (++hydro == 7); }   // Bay G
             g.rooms.push_back(R);
-            x += s.width + 1;
+            x += rw + 1;
         }
     };
     pack(def.top, 1, corr - 1, false);
@@ -709,33 +712,49 @@ void open_panel(int p) {
     }
 }
 
-// ── rendering ──────────────────────────────────────────────────────────────────
-// A little top-down crew member: shadow, legs, uniform torso (sheen + outline),
-// skin head with cheek light + facing eyes. isPlayer adds a highlight ring.
+// ── rendering (pixel-art: no anti-aliasing, blocky sprites, snapped camera) ──────
+ImU32 lighten(ImU32 c, int add) {
+    const int r = std::min(255, static_cast<int>(c & 0xFF) + add);
+    const int g = std::min(255, static_cast<int>((c >> 8) & 0xFF) + add);
+    const int b = std::min(255, static_cast<int>((c >> 16) & 0xFF) + add);
+    return IM_COL32(r, g, b, 255);
+}
+// 8x11 top-down crew sprite. keys: 0 clear,1 hair,2 skin,3 uniform,4 sheen,5 pants,6 eye,7 boots
+const char* kCrewPx[11] = {
+    "01111110", "12222221", "12622621", "12222221", "03333330",
+    "33333333", "34333343", "33333333", "03333330", "05500550", "07700770",
+};
 void draw_character(ImDrawList* dl, ImVec2 c, float s, ImU32 uniform, int fx, int fy, bool isPlayer) {
-    const float r = s * 0.30f;
-    dl->AddRectFilled(ImVec2(c.x - r * 0.85f, c.y + r * 0.72f), ImVec2(c.x + r * 0.85f, c.y + r * 1.02f), IM_COL32(0, 0, 0, 60), r);
-    dl->AddRectFilled(ImVec2(c.x - r * 0.46f, c.y + r * 0.5f), ImVec2(c.x + r * 0.46f, c.y + r * 0.92f), IM_COL32(44, 48, 58, 255), r * 0.2f);
-    const ImVec2 b0(c.x - r * 0.78f, c.y - r * 0.18f), b1(c.x + r * 0.78f, c.y + r * 0.66f);
-    dl->AddRectFilled(b0, b1, uniform, r * 0.42f);
-    dl->AddRectFilled(ImVec2(b0.x + r * 0.16f, b0.y + r * 0.08f), ImVec2(b1.x - r * 0.16f, b0.y + r * 0.32f), IM_COL32(255, 255, 255, 38), r * 0.3f);
-    dl->AddRect(b0, b1, IM_COL32(0, 0, 0, 90), r * 0.42f, 0, 1.0f);
-    const ImVec2 hc(c.x, c.y - r * 0.52f);
-    dl->AddCircleFilled(hc, r * 0.58f, IM_COL32(238, 206, 172, 255));
-    dl->AddCircleFilled(ImVec2(hc.x - r * 0.18f, hc.y - r * 0.18f), r * 0.2f, IM_COL32(255, 236, 212, 110));
-    dl->AddCircle(hc, r * 0.58f, IM_COL32(28, 24, 30, 150), 0, 1.1f);
-    const float ex = fx * r * 0.2f, ey = fy * r * 0.16f;
-    dl->AddCircleFilled(ImVec2(hc.x + ex - r * 0.16f, hc.y + ey), r * 0.09f, IM_COL32(38, 36, 44, 255));
-    dl->AddCircleFilled(ImVec2(hc.x + ex + r * 0.16f, hc.y + ey), r * 0.09f, IM_COL32(38, 36, 44, 255));
-    if (isPlayer) { dl->AddCircle(ImVec2(c.x, c.y + r * 0.2f), r * 1.2f, IM_COL32(130, 205, 255, 130), 0, 2.5f); }
+    (void)fx; (void)fy;
+    constexpr int W = 8, H = 11;
+    const float px = std::max(2.0f, std::floor(s / 8.0f));
+    const float ox = std::floor(c.x - W * px * 0.5f), oy = std::floor(c.y - H * px * 0.82f);
+    dl->AddRectFilled(ImVec2(ox + px, oy + H * px), ImVec2(ox + (W - 1) * px, oy + H * px + px), IM_COL32(0, 0, 0, 70));   // shadow
+    const ImU32 hair = IM_COL32(74, 56, 44, 255), skin = IM_COL32(240, 208, 172, 255), pants = IM_COL32(46, 50, 62, 255),
+                eye = IM_COL32(32, 30, 38, 255), boots = IM_COL32(58, 44, 32, 255), sheen = lighten(uniform, 44);
+    for (int r = 0; r < H; ++r) {
+        for (int cc = 0; cc < W; ++cc) {
+            const char k = kCrewPx[r][cc];
+            if (k == '0') { continue; }
+            const ImU32 col = k == '1' ? hair : k == '2' ? skin : k == '3' ? uniform : k == '4' ? sheen
+                            : k == '5' ? pants : k == '6' ? eye : boots;
+            const float qx = ox + cc * px, qy = oy + r * px;
+            dl->AddRectFilled(ImVec2(qx, qy), ImVec2(qx + px + 0.6f, qy + px + 0.6f), col);
+        }
+    }
+    if (isPlayer) {     // bright pixel beacon over the head
+        dl->AddRectFilled(ImVec2(ox + 3 * px, oy - px * 2.0f), ImVec2(ox + 5 * px, oy - px), IM_COL32(150, 220, 255, 255));
+        dl->AddRectFilled(ImVec2(ox + 3.5f * px, oy - px), ImVec2(ox + 4.5f * px, oy - px * 0.2f), IM_COL32(150, 220, 255, 255));
+    }
 }
 
 void draw_world() {
     const ImGuiViewport* vp = ImGui::GetMainViewport();
     ImDrawList* dl = ImGui::GetBackgroundDrawList();
+    const ImDrawListFlags saved = dl->Flags;                 // pixel-art: kill anti-aliasing
+    dl->Flags &= ~(ImDrawListFlags_AntiAliasedLines | ImDrawListFlags_AntiAliasedLinesUseTex | ImDrawListFlags_AntiAliasedFill);
     const ImVec2 p0 = vp->Pos, sz = vp->Size;
-    dl->AddRectFilledMultiColor(p0, ImVec2(p0.x + sz.x, p0.y + sz.y),
-                                IM_COL32(10, 12, 20, 255), IM_COL32(10, 12, 20, 255), IM_COL32(4, 5, 10, 255), IM_COL32(4, 5, 10, 255));
+    dl->AddRectFilled(p0, ImVec2(p0.x + sz.x, p0.y + sz.y), IM_COL32(8, 10, 16, 255));
 
     const float hud = 96.0f, viewW = sz.x, viewH = sz.y - hud;
     auto camAxis = [](float playerPx, float full, float view) {
@@ -744,7 +763,7 @@ void draw_world() {
     };
     const float fullW = g.deckW * kTile, fullH = g.deckH * kTile;
     const float camx = camAxis(g.pcx * kTile, fullW, viewW), camy = camAxis(g.pcy * kTile, fullH, viewH);
-    const float ox = p0.x - camx, oy = p0.y + hud - camy;
+    const float ox = std::floor(p0.x - camx), oy = std::floor(p0.y + hud - camy);   // snap to whole pixels
     auto sx = [&](float c) { return ox + c * kTile; };
     auto sy = [&](float r) { return oy + r * kTile; };
     auto box = [&](float cx, float cy, float w, float h, ImU32 c) { dl->AddRectFilled(ImVec2(sx(cx), sy(cy)), ImVec2(sx(cx + w), sy(cy + h)), c); };
@@ -753,14 +772,16 @@ void draw_world() {
     const int x1 = std::min(g.deckW - 1, static_cast<int>((camx + viewW) / kTile) + 1);
     const int y0 = std::max(0, static_cast<int>(camy / kTile));
     const int y1 = std::min(g.deckH - 1, static_cast<int>((camy + viewH) / kTile) + 1);
+    const float t4 = kTile * 0.5f, riv = kTile * 0.16f;
     for (int ty = y0; ty <= y1; ++ty) {
         for (int tx = x0; tx <= x1; ++tx) {
             const ImVec2 a(sx(static_cast<float>(tx)), sy(static_cast<float>(ty)));
             const ImVec2 b(a.x + kTile, a.y + kTile);
-            if (deck_at(tx, ty) == '#') {                // beveled metal wall
-                dl->AddRectFilledMultiColor(a, b, IM_COL32(60, 68, 88, 255), IM_COL32(60, 68, 88, 255), IM_COL32(26, 32, 44, 255), IM_COL32(26, 32, 44, 255));
-                dl->AddLine(ImVec2(a.x, a.y + 0.5f), ImVec2(b.x, a.y + 0.5f), IM_COL32(96, 108, 134, 255), 1.5f);
-                dl->AddLine(ImVec2(a.x, b.y - 0.5f), ImVec2(b.x, b.y - 0.5f), IM_COL32(12, 16, 24, 255), 1.5f);
+            if (deck_at(tx, ty) == '#') {                // 2-tone pixel hull panel + rivet
+                dl->AddRectFilled(a, ImVec2(b.x, a.y + t4), IM_COL32(58, 66, 86, 255));
+                dl->AddRectFilled(ImVec2(a.x, a.y + t4), b, IM_COL32(30, 36, 48, 255));
+                dl->AddRectFilled(ImVec2(a.x, b.y - 2), b, IM_COL32(12, 16, 24, 255));
+                dl->AddRectFilled(ImVec2(a.x + riv, a.y + riv), ImVec2(a.x + riv * 2, a.y + riv * 2), IM_COL32(94, 104, 128, 255));
                 continue;
             }
             const int ri = room_of(tx, ty);
@@ -768,18 +789,18 @@ void draw_world() {
             if (ri >= 0) { col = g.rooms[static_cast<std::size_t>(ri)].floorCol; if (g.rooms[static_cast<std::size_t>(ri)].isVoid && g.voidDiscovered) { col = IM_COL32(64, 38, 86, 255); } }
             else { col = ((tx + ty) & 1) ? IM_COL32(24, 28, 38, 255) : IM_COL32(19, 23, 31, 255); }
             dl->AddRectFilled(a, b, col);
-            dl->AddLine(ImVec2(b.x, a.y), ImVec2(b.x, b.y), IM_COL32(0, 0, 0, 26), 1.0f);   // deck-plating grid
-            dl->AddLine(ImVec2(a.x, b.y), ImVec2(b.x, b.y), IM_COL32(0, 0, 0, 26), 1.0f);
+            dl->AddRectFilled(ImVec2(b.x - 1, a.y), b, IM_COL32(0, 0, 0, 30));      // deck-plating seams
+            dl->AddRectFilled(ImVec2(a.x, b.y - 1), b, IM_COL32(0, 0, 0, 30));
         }
     }
-    // rooms: accent trim + kind-specific furniture + lit door + glowing console + label
+    // rooms: accent trim + blocky furniture + door + console + label
     for (const Room& r : g.rooms) {
         if (r.x1 < x0 || r.x0 > x1 || r.y1 < y0 || r.y0 > y1) { continue; }
         const ImU32 trim = (r.labelCol & 0x00FFFFFFu) | 0x40000000u;
         dl->AddRect(ImVec2(sx(static_cast<float>(r.x0)) + 3, sy(static_cast<float>(r.y0)) + 3),
-                    ImVec2(sx(static_cast<float>(r.x1) + 1) - 3, sy(static_cast<float>(r.y1) + 1) - 3), trim, 2.0f, 0, 1.5f);
+                    ImVec2(sx(static_cast<float>(r.x1) + 1) - 3, sy(static_cast<float>(r.y1) + 1) - 3), trim, 0, 0, 2.0f);
         const float ix0 = static_cast<float>(r.x0) + 1.2f, iy0 = static_cast<float>(r.y0) + 1.2f;
-        if (r.kind == RoomKind::Quarters) {                 // bunks — frame, mattress, pillow, blanket
+        if (r.kind == RoomKind::Quarters) {                 // bunk beds
             for (float by = iy0; by < r.y1 - 1.8f; by += 2.1f) {
                 for (float bx = ix0; bx < r.x1 - 1.6f; bx += 1.9f) {
                     box(bx, by, 1.5f, 1.7f, IM_COL32(52, 58, 72, 255));
@@ -788,54 +809,58 @@ void draw_world() {
                     box(bx + 0.12f, by + 0.66f, 1.26f, 0.5f, IM_COL32(88, 120, 172, 255));
                 }
             }
-        } else if (r.kind == RoomKind::Hydro) {             // plot beds: soil + plant + highlight
+        } else if (r.kind == RoomKind::Hydro) {             // blocky plant beds
             for (float py = iy0; py < r.y1 - 1.4f; py += 1.5f) {
                 for (float px = ix0; px < r.x1 - 1.4f; px += 1.5f) {
                     box(px, py, 1.1f, 1.1f, IM_COL32(74, 54, 40, 255));
-                    dl->AddCircleFilled(ImVec2(sx(px + 0.55f), sy(py + 0.55f)), kTile * 0.24f, IM_COL32(92, 178, 98, 255));
-                    dl->AddCircleFilled(ImVec2(sx(px + 0.42f), sy(py + 0.42f)), kTile * 0.1f, IM_COL32(160, 226, 150, 200));
+                    box(px + 0.28f, py + 0.5f, 0.55f, 0.45f, IM_COL32(58, 116, 64, 255));
+                    box(px + 0.3f, py + 0.26f, 0.5f, 0.4f, IM_COL32(98, 184, 102, 255));
+                    box(px + 0.4f, py + 0.3f, 0.2f, 0.2f, IM_COL32(168, 230, 156, 255));
                 }
             }
         } else if (r.kind == RoomKind::Mess || r.kind == RoomKind::Conference) {   // tables + plates
             for (float yy = iy0 + 0.4f; yy < r.y1 - 1.4f; yy += 2.4f) {
                 box(ix0 + 0.4f, yy, static_cast<float>(r.x1 - r.x0) - 2.4f, 1.0f, IM_COL32(98, 80, 58, 255));
-                box(ix0 + 0.4f, yy, static_cast<float>(r.x1 - r.x0) - 2.4f, 0.25f, IM_COL32(124, 102, 74, 255));
-                for (float px = ix0 + 1.0f; px < r.x1 - 1.6f; px += 1.6f) { dl->AddCircleFilled(ImVec2(sx(px), sy(yy + 0.5f)), kTile * 0.14f, IM_COL32(210, 212, 218, 255)); }
+                box(ix0 + 0.4f, yy, static_cast<float>(r.x1 - r.x0) - 2.4f, 0.22f, IM_COL32(124, 102, 74, 255));
+                for (float px = ix0 + 1.0f; px < r.x1 - 1.6f; px += 1.6f) { box(px - 0.2f, yy + 0.32f, 0.4f, 0.4f, IM_COL32(212, 214, 220, 255)); }
             }
         } else {                                            // lockers with handles
             for (int k = 0; k < 2; ++k) {
                 const float lx = k == 0 ? static_cast<float>(r.x0) + 1.4f : static_cast<float>(r.x1) - 2.5f;
                 box(lx, iy0 + 0.3f, 1.1f, 1.9f, IM_COL32(56, 62, 76, 255));
                 box(lx + 0.12f, iy0 + 0.45f, 0.86f, 1.6f, IM_COL32(70, 78, 94, 255));
-                dl->AddLine(ImVec2(sx(lx + 0.55f), sy(iy0 + 0.7f)), ImVec2(sx(lx + 0.55f), sy(iy0 + 1.8f)), IM_COL32(150, 158, 176, 255), 1.5f);
+                box(lx + 0.48f, iy0 + 0.8f, 0.16f, 0.9f, IM_COL32(150, 158, 176, 255));
             }
         }
-        // lit door
+        // door (2-tone)
         const ImVec2 da(sx(static_cast<float>(r.doorx)), sy(static_cast<float>(r.doory)));
         const ImVec2 db(da.x + kTile * 2, da.y + kTile);
-        const ImU32 dtop = r.panel >= 0 ? IM_COL32(150, 120, 52, 255) : IM_COL32(78, 80, 92, 255);
-        const ImU32 dbot = r.panel >= 0 ? IM_COL32(92, 72, 28, 255) : IM_COL32(46, 48, 58, 255);
-        dl->AddRectFilledMultiColor(da, db, dtop, dtop, dbot, dbot);
-        dl->AddRect(da, db, IM_COL32(0, 0, 0, 110), 0, 0, 1.0f);
-        if (r.panel >= 0) {     // glowing console terminal beside the door
+        const ImU32 dtop = r.panel >= 0 ? IM_COL32(160, 128, 56, 255) : IM_COL32(80, 82, 94, 255);
+        const ImU32 dbot = r.panel >= 0 ? IM_COL32(96, 74, 28, 255) : IM_COL32(46, 48, 58, 255);
+        dl->AddRectFilled(da, ImVec2(db.x, da.y + t4), dtop);
+        dl->AddRectFilled(ImVec2(da.x, da.y + t4), db, dbot);
+        dl->AddRect(da, db, IM_COL32(0, 0, 0, 120), 0, 0, 1.0f);
+        if (r.panel >= 0) {     // console terminal
             const float cyoff = r.doorNorth ? 0.85f : -1.75f;
             const float cx = sx(static_cast<float>(r.doorx) - 0.15f), cy = sy(static_cast<float>(r.doory) + cyoff);
-            dl->AddRectFilled(ImVec2(cx - 6, cy - 6), ImVec2(cx + kTile * 1.35f + 6, cy + kTile * 0.95f + 6), IM_COL32(80, 200, 210, 26), 6.0f);
-            dl->AddRectFilled(ImVec2(cx, cy), ImVec2(cx + kTile * 1.35f, cy + kTile * 0.95f), IM_COL32(40, 56, 70, 255), 3.0f);
-            dl->AddRectFilled(ImVec2(cx + 3, cy + 3), ImVec2(cx + kTile * 1.35f - 3, cy + kTile * 0.5f), IM_COL32(70, 190, 205, 235), 2.0f);
-            dl->AddLine(ImVec2(cx + 5, cy + kTile * 0.22f), ImVec2(cx + kTile * 1.35f - 5, cy + kTile * 0.22f), IM_COL32(150, 240, 245, 200), 1.0f);
+            dl->AddRectFilled(ImVec2(cx - 5, cy - 5), ImVec2(cx + kTile * 1.35f + 5, cy + kTile * 0.95f + 5), IM_COL32(80, 200, 210, 30));
+            dl->AddRectFilled(ImVec2(cx, cy), ImVec2(cx + kTile * 1.35f, cy + kTile * 0.95f), IM_COL32(40, 56, 70, 255));
+            dl->AddRectFilled(ImVec2(cx + 3, cy + 3), ImVec2(cx + kTile * 1.35f - 3, cy + kTile * 0.5f), IM_COL32(70, 190, 205, 235));
+            dl->AddRectFilled(ImVec2(cx + 5, cy + kTile * 0.2f), ImVec2(cx + kTile * 1.35f - 5, cy + kTile * 0.2f + 2), IM_COL32(150, 240, 245, 200));
         }
         dl->AddText(ImVec2(sx(static_cast<float>(r.x0) + 0.6f) + 1, sy(static_cast<float>(r.y0) + 0.3f) + 1), IM_COL32(0, 0, 0, 160), r.name.c_str());
         dl->AddText(ImVec2(sx(static_cast<float>(r.x0) + 0.6f), sy(static_cast<float>(r.y0) + 0.3f)), r.labelCol, r.name.c_str());
         if (r.isVoid && g.voidDiscovered) { dl->AddText(ImVec2(sx((r.x0 + r.x1) * 0.5f - 2.0f), sy((r.y0 + r.y1) * 0.5f)), IM_COL32(205, 130, 235, 255), "* void seed *"); }
     }
-    // elevator
+    // elevator (2-tone lift)
     {
         const ImVec2 ea(sx(static_cast<float>(g.elevX)), sy(static_cast<float>(g.elevY))), eb(sx(static_cast<float>(g.elevX) + 1), sy(static_cast<float>(g.elevY) + 2));
-        dl->AddRectFilledMultiColor(ea, eb, IM_COL32(86, 78, 40, 255), IM_COL32(86, 78, 40, 255), IM_COL32(44, 40, 22, 255), IM_COL32(44, 40, 22, 255));
+        const float emid = (ea.y + eb.y) * 0.5f;
+        dl->AddRectFilled(ea, ImVec2(eb.x, emid), IM_COL32(90, 80, 42, 255));
+        dl->AddRectFilled(ImVec2(ea.x, emid), eb, IM_COL32(50, 44, 24, 255));
         dl->AddRect(ea, eb, IM_COL32(240, 220, 120, 255), 0, 0, 2.0f);
-        dl->AddLine(ImVec2((ea.x + eb.x) * 0.5f, ea.y + 2), ImVec2((ea.x + eb.x) * 0.5f, eb.y - 2), IM_COL32(200, 178, 96, 255), 1.5f);
-        dl->AddText(ImVec2(ea.x - 4, ea.y - kTile * 0.85f), IM_COL32(240, 220, 120, 255), "LIFT");
+        dl->AddRectFilled(ImVec2((ea.x + eb.x) * 0.5f - 1, ea.y + 2), ImVec2((ea.x + eb.x) * 0.5f + 1, eb.y - 2), IM_COL32(200, 178, 96, 255));
+        dl->AddText(ImVec2(ea.x - 4, ea.y - kTile * 0.9f), IM_COL32(240, 220, 120, 255), "LIFT");
     }
     // crew (NPCs) with idle bob + name tag when near
     const float tnow = static_cast<float>(ImGui::GetTime());
@@ -845,8 +870,8 @@ void draw_world() {
         draw_character(dl, ImVec2(sx(n.x), sy(n.y + bob)), kTile, n.color, n.fx, n.fy, false);
         if (std::max(std::fabs(n.x - g.pcx), std::fabs(n.y - g.pcy)) <= 3.0f) {
             const float tw = ImGui::CalcTextSize(n.name.c_str()).x;
-            const ImVec2 tp(sx(n.x) - tw * 0.5f, sy(n.y) - kTile * 1.0f);
-            dl->AddRectFilled(ImVec2(tp.x - 4, tp.y - 1), ImVec2(tp.x + tw + 4, tp.y + 15), IM_COL32(14, 17, 24, 205), 3.0f);
+            const ImVec2 tp(std::floor(sx(n.x) - tw * 0.5f), std::floor(sy(n.y) - kTile * 1.05f));
+            dl->AddRectFilled(ImVec2(tp.x - 4, tp.y - 1), ImVec2(tp.x + tw + 4, tp.y + 15), IM_COL32(14, 17, 24, 210));
             dl->AddText(tp, IM_COL32(230, 235, 245, 255), n.name.c_str());
         }
     }
@@ -854,8 +879,10 @@ void draw_world() {
     draw_character(dl, ImVec2(sx(g.pcx), sy(g.pcy)), kTile, IM_COL32(96, 174, 214, 255), g.fx, g.fy, true);
     const ImVec2 pc(sx(g.pcx), sy(g.pcy));
     const int s = station_at_player();
-    if (near_elevator()) { dl->AddText(ImVec2(pc.x - 36, pc.y - kTile * 1.3f), IM_COL32(255, 240, 160, 255), "[E] Elevator"); }
-    else if (s >= 0) { const std::string t = "[E] " + g.rooms[static_cast<std::size_t>(s)].name; dl->AddText(ImVec2(pc.x - 34, pc.y - kTile * 1.3f), IM_COL32(255, 240, 160, 255), t.c_str()); }
+    if (near_elevator()) { dl->AddText(ImVec2(pc.x - 36, pc.y - kTile * 1.35f), IM_COL32(255, 240, 160, 255), "[E] Elevator"); }
+    else if (s >= 0) { const std::string t = "[E] " + g.rooms[static_cast<std::size_t>(s)].name; dl->AddText(ImVec2(pc.x - 34, pc.y - kTile * 1.35f), IM_COL32(255, 240, 160, 255), t.c_str()); }
+
+    dl->Flags = saved;   // restore AA for the HUD/panels
 }
 
 void draw_hud() {
