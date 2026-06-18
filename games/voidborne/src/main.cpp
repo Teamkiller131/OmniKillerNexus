@@ -719,6 +719,30 @@ ImU32 lighten(ImU32 c, int add) {
     const int b = std::min(255, static_cast<int>((c >> 16) & 0xFF) + add);
     return IM_COL32(r, g, b, 255);
 }
+// multiply RGB by f (f<1 darken, >1 lighten); alpha preserved
+ImU32 shade(ImU32 c, float f) {
+    const int r = std::clamp(static_cast<int>((c & 0xFF) * f), 0, 255);
+    const int g = std::clamp(static_cast<int>(((c >> 8) & 0xFF) * f), 0, 255);
+    const int b = std::clamp(static_cast<int>(((c >> 16) & 0xFF) * f), 0, 255);
+    return IM_COL32(r, g, b, (c >> 24) & 0xFF);
+}
+// linear blend a->b by t (0..1)
+ImU32 mix(ImU32 a, ImU32 b, float t) {
+    auto L = [&](int sh) { return static_cast<int>(((a >> sh) & 0xFF) * (1 - t) + ((b >> sh) & 0xFF) * t); };
+    return IM_COL32(L(0), L(8), L(16), 255);
+}
+
+// ── Hybrid tile-art seam ─────────────────────────────────────────────────────
+// Phase 1 draws the ship procedurally on the ImGui draw list. To later drop in
+// hand-drawn PNG pixel-art without a rewrite, every tile goes through one of the
+// helpers below; when a tileset atlas is loaded the same call site can blit a UV
+// rect instead of running the procedural path. The hook is intentionally simple.
+struct TileAtlas {
+    ImTextureID tex = 0;      // 0 ⇒ procedural (current); set once a PNG tileset is loaded
+    float tileuv = 16.0f;     // source tile size in the atlas
+    bool active() const { return tex != 0; }
+};
+TileAtlas g_atlas;            // stays procedural until a real atlas is wired in
 // 8x11 top-down crew sprite. keys: 0 clear,1 hair,2 skin,3 uniform,4 sheen,5 pants,6 eye,7 boots
 const char* kCrewPx[11] = {
     "01111110", "12222221", "12622621", "12222221", "03333330",
@@ -772,25 +796,81 @@ void draw_world() {
     const int x1 = std::min(g.deckW - 1, static_cast<int>((camx + viewW) / kTile) + 1);
     const int y0 = std::max(0, static_cast<int>(camy / kTile));
     const int y1 = std::min(g.deckH - 1, static_cast<int>((camy + viewH) / kTile) + 1);
-    const float t4 = kTile * 0.5f, riv = kTile * 0.16f;
+    // Per-deck hull theme (walls tinted by the deck accent, kept dark/metallic).
+    const ImU32 accent = g.decks[static_cast<std::size_t>(g.curDeck)].accent;
+    const ImU32 capCol  = mix(IM_COL32(68, 76, 98, 255), accent, 0.17f);   // lit roof of the wall
+    const ImU32 capLo   = shade(capCol, 0.70f);                            // shaded lower roof band
+    const ImU32 capHi   = shade(capCol, 1.60f);                            // top/left highlight
+    const ImU32 faceCol = shade(capCol, 0.46f);                            // the vertical FRONT face (height)
+    const ImU32 faceDk  = shade(capCol, 0.26f);                            // dark base of the face
+    const ImU32 rivetC  = shade(capCol, 1.70f);
+    const ImU32 subfl   = IM_COL32(13, 16, 23, 255);                       // gap colour revealed by bevels
+    auto isWall = [&](int x, int y) { return deck_at(x, y) == '#'; };
+    auto floorColAt = [&](int tx, int ty) -> ImU32 {
+        const int ri = room_of(tx, ty);
+        if (ri >= 0) {
+            const Room& rr = g.rooms[static_cast<std::size_t>(ri)];
+            if (rr.isVoid && g.voidDiscovered) { return IM_COL32(64, 38, 86, 255); }
+            return rr.floorCol;
+        }
+        return ((tx + ty) & 1) ? IM_COL32(24, 28, 38, 255) : IM_COL32(19, 23, 31, 255);
+    };
+
+    // ── PASS A: floors (+ a dark base under walls for bevels) + wall-adjacent skirting/AO ──
     for (int ty = y0; ty <= y1; ++ty) {
         for (int tx = x0; tx <= x1; ++tx) {
             const ImVec2 a(sx(static_cast<float>(tx)), sy(static_cast<float>(ty)));
             const ImVec2 b(a.x + kTile, a.y + kTile);
-            if (deck_at(tx, ty) == '#') {                // 2-tone pixel hull panel + rivet
-                dl->AddRectFilled(a, ImVec2(b.x, a.y + t4), IM_COL32(58, 66, 86, 255));
-                dl->AddRectFilled(ImVec2(a.x, a.y + t4), b, IM_COL32(30, 36, 48, 255));
-                dl->AddRectFilled(ImVec2(a.x, b.y - 2), b, IM_COL32(12, 16, 24, 255));
-                dl->AddRectFilled(ImVec2(a.x + riv, a.y + riv), ImVec2(a.x + riv * 2, a.y + riv * 2), IM_COL32(94, 104, 128, 255));
-                continue;
-            }
-            const int ri = room_of(tx, ty);
-            ImU32 col;
-            if (ri >= 0) { col = g.rooms[static_cast<std::size_t>(ri)].floorCol; if (g.rooms[static_cast<std::size_t>(ri)].isVoid && g.voidDiscovered) { col = IM_COL32(64, 38, 86, 255); } }
-            else { col = ((tx + ty) & 1) ? IM_COL32(24, 28, 38, 255) : IM_COL32(19, 23, 31, 255); }
-            dl->AddRectFilled(a, b, col);
-            dl->AddRectFilled(ImVec2(b.x - 1, a.y), b, IM_COL32(0, 0, 0, 30));      // deck-plating seams
+            if (isWall(tx, ty)) { dl->AddRectFilled(a, b, subfl); continue; }
+            dl->AddRectFilled(a, b, floorColAt(tx, ty));
+            dl->AddRectFilled(ImVec2(b.x - 1, a.y), b, IM_COL32(0, 0, 0, 30));   // deck-plating seams
             dl->AddRectFilled(ImVec2(a.x, b.y - 1), b, IM_COL32(0, 0, 0, 30));
+            if (isWall(tx - 1, ty)) { dl->AddRectFilled(a, ImVec2(a.x + 3, b.y), IM_COL32(0, 0, 0, 95)); }  // skirting
+            if (isWall(tx + 1, ty)) { dl->AddRectFilled(ImVec2(b.x - 3, a.y), b, IM_COL32(0, 0, 0, 95)); }
+            if (isWall(tx, ty + 1)) { dl->AddRectFilled(ImVec2(a.x, b.y - 3), b, IM_COL32(0, 0, 0, 70)); }  // wall base to S
+            // (north edge gets the hanging wall face from PASS B instead of a skirt)
+        }
+    }
+
+    // ── PASS B: walls — lit top cap + dark front face (height) + autotiled corners ──
+    const float faceH = kTile * 0.52f, riv = kTile * 0.16f, half = kTile * 0.5f;
+    auto cutCorner = [&](float cx, float cy, float dx, float dy) {       // exterior corner → 2-step bevel
+        const float n = kTile * 0.34f, h = n * 0.5f;
+        auto rect = [&](float ax, float ay, float bx, float by) {
+            dl->AddRectFilled(ImVec2(std::min(ax, bx), std::min(ay, by)), ImVec2(std::max(ax, bx), std::max(ay, by)), subfl);
+        };
+        rect(cx, cy, cx + dx * n, cy + dy * h);
+        rect(cx, cy, cx + dx * h, cy + dy * n);
+    };
+    auto aoCorner = [&](float cx, float cy, float dx, float dy) {        // interior corner → soft AO
+        const float n = kTile * 0.34f;
+        dl->AddRectFilled(ImVec2(std::min(cx, cx + dx * n), std::min(cy, cy + dy * n)),
+                          ImVec2(std::max(cx, cx + dx * n), std::max(cy, cy + dy * n)), IM_COL32(0, 0, 0, 70));
+    };
+    for (int ty = y0; ty <= y1; ++ty) {
+        for (int tx = x0; tx <= x1; ++tx) {
+            if (!isWall(tx, ty)) { continue; }
+            const ImVec2 a(sx(static_cast<float>(tx)), sy(static_cast<float>(ty)));
+            const ImVec2 b(a.x + kTile, a.y + kTile);
+            const bool nF = !isWall(tx, ty - 1), sF = !isWall(tx, ty + 1), wF = !isWall(tx - 1, ty), eF = !isWall(tx + 1, ty);
+            if (sF) {       // a wall standing in front of the floor behind it → a vertical face = height
+                dl->AddRectFilled(ImVec2(a.x, b.y), ImVec2(b.x, b.y + faceH), faceCol);
+                dl->AddRectFilled(ImVec2(a.x + half - 1, b.y), ImVec2(a.x + half, b.y + faceH), shade(faceCol, 0.80f));   // panel seam
+                dl->AddRectFilled(ImVec2(a.x, b.y + faceH - 3), ImVec2(b.x, b.y + faceH), faceDk);                        // dark base
+                dl->AddRectFilled(ImVec2(a.x, b.y + faceH), ImVec2(b.x, b.y + faceH + 5), IM_COL32(0, 0, 0, 70));         // AO cast on floor
+                dl->AddRectFilled(ImVec2(a.x, b.y - 1), ImVec2(b.x, b.y + 1), IM_COL32(0, 0, 0, 120));                    // crisp eave line
+            }
+            dl->AddRectFilled(a, ImVec2(b.x, a.y + half), capCol);                                  // top cap (lit)
+            dl->AddRectFilled(ImVec2(a.x, a.y + half), b, capLo);                                   // lower roof band
+            if (nF) { dl->AddRectFilled(a, ImVec2(b.x, a.y + 3), capHi); }                          // lit north roof edge
+            if (wF) { dl->AddRectFilled(a, ImVec2(a.x + 2, a.y + half), capHi); }                   // lit west edge (raised block)
+            if (eF) { dl->AddRectFilled(ImVec2(b.x - 2, a.y), ImVec2(b.x, a.y + half), IM_COL32(0, 0, 0, 95)); }  // shaded east edge
+            dl->AddRectFilled(ImVec2(a.x + riv, a.y + riv), ImVec2(a.x + riv * 2, a.y + riv * 2), rivetC);
+            // autotiled corners (dual-grid idea on a single grid): cut exterior, shade interior
+            if (nF && wF) { cutCorner(a.x, a.y, +1, +1); } else if (!nF && !wF && !isWall(tx - 1, ty - 1)) { aoCorner(a.x, a.y, +1, +1); }
+            if (nF && eF) { cutCorner(b.x, a.y, -1, +1); } else if (!nF && !eF && !isWall(tx + 1, ty - 1)) { aoCorner(b.x, a.y, -1, +1); }
+            if (sF && wF) { cutCorner(a.x, b.y, +1, -1); } else if (!sF && !wF && !isWall(tx - 1, ty + 1)) { aoCorner(a.x, b.y, +1, -1); }
+            if (sF && eF) { cutCorner(b.x, b.y, -1, -1); } else if (!sF && !eF && !isWall(tx + 1, ty + 1)) { aoCorner(b.x, b.y, -1, -1); }
         }
     }
     // rooms: accent trim + blocky furniture + door + console + label
@@ -837,8 +917,8 @@ void draw_world() {
         const ImVec2 db(da.x + kTile * 2, da.y + kTile);
         const ImU32 dtop = r.panel >= 0 ? IM_COL32(160, 128, 56, 255) : IM_COL32(80, 82, 94, 255);
         const ImU32 dbot = r.panel >= 0 ? IM_COL32(96, 74, 28, 255) : IM_COL32(46, 48, 58, 255);
-        dl->AddRectFilled(da, ImVec2(db.x, da.y + t4), dtop);
-        dl->AddRectFilled(ImVec2(da.x, da.y + t4), db, dbot);
+        dl->AddRectFilled(da, ImVec2(db.x, da.y + half), dtop);
+        dl->AddRectFilled(ImVec2(da.x, da.y + half), db, dbot);
         dl->AddRect(da, db, IM_COL32(0, 0, 0, 120), 0, 0, 1.0f);
         if (r.panel >= 0) {     // console terminal
             const float cyoff = r.doorNorth ? 0.85f : -1.75f;
