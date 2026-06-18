@@ -112,6 +112,7 @@ struct DeckDef { std::string label, purpose; ImU32 accent; int width, height; st
 struct Room {
     int x0 = 0, y0 = 0, x1 = 0, y1 = 0, doorx = 0, doory = 0;
     bool doorNorth = false;
+    float doorOpen = 0.0f;      // 0 shut .. 1 open — animated from player/crew proximity (Phase 2)
     std::string name;
     int panel = -1;
     RoomKind kind = RoomKind::Generic;
@@ -554,10 +555,37 @@ char deck_at(int x, int y) {
     return g.deck[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)];
 }
 bool walkable_tile(int x, int y) { const char c = deck_at(x, y); return c != '#'; }
+// A 'D' door tile blocks like a wall until its owning room's door has slid open.
+bool door_tile_solid(int x, int y) {
+    for (const Room& r : g.rooms) {
+        if (r.doory == y && (r.doorx == x || r.doorx + 1 == x)) { return r.doorOpen < 0.42f; }
+    }
+    return false;   // a stray 'D' with no owner — treat as passable
+}
+bool tile_solid(int x, int y) {
+    const char c = deck_at(x, y);
+    if (c == '#') { return true; }
+    if (c == 'D') { return door_tile_solid(x, y); }
+    return false;
+}
 bool blocked_box(float cx, float cy) {
     const int x0 = static_cast<int>(std::floor(cx - kPlayerR)), x1 = static_cast<int>(std::floor(cx + kPlayerR));
     const int y0 = static_cast<int>(std::floor(cy - kPlayerR)), y1 = static_cast<int>(std::floor(cy + kPlayerR));
-    for (int y = y0; y <= y1; ++y) { for (int x = x0; x <= x1; ++x) { if (!walkable_tile(x, y)) { return true; } } }
+    for (int y = y0; y <= y1; ++y) { for (int x = x0; x <= x1; ++x) { if (tile_solid(x, y)) { return true; } } }
+    return false;
+}
+// Crew are soft obstacles: a move is rejected only if it pushes the player CLOSER to a
+// nearby crew member than they already are — so you bump and slide, never get trapped.
+bool crew_blocks(float nx, float ny, float ox, float oy) {
+    constexpr float rmin = kPlayerR + 0.30f;   // combined personal space
+    for (const WorldNpc& n : g.npcsHere) {
+        const float ndx = nx - n.x, ndy = ny - n.y;
+        const float nd2 = ndx * ndx + ndy * ndy;
+        if (nd2 < rmin * rmin) {
+            const float odx = ox - n.x, ody = oy - n.y;
+            if (nd2 < odx * odx + ody * ody) { return true; }   // only block moves that close in
+        }
+    }
     return false;
 }
 void move_player(float dcol, float drow, float dt) {
@@ -568,9 +596,24 @@ void move_player(float dcol, float drow, float dt) {
     else { g.fx = 0; g.fy = drow > 0 ? 1 : -1; }
     const float step = kMoveSpeed * dt;
     const float nx = g.pcx + dcol * step;
-    if (!blocked_box(nx, g.pcy)) { g.pcx = nx; }
+    if (!blocked_box(nx, g.pcy) && !crew_blocks(nx, g.pcy, g.pcx, g.pcy)) { g.pcx = nx; }
     const float ny = g.pcy + drow * step;
-    if (!blocked_box(g.pcx, ny)) { g.pcy = ny; }
+    if (!blocked_box(g.pcx, ny) && !crew_blocks(g.pcx, ny, g.pcx, g.pcy)) { g.pcy = ny; }
+}
+// Animate every door: slide open when the player or a crew member is near, else shut.
+void update_doors(float dt) {
+    const float k = std::min(1.0f, dt * 10.0f);   // exponential smoothing toward target
+    for (Room& r : g.rooms) {
+        const float dcx = static_cast<float>(r.doorx) + 1.0f, dcy = static_cast<float>(r.doory) + 0.5f;
+        bool nearDoor = std::max(std::fabs(g.pcx - dcx), std::fabs(g.pcy - dcy)) <= 2.0f;
+        if (!nearDoor) {
+            for (const WorldNpc& n : g.npcsHere) {
+                if (std::max(std::fabs(n.x - dcx), std::fabs(n.y - dcy)) <= 1.4f) { nearDoor = true; break; }
+            }
+        }
+        r.doorOpen += ((nearDoor ? 1.0f : 0.0f) - r.doorOpen) * k;
+        r.doorOpen = std::clamp(r.doorOpen, 0.0f, 1.0f);
+    }
 }
 // ── the 6-deck blueprint (a port of the original ShipFloorCatalog) ──
 void build_decks_data() {
@@ -638,7 +681,8 @@ void place_npcs() {
                           || g.curDeck == 3                                       // everyone lives on habitation
                           || ((g.curDeck == 0 || g.curDeck == 5) && i < 4);       // a few staff the sparse decks
         if (!here) { continue; }
-        while (si < spots.size() && !walkable_tile(static_cast<int>(spots[si].x), static_cast<int>(spots[si].y))) { ++si; }
+        while (si < spots.size() && (!walkable_tile(static_cast<int>(spots[si].x), static_cast<int>(spots[si].y))
+                                     || deck_at(static_cast<int>(spots[si].x), static_cast<int>(spots[si].y)) == 'D')) { ++si; }
         if (si >= spots.size()) { break; }
         WorldNpc n; n.x = spots[si].x; n.y = spots[si].y; n.phase = static_cast<float>(i) * 1.7f;
         n.color = dept_color(g.crew[static_cast<std::size_t>(i)].department);
@@ -669,8 +713,8 @@ void build_deck(int d) {
             for (int xx = x0; xx <= x1; ++xx) { g.deck[static_cast<std::size_t>(y0)][static_cast<std::size_t>(xx)] = '#'; g.deck[static_cast<std::size_t>(y1)][static_cast<std::size_t>(xx)] = '#'; }
             for (int yy = y0; yy <= y1; ++yy) { g.deck[static_cast<std::size_t>(yy)][static_cast<std::size_t>(x0)] = '#'; g.deck[static_cast<std::size_t>(yy)][static_cast<std::size_t>(x1)] = '#'; }
             const int dx = (x0 + x1) / 2, dy = doorNorth ? y0 : y1;
-            g.deck[static_cast<std::size_t>(dy)][static_cast<std::size_t>(dx)] = '.';
-            g.deck[static_cast<std::size_t>(dy)][static_cast<std::size_t>(std::min(W - 2, dx + 1))] = '.';
+            g.deck[static_cast<std::size_t>(dy)][static_cast<std::size_t>(dx)] = 'D';       // door tile (Phase 2: animated, solid when shut)
+            g.deck[static_cast<std::size_t>(dy)][static_cast<std::size_t>(std::min(W - 2, dx + 1))] = 'D';
             Room R; R.x0 = x0; R.y0 = y0; R.x1 = x1; R.y1 = y1; R.doorx = dx; R.doory = dy; R.doorNorth = doorNorth;
             R.name = s.label; R.panel = s.panel; R.kind = s.kind;
             R.floorCol = deck_floor(def.accent, s.kind); R.labelCol = def.accent;
@@ -912,14 +956,54 @@ void draw_world() {
                 box(lx + 0.48f, iy0 + 0.8f, 0.16f, 0.9f, IM_COL32(150, 158, 176, 255));
             }
         }
-        // door (2-tone)
-        const ImVec2 da(sx(static_cast<float>(r.doorx)), sy(static_cast<float>(r.doory)));
-        const ImVec2 db(da.x + kTile * 2, da.y + kTile);
-        const ImU32 dtop = r.panel >= 0 ? IM_COL32(160, 128, 56, 255) : IM_COL32(80, 82, 94, 255);
-        const ImU32 dbot = r.panel >= 0 ? IM_COL32(96, 74, 28, 255) : IM_COL32(46, 48, 58, 255);
-        dl->AddRectFilled(da, ImVec2(db.x, da.y + half), dtop);
-        dl->AddRectFilled(ImVec2(da.x, da.y + half), db, dbot);
-        dl->AddRect(da, db, IM_COL32(0, 0, 0, 120), 0, 0, 1.0f);
+        // ── animated airlock: header lintel + jamb posts + two sliding leaves ──
+        {
+            const float dx0 = sx(static_cast<float>(r.doorx)), dy0 = sy(static_cast<float>(r.doory));
+            const float dW = kTile * 2.0f, dH = kTile, open = r.doorOpen;
+            const bool console = r.panel >= 0;
+            const ImU32 frameC  = console ? IM_COL32(126, 98, 40, 255)  : IM_COL32(74, 80, 98, 255);
+            const ImU32 frameHi = console ? IM_COL32(196, 158, 74, 255) : IM_COL32(120, 128, 152, 255);
+            const ImU32 leafC   = console ? IM_COL32(158, 126, 52, 255) : IM_COL32(104, 112, 132, 255);
+            const ImU32 leafHi  = lighten(leafC, 46), leafLo = shade(leafC, 0.58f);
+            const float postW = kTile * 0.15f, headH = kTile * 0.30f, thrH = kTile * 0.15f;
+            const float oL = dx0 + postW, oR = dx0 + dW - postW, oT = dy0 + headH, oB = dy0 + dH - thrH;
+            const float ctr = (oL + oR) * 0.5f, halfW = (oR - oL) * 0.5f, gap = open * halfW;
+            // header lintel (continuous with the wall caps from Phase 1) + underside shadow
+            dl->AddRectFilled(ImVec2(dx0, dy0), ImVec2(dx0 + dW, dy0 + headH), capCol);
+            dl->AddRectFilled(ImVec2(dx0, dy0 + headH - 2), ImVec2(dx0 + dW, dy0 + headH), shade(capCol, 0.42f));
+            // jamb posts
+            dl->AddRectFilled(ImVec2(dx0, dy0), ImVec2(dx0 + postW, dy0 + dH), frameC);
+            dl->AddRectFilled(ImVec2(dx0 + dW - postW, dy0), ImVec2(dx0 + dW, dy0 + dH), frameC);
+            dl->AddRectFilled(ImVec2(dx0, dy0), ImVec2(dx0 + 2, dy0 + dH), frameHi);
+            dl->AddRectFilled(ImVec2(dx0 + dW - 2, dy0), ImVec2(dx0 + dW, dy0 + dH), shade(frameC, 0.6f));
+            // two leaves, clipped to the opening so they vanish into the jambs when retracted
+            dl->PushClipRect(ImVec2(oL, oT), ImVec2(oR, oB), true);
+            dl->AddRectFilled(ImVec2(oL, oT), ImVec2(oR, oT + 3), IM_COL32(0, 0, 0, 90));   // pocket shadow under the lintel
+            auto leaf = [&](float lx0, float lx1, bool isLeft) {
+                dl->AddRectFilled(ImVec2(lx0, oT), ImVec2(lx1, oB), leafC);
+                dl->AddRectFilled(ImVec2(lx0, oT), ImVec2(lx1, oT + 3), leafHi);
+                dl->AddRectFilled(ImVec2(lx0, oB - 3), ImVec2(lx1, oB), leafLo);
+                dl->AddRectFilled(ImVec2(lx0 + 3, oT + 5), ImVec2(lx1 - 3, oB - 5), shade(leafC, 0.84f));   // inset panel
+                for (float yy = oT + 8; yy < oB - 6; yy += 8) { dl->AddRectFilled(ImVec2(lx0 + 3, yy), ImVec2(lx1 - 3, yy + 1), IM_COL32(0, 0, 0, 55)); }
+                const float me = isLeft ? lx1 - 2 : lx0;                                    // bright meeting edge
+                dl->AddRectFilled(ImVec2(me, oT), ImVec2(me + 2, oB), shade(leafC, 1.32f));
+            };
+            leaf(ctr - halfW - gap, ctr - gap, true);
+            leaf(ctr + gap, ctr + halfW + gap, false);
+            dl->PopClipRect();
+            // threshold plate + light strip that brightens as the door opens
+            const ImU32 accentLine = console ? IM_COL32(240, 200, 90, 255) : IM_COL32(90, 200, 230, 255);
+            dl->AddRectFilled(ImVec2(oL, oB), ImVec2(oR, dy0 + dH), IM_COL32(26, 30, 40, 255));
+            dl->AddRectFilled(ImVec2(oL + 2, dy0 + dH - 3), ImVec2(oR - 2, dy0 + dH - 1), mix(shade(accentLine, 0.4f), accentLine, open));
+            // status light on the header: red shut → green open, with a faint glow
+            const ImU32 lightCol = mix(IM_COL32(222, 72, 60, 255), IM_COL32(96, 232, 124, 255), open);
+            const float lcx = dx0 + dW * 0.5f, lcy = dy0 + headH * 0.45f;
+            dl->AddRectFilled(ImVec2(lcx - 7, lcy - 3), ImVec2(lcx + 7, lcy + 4), shade(lightCol, 0.35f));
+            dl->AddRectFilled(ImVec2(lcx - 4, lcy - 2), ImVec2(lcx + 4, lcy + 3), lightCol);
+            // frame outline + AO the doorway casts on the floor below
+            dl->AddRectFilled(ImVec2(dx0, dy0 + dH), ImVec2(dx0 + dW, dy0 + dH + 4), IM_COL32(0, 0, 0, 55));
+            dl->AddRect(ImVec2(dx0, dy0), ImVec2(dx0 + dW, dy0 + dH), IM_COL32(0, 0, 0, 140), 0, 0, 1.5f);
+        }
         if (r.panel >= 0) {     // console terminal
             const float cyoff = r.doorNorth ? 0.85f : -1.75f;
             const float cx = sx(static_cast<float>(r.doorx) - 0.15f), cy = sy(static_cast<float>(r.doory) + cyoff);
@@ -1460,6 +1544,7 @@ void draw_frame() {
     const float dt = std::clamp(ImGui::GetIO().DeltaTime, 0.0f, 1.0f / 20.0f);
     advance_time(dt);
     handle_input(dt);
+    update_doors(dt);
     draw_world();
     draw_hud();
     if (g.elevatorOpen) { draw_elevator_overlay(); }
@@ -1585,6 +1670,8 @@ int main(int argc, char* argv[]) {
         else if (s == "habitation") { build_deck(3); }
         else if (s == "science") { build_deck(4); }
         else if (s == "command") { build_deck(5); }
+        // park the player in a doorway so the airlock animates open for the capture
+        else if (s == "doors") { build_deck(3); if (g.rooms.size() > 3) { const Room& rr = g.rooms[3]; g.pcx = static_cast<float>(rr.doorx) + 1.0f; g.pcy = static_cast<float>(rr.doory) + 0.5f; } }
     }
 
     unigui::AppConfig cfg;
