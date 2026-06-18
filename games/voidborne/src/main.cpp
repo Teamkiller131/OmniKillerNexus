@@ -113,6 +113,7 @@ struct Room {
     int x0 = 0, y0 = 0, x1 = 0, y1 = 0, doorx = 0, doory = 0;
     bool doorNorth = false;
     float doorOpen = 0.0f;      // 0 shut .. 1 open — animated from player/crew proximity (Phase 2)
+    int chamfer = 0;            // corner-bevel size (tiles) — furniture insets to clear it (Phase 3)
     std::string name;
     int panel = -1;
     RoomKind kind = RoomKind::Generic;
@@ -690,8 +691,13 @@ void place_npcs() {
         g.npcsHere.push_back(n); ++si;
     }
 }
-// Generate the CURRENT deck's tilemap + room list from its blueprint: a central
-// corridor with rooms packed left-to-right above (south doors) and below (north).
+// deterministic hash → stable per-deck layout variation (no RNG state, survives rebuilds)
+static inline unsigned vbhash(unsigned x) {
+    x ^= x >> 16; x *= 0x7feb352dU; x ^= x >> 15; x *= 0x846ca68bU; x ^= x >> 16; return x;
+}
+// Generate the CURRENT deck's tilemap + room list: rooms of VARIED depth flush to the
+// hull and staggered along a central concourse (organic, non-square), with chamfered
+// (octagonal) room corners, a chamfered hull silhouette, and a signature reactor octagon.
 void build_deck(int d) {
     g.curDeck = std::clamp(d, 0, static_cast<int>(g.decks.size()) - 1);
     const DeckDef& def = g.decks[static_cast<std::size_t>(g.curDeck)];
@@ -701,30 +707,69 @@ void build_deck(int d) {
     g.deck.assign(static_cast<std::size_t>(H), std::string(static_cast<std::size_t>(W), '.'));
     for (int x = 0; x < W; ++x) { g.deck[0][static_cast<std::size_t>(x)] = '#'; g.deck[static_cast<std::size_t>(H - 1)][static_cast<std::size_t>(x)] = '#'; }
     for (int y = 0; y < H; ++y) { g.deck[static_cast<std::size_t>(y)][0] = '#'; g.deck[static_cast<std::size_t>(y)][static_cast<std::size_t>(W - 1)] = '#'; }
-    const int corr = H / 2 - 1;     // corridor occupies rows corr, corr+1
+    const int corr = H / 2 - 1;     // central concourse: rows corr, corr+1
     g.rooms.clear();
     int hydro = 0;
-    auto pack = [&](const std::vector<RoomSpec>& specs, int ty, int th, bool doorNorth) {
-        int x = 5;
+    auto setW = [&](int xx, int yy) { if (xx > 0 && yy > 0 && xx < W - 1 && yy < H - 1) { g.deck[static_cast<std::size_t>(yy)][static_cast<std::size_t>(xx)] = '#'; } };
+    auto h01 = [&](int a, int b) { return static_cast<float>(vbhash(static_cast<unsigned>((g.curDeck * 2654435761U) ^ (a * 40503U) ^ (b * 12345U))) & 1023U) / 1023.0f; };
+    // octagonalize a walled rectangle: fill small '#' triangles into its 4 interior corners
+    auto chamfer = [&](int x0, int y0, int x1, int y1, int c) {
+        for (int a = 1; a <= c; ++a) {
+            for (int b = 1; b <= c; ++b) {
+                if (a + b > c + 1) { continue; }
+                setW(x0 + a, y0 + b); setW(x1 - a, y0 + b); setW(x0 + a, y1 - b); setW(x1 - a, y1 - b);
+            }
+        }
+    };
+    auto pack = [&](const std::vector<RoomSpec>& specs, bool topBand) {
+        int x = 6, idx = 0;
         for (const RoomSpec& s : specs) {
-            const int rw = std::max(5, static_cast<int>(std::lround(s.width * kMapScale)));
-            const int x0 = x, y0 = ty, x1 = x + rw - 1, y1 = ty + th - 1;
-            if (x1 >= W - 1) { break; }
+            const int rw = std::max(6, static_cast<int>(std::lround(s.width * kMapScale)));
+            const int x0 = x, x1 = x + rw - 1;
+            if (x1 >= W - 2) { break; }
+            // stagger the concourse-facing (inner) edge; deep service rooms stay full depth
+            const bool deep = (s.kind == RoomKind::Hydro || s.kind == RoomKind::Mess || s.kind == RoomKind::Engine || s.kind == RoomKind::Cargo || s.kind == RoomKind::Bridge);
+            const int setback = deep ? 0 : static_cast<int>(h01(idx, topBand ? 1 : 2) * 2.99f);
+            int y0, y1, dy;
+            if (topBand) { y0 = 1; y1 = (corr - 1) - setback; dy = y1; }       // flush to top hull
+            else { y1 = H - 2; y0 = (corr + 2) + setback; dy = y0; }            // flush to bottom hull
+            if (y1 - y0 < 4) { if (topBand) { y1 = corr - 1; dy = y1; } else { y0 = corr + 2; dy = y0; } }
             for (int xx = x0; xx <= x1; ++xx) { g.deck[static_cast<std::size_t>(y0)][static_cast<std::size_t>(xx)] = '#'; g.deck[static_cast<std::size_t>(y1)][static_cast<std::size_t>(xx)] = '#'; }
             for (int yy = y0; yy <= y1; ++yy) { g.deck[static_cast<std::size_t>(yy)][static_cast<std::size_t>(x0)] = '#'; g.deck[static_cast<std::size_t>(yy)][static_cast<std::size_t>(x1)] = '#'; }
-            const int dx = (x0 + x1) / 2, dy = doorNorth ? y0 : y1;
-            g.deck[static_cast<std::size_t>(dy)][static_cast<std::size_t>(dx)] = 'D';       // door tile (Phase 2: animated, solid when shut)
-            g.deck[static_cast<std::size_t>(dy)][static_cast<std::size_t>(std::min(W - 2, dx + 1))] = 'D';
-            Room R; R.x0 = x0; R.y0 = y0; R.x1 = x1; R.y1 = y1; R.doorx = dx; R.doory = dy; R.doorNorth = doorNorth;
+            int cc = (rw >= 14 && (y1 - y0) >= 9) ? 2 : 1;
+            if (s.kind == RoomKind::Reactor) { cc = std::min({4, rw / 3, (y1 - y0) / 3}); }   // signature octagon
+            chamfer(x0, y0, x1, y1, cc);
+            const int dx = (x0 + x1) / 2;
+            Room R; R.x0 = x0; R.y0 = y0; R.x1 = x1; R.y1 = y1; R.doorx = dx; R.doory = dy; R.doorNorth = !topBand; R.chamfer = cc;
             R.name = s.label; R.panel = s.panel; R.kind = s.kind;
             R.floorCol = deck_floor(def.accent, s.kind); R.labelCol = def.accent;
             if (s.kind == RoomKind::Hydro) { R.isVoid = (++hydro == 7); }   // Bay G
             g.rooms.push_back(R);
-            x += rw + 1;
+            x = x1 + 2 + (h01(idx * 7 + 3, topBand ? 5 : 9) < 0.4f ? 1 : 0);   // varied gap
+            ++idx;
         }
     };
-    pack(def.top, 1, corr - 1, false);
-    pack(def.bottom, corr + 2, H - 2 - (corr + 2) + 1, true);
+    pack(def.top, true);
+    pack(def.bottom, false);
+    // chamfer the four hull corners → the deck silhouette reads as a ship section, not a box
+    {
+        const int cw = std::min(9, W / 7), ch = std::max(3, std::min(6, H / 5));
+        auto hullCut = [&](bool right, bool bottom) {
+            for (int a = 0; a <= cw; ++a) {
+                for (int b = 0; b <= ch; ++b) {
+                    if (static_cast<float>(a) / cw + static_cast<float>(b) / ch < 0.98f) {
+                        g.deck[static_cast<std::size_t>(bottom ? H - 1 - b : b)][static_cast<std::size_t>(right ? W - 1 - a : a)] = '#';
+                    }
+                }
+            }
+        };
+        hullCut(false, false); hullCut(true, false); hullCut(false, true); hullCut(true, true);
+    }
+    // re-assert every door LAST so no chamfer/hull carve can wall it shut
+    for (const Room& r : g.rooms) {
+        g.deck[static_cast<std::size_t>(r.doory)][static_cast<std::size_t>(r.doorx)] = 'D';
+        g.deck[static_cast<std::size_t>(r.doory)][static_cast<std::size_t>(std::min(W - 2, r.doorx + 1))] = 'D';
+    }
     g.elevX = 2; g.elevY = corr;
     g.pcx = 3.5f; g.pcy = static_cast<float>(corr) + 0.5f;   // spawn beside the elevator
     place_npcs();
@@ -923,10 +968,13 @@ void draw_world() {
         const ImU32 trim = (r.labelCol & 0x00FFFFFFu) | 0x40000000u;
         dl->AddRect(ImVec2(sx(static_cast<float>(r.x0)) + 3, sy(static_cast<float>(r.y0)) + 3),
                     ImVec2(sx(static_cast<float>(r.x1) + 1) - 3, sy(static_cast<float>(r.y1) + 1) - 3), trim, 0, 0, 2.0f);
-        const float ix0 = static_cast<float>(r.x0) + 1.2f, iy0 = static_cast<float>(r.y0) + 1.2f;
+        // furniture is bounded to a chamfer-clear interior rect [fx0,fx1]×[fy0,fy1]
+        const float ch = static_cast<float>(r.chamfer);
+        const float fx0 = static_cast<float>(r.x0) + ch + 1.2f, fy0 = static_cast<float>(r.y0) + ch + 1.2f;
+        const float fx1 = static_cast<float>(r.x1) - ch - 1.2f, fy1 = static_cast<float>(r.y1) - ch - 1.2f;
         if (r.kind == RoomKind::Quarters) {                 // bunk beds
-            for (float by = iy0; by < r.y1 - 1.8f; by += 2.1f) {
-                for (float bx = ix0; bx < r.x1 - 1.6f; bx += 1.9f) {
+            for (float by = fy0; by < fy1 - 1.6f; by += 2.1f) {
+                for (float bx = fx0; bx < fx1 - 1.4f; bx += 1.9f) {
                     box(bx, by, 1.5f, 1.7f, IM_COL32(52, 58, 72, 255));
                     box(bx + 0.12f, by + 0.12f, 1.26f, 1.0f, IM_COL32(188, 194, 208, 255));
                     box(bx + 0.18f, by + 0.16f, 0.5f, 0.42f, IM_COL32(246, 246, 250, 255));
@@ -934,8 +982,8 @@ void draw_world() {
                 }
             }
         } else if (r.kind == RoomKind::Hydro) {             // blocky plant beds
-            for (float py = iy0; py < r.y1 - 1.4f; py += 1.5f) {
-                for (float px = ix0; px < r.x1 - 1.4f; px += 1.5f) {
+            for (float py = fy0; py < fy1 - 1.0f; py += 1.5f) {
+                for (float px = fx0; px < fx1 - 1.0f; px += 1.5f) {
                     box(px, py, 1.1f, 1.1f, IM_COL32(74, 54, 40, 255));
                     box(px + 0.28f, py + 0.5f, 0.55f, 0.45f, IM_COL32(58, 116, 64, 255));
                     box(px + 0.3f, py + 0.26f, 0.5f, 0.4f, IM_COL32(98, 184, 102, 255));
@@ -943,17 +991,18 @@ void draw_world() {
                 }
             }
         } else if (r.kind == RoomKind::Mess || r.kind == RoomKind::Conference) {   // tables + plates
-            for (float yy = iy0 + 0.4f; yy < r.y1 - 1.4f; yy += 2.4f) {
-                box(ix0 + 0.4f, yy, static_cast<float>(r.x1 - r.x0) - 2.4f, 1.0f, IM_COL32(98, 80, 58, 255));
-                box(ix0 + 0.4f, yy, static_cast<float>(r.x1 - r.x0) - 2.4f, 0.22f, IM_COL32(124, 102, 74, 255));
-                for (float px = ix0 + 1.0f; px < r.x1 - 1.6f; px += 1.6f) { box(px - 0.2f, yy + 0.32f, 0.4f, 0.4f, IM_COL32(212, 214, 220, 255)); }
+            const float tw = std::max(2.0f, fx1 - fx0);
+            for (float yy = fy0 + 0.4f; yy < fy1 - 1.0f; yy += 2.4f) {
+                box(fx0, yy, tw, 1.0f, IM_COL32(98, 80, 58, 255));
+                box(fx0, yy, tw, 0.22f, IM_COL32(124, 102, 74, 255));
+                for (float px = fx0 + 0.6f; px < fx1 - 0.6f; px += 1.6f) { box(px - 0.2f, yy + 0.32f, 0.4f, 0.4f, IM_COL32(212, 214, 220, 255)); }
             }
         } else {                                            // lockers with handles
             for (int k = 0; k < 2; ++k) {
-                const float lx = k == 0 ? static_cast<float>(r.x0) + 1.4f : static_cast<float>(r.x1) - 2.5f;
-                box(lx, iy0 + 0.3f, 1.1f, 1.9f, IM_COL32(56, 62, 76, 255));
-                box(lx + 0.12f, iy0 + 0.45f, 0.86f, 1.6f, IM_COL32(70, 78, 94, 255));
-                box(lx + 0.48f, iy0 + 0.8f, 0.16f, 0.9f, IM_COL32(150, 158, 176, 255));
+                const float lx = k == 0 ? fx0 : fx1 - 1.1f;
+                box(lx, fy0 + 0.3f, 1.1f, 1.9f, IM_COL32(56, 62, 76, 255));
+                box(lx + 0.12f, fy0 + 0.45f, 0.86f, 1.6f, IM_COL32(70, 78, 94, 255));
+                box(lx + 0.48f, fy0 + 0.8f, 0.16f, 0.9f, IM_COL32(150, 158, 176, 255));
             }
         }
         // ── animated airlock: header lintel + jamb posts + two sliding leaves ──
