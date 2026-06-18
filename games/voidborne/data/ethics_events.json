@@ -1,0 +1,208 @@
+{
+  "events": [
+    {
+      "id": "open_specimen_trace",
+      "requiredFlag": "quarantine_lab",
+      "requiredEthics": "open",
+      "minDay": 10,
+      "text": "Open-access lab: alien trace detected in mess hall air scrubbers.",
+      "options": [
+        { "label": "Mass crew screening", "moraleDelta": -3, "orderDelta": 3, "setFlag": "ethics_screening" },
+        { "label": "Seal Bay F only", "moraleDelta": -1, "orderDelta": 2, "setFlag": "bay_f_sealed" },
+        { "label": "Downplay to avoid panic", "moraleDelta": -6, "orderDelta": -4, "setFlag": "ethics_coverup" }
+      ]
+    },
+    {
+      "id": "restricted_audit",
+      "requiredFlag": "quarantine_lab",
+      "requiredEthics": "restricted",
+      "minDay": 12,
+      "text": "Restricted lab: logistics demands audit of specimen chain-of-custody.",
+      "options": [
+        { "label": "Full audit (slows science 1d)", "moraleDelta": 0, "orderDelta": 4, "setFlag": "specimen_audit" },
+        { "label": "Captain certifies internally", "moraleDelta": 2, "orderDelta": -1, "setFlag": "captain_cert" },
+        { "label": "Refuse audit — science autonomy", "moraleDelta": -2, "orderDelta": -3, "setFlag": "science_autonomy" }
+      ]
+    },
+    {
+      "id": "quarantine_protest",
+      "requiredFlag": "quarantine_lab",
+      "requiredEthics": "any",
+      "minDay": 14,
+      "text": "Crew petition: quarantine Bay F blocks staple grain rotation.",
+      "options": [
+        { "label": "Keep quarantine — safety first", "moraleDelta": -2, "orderDelta": 3 },
+        { "label": "Dual-use schedule (risk + yield)", "moraleDelta": 1, "orderDelta": 0, "setFlag": "dual_use_bay_f" },
+        { "label": "Move quarantine to Bay G", "moraleDelta": 0, "orderDelta": 1, "setFlag": "quarantine_moved" }
+      ]
+    },
+    {
+      "id": "screening_backlash",
+      "requiredFlag": "ethics_screening",
+      "requiredEthics": "open",
+      "minDay": 16,
+      "text": "Mass screening queues stretch six hours. Science crew refuse to miss experiment windows.",
+      "options": [
+        { "label": "Priority lane for critical shifts", "moraleDelta": 1, "orderDelta": 1, "setFlag": "screening_priority" },
+        { "label": "Extend screening two more days — no exceptions", "moraleDelta": -4, "orderDelta": 4 },
+        { "label": "Cancel screening — monitor symptoms only", "moraleDelta": 2, "orderDelta": -3, "setFlag": "screening_rolled_back" }
+      ]
+    },
+    {
+      "id": "screening_positive",
+      "requiredFlag": "ethics_screening",
+      "requiredEthics": "open",
+      "minDay": 18,
+      "text": "Two false positives and one ambiguous sample from screening. Elena demands retest authority.",
+      "options": [
+        { "label": "Science retest panel — transparent results", "moraleDelta": 0, "orderDelta": 2, "setFlag": "retest_panel" },
+        { "label": "Captain signs final call on positives", "moraleDelta": -1, "orderDelta": 3 },
+        { "label": "Isolate all three pending retest", "moraleDelta": -3, "orderDelta": 4, "setFlag": "triple_isolation" }
+      ]
+    },
+    {
+      "id": "bay_f_leak_scare",
+      "requiredFlag": "bay_f_sealed",
+      "requiredEthics": "any",
+      "minDay": 17,
+      "text": "Pressure sensor flicker on Bay F seal. Ecology reports wilt stress on adjacent Bay E vents.",
+      "options": [
+        { "label": "Emergency re-seal + spare parts burn", "moraleDelta": -1, "orderDelta": 3 },
+        { "label": "Partial harvest Bay E before spread", "moraleDelta": -2, "orderDelta": 2, "setFlag": "bay_e_partial_harvest" },
+        { "label": "Science inspects — may be sensor drift", "moraleDelta": 1, "orderDelta": -1, "setFlag": "seal_sensor_drift" }
+      ]
+    },
+    {
+      "id": "coverup_exposed",
+      "requiredFlag": "ethics_coverup",
+      "requiredEthics": "any",
+      "minDay": 19,
+      "text": "Anonymous forum post claims leadership hid scrubber traces. Order score wobbles.",
+      "options": [
+        { "label": "Full disclosure + town hall", "moraleDelta": -2, "orderDelta": 4, "setFlag": "ethics_disclosure" },
+        { "label": "Trace poster — enforce comms lockdown", "moraleDelta": -5, "orderDelta": 2, "setFlag": "comms_lockdown" },
+        { "label": "Release partial logs — redact names", "moraleDelta": 0, "orderDelta": 0 }
+      ]
+    },
+    {
+      "id": "audit_findings",
+      "requiredFlag": "specimen_audit",
+      "requiredEthics": "restricted",
+      "minDay": 18,
+      "text": "Audit finds two missing chain signatures on xenobiology samples. Logistics wants suspensions.",
+      "options": [
+        { "label": "Suspend responsible techs pending review", "moraleDelta": -3, "orderDelta": 4, "setFlag": "tech_suspension" },
+        { "label": "Retrain + dual custody going forward", "moraleDelta": 0, "orderDelta": 3, "setFlag": "dual_custody" },
+        { "label": "Close case — signatures backlog only", "moraleDelta": 2, "orderDelta": -2, "setFlag": "audit_waived" }
+      ]
+    },
+    {
+      "id": "captain_cert_challenge",
+      "requiredFlag": "captain_cert",
+      "requiredEthics": "restricted",
+      "minDay": 20,
+      "text": "Science council challenges captain's internal certification as insufficient for export samples.",
+      "options": [
+        { "label": "Accept external review at next port", "moraleDelta": -1, "orderDelta": 3 },
+        { "label": "Re-run certification with Elena co-sign", "moraleDelta": 1, "orderDelta": 2, "setFlag": "co_sign_cert" },
+        { "label": "Assert captain authority — no re-run", "moraleDelta": -2, "orderDelta": -2, "setFlag": "cert_asserted" }
+      ]
+    },
+    {
+      "id": "science_autonomy_breach",
+      "requiredFlag": "science_autonomy",
+      "requiredEthics": "restricted",
+      "minDay": 21,
+      "text": "Logistics discovers an unsanctioned sample transfer to Bay F. Autonomy policy blamed.",
+      "options": [
+        { "label": "Revoke autonomy — central custody", "moraleDelta": -2, "orderDelta": 4, "setFlag": "autonomy_revoked" },
+        { "label": "Fine science dept power budget", "moraleDelta": 0, "orderDelta": 2 },
+        { "label": "Amnesty if chain restored within 24h", "moraleDelta": 1, "orderDelta": 0, "setFlag": "autonomy_amnesty" }
+      ]
+    },
+    {
+      "id": "dual_use_incident",
+      "requiredFlag": "dual_use_bay_f",
+      "requiredEthics": "any",
+      "minDay": 22,
+      "text": "Dual-use Bay F schedule overlaps harvest and quarantine window. Spore counters tick up.",
+      "options": [
+        { "label": "Revert to full quarantine", "moraleDelta": -2, "orderDelta": 3 },
+        { "label": "Harvest first — then 48h seal", "moraleDelta": 1, "orderDelta": 0, "setFlag": "harvest_then_seal" },
+        { "label": "Move grain crop to Bay A temporarily", "moraleDelta": 0, "orderDelta": 1, "setFlag": "grain_moved_a" }
+      ]
+    },
+    {
+      "id": "quarantine_move_contamination",
+      "requiredFlag": "quarantine_moved",
+      "requiredEthics": "any",
+      "minDay": 23,
+      "text": "Trace amounts detected in Bay G after quarantine move. Crew ask if move spread the problem.",
+      "options": [
+        { "label": "Re-seal Bay G + decontaminate corridor", "moraleDelta": -2, "orderDelta": 4 },
+        { "label": "Science: traces predated move — calm crew", "moraleDelta": 1, "orderDelta": 1 },
+        { "label": "Return quarantine to Bay F — abandon G crop", "moraleDelta": -3, "orderDelta": 3, "setFlag": "bay_g_abandoned" }
+      ]
+    },
+    {
+      "id": "retest_panel_appeal",
+      "requiredFlag": "retest_panel",
+      "requiredEthics": "open",
+      "minDay": 24,
+      "text": "One crew member appeals retest panel verdict. Forums trend toward distrust of open lab policy.",
+      "options": [
+        { "label": "Grant appeal hearing — public", "moraleDelta": 2, "orderDelta": 1 },
+        { "label": "Uphold panel — no appeal", "moraleDelta": -2, "orderDelta": 3 },
+        { "label": "Switch to restricted custody model", "moraleDelta": -1, "orderDelta": 2, "setFlag": "shift_to_restricted" }
+      ]
+    },
+    {
+      "id": "grain_move_pest_scare",
+      "requiredFlag": "grain_moved_a",
+      "requiredEthics": "any",
+      "minDay": 25,
+      "text": "Pest counters tick up in Bay A after the temporary grain move. Crew ask if ethics shortcuts spread contamination.",
+      "options": [
+        { "label": "Burn affected trays — full loss", "moraleDelta": -2, "orderDelta": 4, "setFlag": "bay_a_burn" },
+        { "label": "Science quarantine sub-section", "moraleDelta": 0, "orderDelta": 2 },
+        { "label": "Continue harvest — monitor only", "moraleDelta": 1, "orderDelta": -2, "setFlag": "pest_monitored" }
+      ]
+    },
+    {
+      "id": "cert_asserted_backlash",
+      "requiredFlag": "cert_asserted",
+      "requiredEthics": "restricted",
+      "minDay": 26,
+      "text": "After the captain blocked re-certification, junior researchers circulate a memo calling export custody 'rank over science.'",
+      "options": [
+        { "label": "Town hall — explain captain authority", "moraleDelta": -1, "orderDelta": 3 },
+        { "label": "Offer co-sign path with Elena", "moraleDelta": 2, "orderDelta": 1, "setFlag": "co_sign_cert" },
+        { "label": "Discipline memo authors", "moraleDelta": -3, "orderDelta": 5 }
+      ]
+    },
+    {
+      "id": "pest_monitored_outbreak",
+      "requiredFlag": "pest_monitored",
+      "requiredEthics": "any",
+      "minDay": 27,
+      "text": "Monitored pest counters cross the action threshold in Bay A. Crew ask why harvest continued.",
+      "options": [
+        { "label": "Emergency burn — admit delay", "moraleDelta": -2, "orderDelta": 4 },
+        { "label": "Blame legacy contamination", "moraleDelta": 0, "orderDelta": 2 },
+        { "label": "Expand monitor-only policy", "moraleDelta": -1, "orderDelta": -2, "setFlag": "pest_policy_expanded" }
+      ]
+    },
+    {
+      "id": "co_sign_cert_dispute",
+      "requiredFlag": "co_sign_cert",
+      "requiredEthics": "restricted",
+      "minDay": 28,
+      "text": "Elena co-signed export certification, but Science council disputes her authority over Bay F custody chain.",
+      "options": [
+        { "label": "Uphold Elena co-sign", "moraleDelta": 1, "orderDelta": 3 },
+        { "label": "Third-party review panel", "moraleDelta": 0, "orderDelta": 2, "setFlag": "third_party_cert" },
+        { "label": "Revoke co-sign — captain only", "moraleDelta": -2, "orderDelta": 4 }
+      ]
+    }
+  ]
+}

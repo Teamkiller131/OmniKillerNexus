@@ -1,0 +1,304 @@
+{
+  "events": [
+    {
+      "id": "audit_followup_clean",
+      "type": "operational",
+      "weight": 14,
+      "cooldown": 14,
+      "trigger": { "any": [{ "flag": "audit_resolved", "flagMin": 1 }] },
+      "title": "Audit follow-up: books balanced",
+      "body": "Lee presents reconciled ledgers to the council. Exchange listings match warehouse counts for the first time in weeks.",
+      "options": [
+        { "label": "Publish summary — boost trust", "deptGate": "Logistics", "effects": { "social.order": "4", "social.morale": "2", "social.playerRep": "3" } },
+        { "label": "Keep quiet — avoid scrutiny", "effects": { "social.order": "2" } },
+        { "label": "Schedule monthly audits", "effects": { "social.order": "6", "social.morale": "-2", "flag.audit_routine": "1" } }
+      ]
+    },
+    {
+      "id": "audit_dispute_riot",
+      "type": "social",
+      "weight": 12,
+      "cooldown": 16,
+      "trigger": { "any": [{ "flag": "audit_disputed", "flagMin": 1 }] },
+      "title": "Warehouse staff push back",
+      "body": "After the disputed audit, loaders refuse overtime. Rumors say you targeted the wrong clerk to look decisive.",
+      "options": [
+        { "label": "Apologize publicly", "effects": { "social.playerRep": "5", "social.order": "-3" } },
+        { "label": "Hold the line", "deptGate": "Logistics", "effects": { "social.order": "4", "social.morale": "-5" } },
+        { "label": "Re-audit with neutral witness", "effects": { "resource.power": "-3", "flag.audit_resolved": "1" } }
+      ]
+    },
+    {
+      "id": "audit_defer_crunch",
+      "type": "operational",
+      "weight": 15,
+      "cooldown": 12,
+      "trigger": { "any": [{ "flag": "audit_deferred", "flagMin": 1 }] },
+      "title": "Deferred audit — variance spike",
+      "body": "Without reconciliation, exchange drift hits 6%. Captain demands a decision before the next route vote.",
+      "options": [
+        { "label": "Emergency strict audit now", "effects": { "social.order": "5", "social.morale": "-4", "flag.audit_resolved": "1" } },
+        { "label": "Freeze exchange until fixed", "effects": { "resource.rawMaterials": "-5", "social.morale": "-3", "social.order": "3" } },
+        { "label": "Defer again", "effects": { "flag.audit_deferred": "1", "social.order": "-6", "social.playerRep": "-4" } }
+      ]
+    },
+    {
+      "id": "audit_npc_accusation",
+      "type": "social",
+      "weight": 10,
+      "cooldown": 22,
+      "trigger": { "any": [{ "flag": "audit_disputed", "flagMin": 2 }] },
+      "title": "Accused of cooking the books",
+      "body": "A senior logistician claims you hid food surplus to manipulate rations. The mess hall splits on whether to trust you.",
+      "options": [
+        { "label": "Open books to everyone", "effects": { "social.playerRep": "6", "social.order": "3", "flag.audit_resolved": "1" } },
+        { "label": "Disciplinary hearing", "tierGate": 2, "effects": { "social.order": "5", "social.morale": "-6" } },
+        { "label": "Ignore — ride it out", "effects": { "social.morale": "-4", "flag.audit_ignored": "1" } }
+      ]
+    },
+    {
+      "id": "audit_routine_spotcheck",
+      "type": "operational",
+      "weight": 13,
+      "cooldown": 18,
+      "trigger": { "any": [{ "flag": "audit_routine", "flagMin": 1 }] },
+      "title": "Monthly audit spot-check",
+      "body": "Lee's routine audit catches a 2% parts mismatch between Manufacturing receipts and Logistics listings. Small, but the council watches.",
+      "options": [
+        { "label": "Correct ledger — transparent", "deptGate": "Logistics", "effects": { "social.order": "3", "social.playerRep": "2", "flag.audit_resolved": "1" } },
+        { "label": "Write off as rounding", "effects": { "social.order": "-2", "flag.audit_disputed": "1" } },
+        { "label": "Freeze parts exchange 1 day", "effects": { "resource.parts": "-3", "social.order": "4" } }
+      ]
+    },
+    {
+      "id": "audit_ignored_shortage",
+      "type": "social",
+      "weight": 14,
+      "cooldown": 20,
+      "trigger": { "any": [{ "flag": "audit_ignored", "flagMin": 1 }] },
+      "title": "Ignored audit — ration panic",
+      "body": "Mess hall rumor: food counts don't match what you published last month. Families hoard trays before the next distribution.",
+      "options": [
+        { "label": "Emergency open audit", "tierGate": 2, "effects": { "social.order": "4", "social.morale": "-3", "flag.audit_resolved": "1", "resource.power": "-2" } },
+        { "label": "Extra ration day to calm", "effects": { "resource.food": "-15", "social.morale": "5", "social.order": "-2" } },
+        { "label": "Deny discrepancy", "effects": { "social.playerRep": "-5", "flag.audit_disputed": "1" } }
+      ]
+    },
+    {
+      "id": "audit_whistleblower",
+      "type": "operational",
+      "weight": 11,
+      "cooldown": 24,
+      "trigger": { "any": [{ "flag": "audit_resolved", "flagMin": 2 }] },
+      "title": "Whistleblower thanks you",
+      "body": "A junior clerk admits they delayed reporting a water listing error until your last audit succeeded. They offer to join the neutral review team.",
+      "options": [
+        { "label": "Recruit to audit roster", "effects": { "social.order": "5", "social.playerRep": "3", "flag.audit_routine": "1" } },
+        { "label": "Reward but keep external", "effects": { "social.morale": "2", "social.playerRep": "4" } },
+        { "label": "Decline — too much exposure", "effects": { "social.order": "1" } }
+      ]
+    },
+    {
+      "id": "trade_smuggle_tip",
+      "type": "operational",
+      "scope": "department",
+      "weight": 12,
+      "cooldown": 22,
+      "minTier": 2,
+      "deptGate": "Logistics",
+      "trigger": { "any": [{ "flag": "audit_disputed", "flagMin": 1 }] },
+      "title": "Off-ledger trade tip",
+      "body": "Someone lists medicine on the exchange without logging raw cost. If real, it explains part of the disputed variance.",
+      "options": [
+        { "label": "Trace listing — strict", "effects": { "social.order": "4", "resource.medicine": "2", "flag.audit_resolved": "1" } },
+        { "label": "Seize listing pending review", "effects": { "social.morale": "-3", "social.order": "5", "resource.medicine": "-2" } },
+        { "label": "Ignore — not your bay", "effects": { "social.playerRep": "-3", "flag.audit_ignored": "1" } }
+      ]
+    },
+    {
+      "id": "trade_black_market_whisper",
+      "type": "social",
+      "weight": 10,
+      "cooldown": 26,
+      "trigger": { "any": [{ "flag": "audit_deferred", "flagMin": 2 }] },
+      "title": "Black-market whisper",
+      "body": "Deferred audits left exchange drift above 5%. Crew whisper about a crawlway barter ring trading parts for food off the books.",
+      "options": [
+        { "label": "Raid crawlway — restore order", "tierGate": 2, "effects": { "social.order": "6", "social.morale": "-5", "resource.parts": "4", "flag.audit_resolved": "1" } },
+        { "label": "Legalize limited barter window", "deptGate": "Logistics", "effects": { "social.morale": "3", "social.order": "-2", "resource.food": "-8" } },
+        { "label": "Look away", "effects": { "social.order": "-8", "flag.audit_ignored": "1", "social.playerRep": "-6" } }
+      ]
+    },
+    {
+      "id": "audit_chain_review",
+      "type": "operational",
+      "weight": 10,
+      "cooldown": 28,
+      "trigger": { "any": [{ "flag": "audit_resolved", "flagMin": 3 }] },
+      "title": "Audit chain quarterly review",
+      "body": "Three resolved audits in a row earn Lee a request for permanent neutral observers on every exchange listing. Manufacturing calls it sabotage.",
+      "options": [
+        { "label": "Institutionalize observers", "effects": { "social.order": "6", "social.morale": "-2", "flag.audit_routine": "1", "player.rep": "3" } },
+        { "label": "Rotate volunteers only", "effects": { "social.morale": "2", "social.order": "2" } },
+        { "label": "Sunset audit program", "effects": { "social.order": "-4", "flag.audit_deferred": "1", "player.rep": "-3" } }
+      ]
+    },
+    {
+      "id": "audit_mfg_parts_mismatch",
+      "type": "operational",
+      "scope": "department",
+      "weight": 12,
+      "cooldown": 19,
+      "minTier": 2,
+      "deptGate": "Manufacturing",
+      "trigger": { "any": [{ "flag": "audit_routine", "flagMin": 1 }] },
+      "title": "Lathe receipt mismatch",
+      "body": "Routine audit finds Manufacturing logged 14 parts yesterday; Logistics exchange shows 11 moved. Sam insists the lathe counters are correct.",
+      "options": [
+        { "label": "Reconcile with Sam present", "effects": { "social.order": "4", "flag.audit_resolved": "1", "player.rep": "2" } },
+        { "label": "Trust Manufacturing counters", "effects": { "crew.sam.loyalty": "3", "flag.audit_disputed": "1" } },
+        { "label": "Freeze parts exchange 24h", "effects": { "resource.parts": "-2", "social.order": "5" } }
+      ]
+    },
+    {
+      "id": "audit_captain_override",
+      "type": "social",
+      "weight": 11,
+      "cooldown": 22,
+      "trigger": { "any": [{ "flag": "audit_disputed", "flagMin": 2 }] },
+      "title": "Captain override rumor",
+      "body": "Crew rumor: the captain can veto any audit finding. Logistics wants the veto written down; habitation wants audits independent of rank.",
+      "options": [
+        { "label": "Publish veto limits", "effects": { "social.order": "4", "player.rep": "4" } },
+        { "label": "Deny veto exists", "effects": { "social.morale": "-3", "social.order": "-2" } },
+        { "label": "Trial audit without officers", "effects": { "player.skill": "3", "flag.audit_resolved": "1", "resource.power": "-2" } }
+      ]
+    },
+    {
+      "id": "audit_routine_escalation",
+      "type": "operational",
+      "weight": 13,
+      "cooldown": 16,
+      "trigger": { "any": [{ "flag": "audit_routine", "flagMin": 1 }, { "flag": "audit_disputed", "flagMin": 1 }] },
+      "title": "Routine audit escalation",
+      "body": "A routine spot-check reopened a disputed line from last month. Lee asks whether to escalate to full ship audit or close the thread quietly.",
+      "options": [
+        { "label": "Full ship audit", "effects": { "social.order": "6", "social.morale": "-5", "flag.audit_resolved": "1", "resource.power": "-4" } },
+        { "label": "Close thread — rounding error", "effects": { "social.morale": "1", "flag.audit_ignored": "1" } },
+        { "label": "Defer to next route vote", "effects": { "flag.audit_deferred": "1", "player.rep": "-2" } }
+      ]
+    },
+    {
+      "id": "audit_captain_ledger_clash",
+      "type": "social",
+      "weight": 12,
+      "cooldown": 20,
+      "trigger": { "any": [{ "minDay": 20 }, { "flag": "audit_disputed", "flagMin": 1 }] },
+      "title": "Captain ledger clash",
+      "body": "Logistics claims the captain's discretionary fund never hit the exchange ledger. Habitation wants a public line-item before the next budget vote.",
+      "options": [
+        { "label": "Publish discretionary ledger", "effects": { "social.order": "4", "player.rep": "5", "flag.audit_resolved": "1" } },
+        { "label": "Merge into ecology share — no separate fund", "effects": { "social.morale": "2", "flag.audit_deferred": "1" } },
+        { "label": "Deny fund exists", "effects": { "social.order": "-3", "flag.audit_disputed": "1" } }
+      ]
+    },
+    {
+      "id": "audit_mfg_parts_mismatch",
+      "type": "operational",
+      "weight": 13,
+      "cooldown": 16,
+      "trigger": { "any": [{ "resource": "parts", "below": 12 }, { "flag": "audit_routine", "flagMin": 1 }] },
+      "title": "Manufacturing parts mismatch",
+      "body": "Audit finds 18 parts on the lathe floor but only 11 in the ledger. Sam blames scrap bins; Lee blames unlogged night runs.",
+      "options": [
+        { "label": "Full lathe bay count", "effects": { "social.order": "5", "social.morale": "-3", "flag.audit_resolved": "1", "resource.power": "-2" } },
+        { "label": "Trust manufacturing — adjust ledger", "effects": { "resource.parts": "4", "flag.audit_ignored": "1", "player.rep": "-2" } },
+        { "label": "Freeze lathe queue until reconcile", "effects": { "social.order": "6", "social.morale": "-5", "flag.audit_disputed": "1" } }
+      ]
+    },
+    {
+      "id": "audit_route_quorum_short",
+      "type": "social",
+      "weight": 11,
+      "cooldown": 18,
+      "trigger": { "any": [{ "minDay": 15 }] },
+      "title": "Route vote quorum short",
+      "body": "Three councilors abstain on a route audit rider. Without quorum, exchange penalties cannot attach to the winning segment.",
+      "options": [
+        { "label": "Extend vote window 24h", "effects": { "social.order": "3", "player.rep": "3", "flag.audit_deferred": "1" } },
+        { "label": "Proceed without audit rider", "effects": { "social.morale": "-2", "flag.audit_ignored": "1" } },
+        { "label": "Recall absent councilors", "effects": { "social.order": "6", "social.morale": "-4", "player.rep": "-2" } }
+      ]
+    },
+    {
+      "id": "audit_generation_handoff",
+      "type": "operational",
+      "weight": 10,
+      "cooldown": 30,
+      "trigger": { "any": [{ "minDay": 40 }] },
+      "title": "Generation ledger handoff",
+      "body": "Iron archives show Gen-1 exchange totals that do not match current warehouse baselines. Council asks whether to restate or grandfather the gap.",
+      "options": [
+        { "label": "Restate baselines — painful honesty", "effects": { "social.order": "5", "social.morale": "-4", "flag.audit_resolved": "1" } },
+        { "label": "Grandfather gap as legacy debt", "effects": { "social.morale": "1", "flag.audit_deferred": "1", "resource.food": "-5" } },
+        { "label": "Seal Gen-1 ledgers — start fresh", "effects": { "player.rep": "4", "flag.audit_ignored": "1" } }
+      ]
+    },
+    {
+      "id": "audit_crew_payroll_gap",
+      "type": "operational",
+      "weight": 12,
+      "cooldown": 18,
+      "trigger": { "any": [{ "minDay": 16 }] },
+      "title": "Crew payroll gap",
+      "body": "Support department hours do not match contribution-point payouts. Habitation suspects favoritism toward engineering overtime.",
+      "options": [
+        { "label": "Publish payroll audit", "effects": { "social.order": "5", "social.morale": "-3", "flag.audit_resolved": "1" } },
+        { "label": "Freeze overtime until reconcile", "effects": { "social.order": "4", "resource.parts": "-2", "flag.audit_deferred": "1" } },
+        { "label": "Backdate corrections quietly", "effects": { "player.rep": "-2", "flag.audit_ignored": "1" } }
+      ]
+    },
+    {
+      "id": "audit_spore_ledger",
+      "type": "social",
+      "weight": 11,
+      "cooldown": 20,
+      "trigger": { "any": [{ "flag": "infectionRate", "flagMin": 0.05 }] },
+      "title": "Spore bay ledger",
+      "body": "Ecology wants contaminated bays logged separately from food output. Logistics says separate ledgers will trigger panic buying.",
+      "options": [
+        { "label": "Split ledgers — full transparency", "effects": { "social.order": "4", "social.morale": "-4", "flag.audit_routine": "1" } },
+        { "label": "Internal memo only", "effects": { "player.rep": "3", "flag.audit_deferred": "1" } },
+        { "label": "Deny contamination entries", "effects": { "social.morale": "2", "flag.audit_disputed": "1" } }
+      ]
+    },
+    {
+      "id": "audit_void_stance_leak",
+      "type": "social",
+      "weight": 12,
+      "cooldown": 22,
+      "trigger": { "any": [{ "flag": "void_stance", "flagMin": 1 }, { "flag": "void_contact", "flagMin": 1 }] },
+      "title": "Void stance leak audit",
+      "body": "Security finds your void stance choice referenced in an unsigned memo. Council asks whether dark-line responses belong in official logs.",
+      "options": [
+        { "label": "Classify memo — captain eyes only", "effects": { "social.order": "4", "player.rep": "3" } },
+        { "label": "Open audit of all void flags", "effects": { "social.order": "5", "social.morale": "-4", "flag.audit_resolved": "1" } },
+        { "label": "Deny memo authenticity", "effects": { "social.morale": "-2", "flag.audit_disputed": "1" } }
+      ]
+    },
+    {
+      "id": "audit_exchange_closure",
+      "type": "operational",
+      "weight": 13,
+      "cooldown": 18,
+      "trigger": { "any": [{ "flag": "audit_routine", "flagMin": 1 }, { "flag": "audit_deferred", "flagMin": 2 }] },
+      "title": "Exchange day closure audit",
+      "body": "Lee proposes closing the exchange for 24h to reconcile every listing. Manufacturing warns lathe parts orders will stall.",
+      "options": [
+        { "label": "Full closure — reconcile all", "effects": { "social.order": "6", "social.morale": "-5", "resource.parts": "-3", "flag.audit_resolved": "1" } },
+        { "label": "Partial closure — food only", "effects": { "social.order": "3", "resource.food": "-4", "flag.audit_deferred": "1" } },
+        { "label": "Keep exchange open", "effects": { "social.morale": "2", "flag.audit_ignored": "1" } }
+      ]
+    }
+  ]
+}

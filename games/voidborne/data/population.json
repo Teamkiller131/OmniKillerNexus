@@ -1,0 +1,16 @@
+{
+  "total": 300,
+  "byDepartment": {
+    "Ecology": 58,
+    "Engineering": 50,
+    "Logistics": 44,
+    "Manufacturing": 38,
+    "Science": 32,
+    "Support": 58
+  },
+  "byAge": {
+    "elderly": 100,
+    "middle": 100,
+    "youth": 100
+  }
+}

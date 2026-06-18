@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "note": "CC0/OFL 素材不必列出。CC-BY 等需署名的条目加在 attributions。",
+  "attributions": [
+    {
+      "id": "oga-observing-the-star",
+      "type": "music",
+      "title": "Observing The Star",
+      "author": "Jannotta (OpenGameArt)",
+      "url": "https://opengameart.org/content/another-space-background-track",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "creditLine": "Observing The Star — Jannotta (CC0, OpenGameArt.org)",
+      "enabled": false
+    }
+  ],
+  "sections": [
+    { "title": "Music", "filter": "music" },
+    { "title": "Other", "filter": "*" }
+  ]
+}

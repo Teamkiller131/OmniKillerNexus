@@ -1,0 +1,36 @@
+{
+  "offers": [
+    {
+      "id": "convoy_medicine",
+      "name": "Convoy — medicine for food",
+      "foodCost": 25,
+      "medicineGain": 12,
+      "minDay": 5,
+      "description": "Friendly flotilla formal trade window"
+    },
+    {
+      "id": "convoy_parts",
+      "name": "Convoy — parts for raw",
+      "rawCost": 10,
+      "partsGain": 8,
+      "minDay": 8,
+      "description": "Salvage crew registered exchange berth"
+    },
+    {
+      "id": "internal_exchange",
+      "name": "Ship exchange — food for water",
+      "foodCost": 15,
+      "waterGain": 30,
+      "minDay": 1,
+      "description": "Logistics dept cross-ledger (regulated)"
+    },
+    {
+      "id": "hub_medicine",
+      "name": "Exchange hub — raw for medicine",
+      "rawCost": 8,
+      "medicineGain": 6,
+      "minDay": 12,
+      "description": "Shipboard trade hall surplus listing"
+    }
+  ]
+}

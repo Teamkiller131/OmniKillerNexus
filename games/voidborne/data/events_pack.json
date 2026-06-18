@@ -1,0 +1,1549 @@
+{
+  "events": [
+    {
+      "id": "water_leak",
+      "type": "operational",
+      "weight": 12,
+      "cooldown": 14,
+      "trigger": {
+        "any": [
+          {
+            "resource": "water",
+            "below": 180
+          }
+        ]
+      },
+      "title": "Coolant loop leak",
+      "body": "A pinhole leak in the hydro loop threatens Bay B reserves.",
+      "options": [
+        {
+          "label": "Patch with spare parts",
+          "effects": {
+            "resource.parts": "-3",
+            "resource.water": "15"
+          }
+        },
+        {
+          "label": "Reroute from Bay A",
+          "effects": {
+            "resource.water": "-10",
+            "resource.food": "-8"
+          },
+          "deptGate": "Ecology"
+        },
+        {
+          "label": "Emergency ration water",
+          "effects": {
+            "social.morale": "-4",
+            "resource.water": "25"
+          }
+        }
+      ]
+    },
+    {
+      "id": "filter_clog",
+      "type": "operational",
+      "weight": 11,
+      "cooldown": 13,
+      "trigger": {
+        "any": [
+          {
+            "resource": "oxygen",
+            "below": 20
+          }
+        ]
+      },
+      "title": "Scrubber filter clogged",
+      "body": "Engineering reports particulate buildup in the primary scrubber.",
+      "options": [
+        {
+          "label": "Replace filters (parts)",
+          "effects": {
+            "resource.oxygen": "3"
+          },
+          "require": {
+            "parts": 4
+          }
+        },
+        {
+          "label": "Run bypass (risk)",
+          "effects": {
+            "flag.scrubber_bypass": "1",
+            "resource.power": "-8"
+          }
+        },
+        {
+          "label": "Clean manually",
+          "effects": {
+            "crew.chen.health": "-5",
+            "resource.oxygen": "2"
+          },
+          "deptGate": "Engineering"
+        }
+      ]
+    },
+    {
+      "id": "seed_contamination",
+      "type": "operational",
+      "weight": 10,
+      "cooldown": 16,
+      "trigger": {
+        "any": [
+          {
+            "resource": "food",
+            "below": 500
+          }
+        ]
+      },
+      "title": "Seed bank contamination scare",
+      "body": "Maya finds fungal spores in a sealed seed tray.",
+      "options": [
+        {
+          "label": "Destroy batch",
+          "effects": {
+            "resource.food": "-12",
+            "social.order": "3"
+          }
+        },
+        {
+          "label": "Quarantine and test",
+          "effects": {
+            "resource.medicine": "-2",
+            "flag.seed_quarantine": "1"
+          },
+          "deptGate": "Science"
+        },
+        {
+          "label": "Blame supplier error",
+          "effects": {
+            "social.morale": "-3",
+            "social.order": "-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "overtime_push",
+      "type": "social",
+      "weight": 9,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "moraleBelow": 50
+          }
+        ]
+      },
+      "title": "Mandatory overtime proposed",
+      "body": "Manufacturing wants 12-hour shifts to clear the parts backlog.",
+      "options": [
+        {
+          "label": "Approve overtime",
+          "effects": {
+            "resource.parts": "10",
+            "social.morale": "-6"
+          }
+        },
+        {
+          "label": "Reject — hire temps from crew pool",
+          "effects": {
+            "social.morale": "2",
+            "resource.food": "-8"
+          }
+        },
+        {
+          "label": "Captain speech",
+          "effects": {
+            "social.order": "4",
+            "social.morale": "3"
+          },
+          "roleGate": "captain"
+        }
+      ]
+    },
+    {
+      "id": "comms_static",
+      "type": "serendipity",
+      "weight": 7,
+      "cooldown": 22,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 7
+          }
+        ]
+      },
+      "title": "Anomalous comms static",
+      "body": "Elena detects structured noise in the long-range array.",
+      "options": [
+        {
+          "label": "Log and ignore",
+          "effects": {
+            "social.order": "2"
+          }
+        },
+        {
+          "label": "Deep scan",
+          "effects": {
+            "resource.power": "-10",
+            "flag.comms_anomaly": "1"
+          },
+          "deptGate": "Science"
+        },
+        {
+          "label": "Broadcast reply",
+          "effects": {
+            "flag.earth_reply": "1",
+            "social.morale": "4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "derelict_sighting",
+      "type": "serendipity",
+      "weight": 8,
+      "cooldown": 20,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 9
+          }
+        ]
+      },
+      "title": "Derelict on sensors",
+      "body": "Navigation picks up a drifting hull fragment.",
+      "options": [
+        {
+          "label": "Alter course to salvage",
+          "effects": {
+            "resource.parts": "12",
+            "resource.power": "-15",
+            "flag.derelict_salvage": "1"
+          }
+        },
+        {
+          "label": "Scan only",
+          "effects": {
+            "flag.alien_sample": "1"
+          },
+          "deptGate": "Science"
+        },
+        {
+          "label": "Avoid — save fuel",
+          "effects": {
+            "resource.power": "5",
+            "social.morale": "-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "birth_announcement",
+      "type": "social",
+      "weight": 6,
+      "cooldown": 25,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 20
+          }
+        ]
+      },
+      "title": "First birth in a generation",
+      "body": "Medical confirms a healthy delivery in the residential ring.",
+      "options": [
+        {
+          "label": "Ship-wide celebration",
+          "effects": {
+            "resource.food": "-15",
+            "social.morale": "10"
+          }
+        },
+        {
+          "label": "Quiet acknowledgment",
+          "effects": {
+            "social.morale": "3",
+            "social.order": "2"
+          }
+        },
+        {
+          "label": "Debate population cap",
+          "effects": {
+            "flag.population_debate": "1",
+            "social.order": "-3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cult_whisper",
+      "type": "social",
+      "weight": 5,
+      "cooldown": 28,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 15
+          }
+        ]
+      },
+      "title": "Whispers in the vents",
+      "body": "Security reports chalk symbols near the void-garden mural.",
+      "options": [
+        {
+          "label": "Investigate",
+          "effects": {
+            "resource.medicine": "-2",
+            "flag.void_dream": "1"
+          }
+        },
+        {
+          "label": "Increase patrols",
+          "effects": {
+            "social.order": "5",
+            "social.morale": "-2"
+          }
+        },
+        {
+          "label": "Ignore superstition",
+          "effects": {
+            "flag.cult_whisper": "1",
+            "social.morale": "-4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "trade_convoy",
+      "type": "serendipity",
+      "weight": 6,
+      "cooldown": 30,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 11
+          }
+        ]
+      },
+      "title": "Friendly convoy hail",
+      "body": "A merchant flotilla offers barter at marginal prices.",
+      "options": [
+        {
+          "label": "Trade food for medicine",
+          "effects": {
+            "resource.food": "-25",
+            "resource.medicine": "15"
+          }
+        },
+        {
+          "label": "Trade parts for water",
+          "effects": {
+            "resource.parts": "-8",
+            "resource.water": "40"
+          }
+        },
+        {
+          "label": "Decline contact",
+          "effects": {
+            "social.order": "3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "solar_flare",
+      "type": "crisis",
+      "weight": 7,
+      "cooldown": 24,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 6
+          }
+        ]
+      },
+      "title": "Solar flare warning",
+      "body": "Radiation spike incoming. Shield non-essentials?",
+      "options": [
+        {
+          "label": "Full shielding",
+          "effects": {
+            "resource.power": "-20",
+            "crew.elena.health": "5"
+          }
+        },
+        {
+          "label": "Partial — keep bays lit",
+          "effects": {
+            "resource.power": "-8",
+            "flag.radiation_exposure": "1"
+          }
+        },
+        {
+          "label": "Evacuate to core",
+          "effects": {
+            "social.morale": "-5",
+            "social.order": "6"
+          }
+        }
+      ]
+    },
+    {
+      "id": "food_riot_averted",
+      "type": "crisis",
+      "weight": 8,
+      "cooldown": 22,
+      "trigger": {
+        "any": [
+          {
+            "resource": "food",
+            "below": 350
+          }
+        ]
+      },
+      "title": "Queue at the warehouse",
+      "body": "Lee reports a crowd at the ration window.",
+      "options": [
+        {
+          "label": "Double rations once",
+          "effects": {
+            "resource.food": "-30",
+            "social.morale": "8"
+          }
+        },
+        {
+          "label": "Deploy order officers",
+          "effects": {
+            "social.order": "8",
+            "social.morale": "-5"
+          }
+        },
+        {
+          "label": "Address personally",
+          "effects": {
+            "social.playerrep": "5",
+            "social.morale": "3"
+          },
+          "tierGate": 2
+        }
+      ]
+    },
+    {
+      "id": "engine_tuneup",
+      "type": "operational",
+      "weight": 10,
+      "cooldown": 15,
+      "trigger": {
+        "any": [
+          {
+            "device": "engine"
+          }
+        ]
+      },
+      "title": "Scheduled engine tune-up",
+      "body": "Chen wants a 48-hour window to recalibrate the drive.",
+      "options": [
+        {
+          "label": "Grant downtime",
+          "effects": {
+            "resource.power": "-25",
+            "crew.chen.loyalty": "8",
+            "flag.engine_tuned": "1"
+          }
+        },
+        {
+          "label": "Defer to next segment",
+          "effects": {
+            "crew.chen.loyalty": "-3"
+          }
+        },
+        {
+          "label": "Partial tune under load",
+          "effects": {
+            "resource.parts": "-4",
+            "flag.engine_risk": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lab_ethics",
+      "type": "social",
+      "weight": 7,
+      "cooldown": 20,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Ethics review of gene trials",
+      "body": "Science wants approval for accelerated crop gene edits.",
+      "options": [
+        {
+          "label": "Approve trials",
+          "effects": {
+            "flag.gene_mod": "1",
+            "social.order": "-4",
+            "resource.food": "20"
+          }
+        },
+        {
+          "label": "Delay pending council vote",
+          "effects": {
+            "social.morale": "2"
+          }
+        },
+        {
+          "label": "Ban gene edits",
+          "effects": {
+            "social.order": "6",
+            "crew.elena.loyalty": "-8"
+          }
+        }
+      ]
+    },
+    {
+      "id": "alien_symbiosis",
+      "type": "serendipity",
+      "weight": 5,
+      "cooldown": 26,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 14
+          }
+        ]
+      },
+      "title": "Symbiotic lichen spreads",
+      "body": "Introduced lichen stabilizes CO₂ but stains the hull.",
+      "options": [
+        {
+          "label": "Encourage spread",
+          "effects": {
+            "flag.alienSpecies": "1",
+            "resource.water": "-5"
+          }
+        },
+        {
+          "label": "Contain to Bay C",
+          "effects": {
+            "social.order": "3"
+          },
+          "deptGate": "Ecology"
+        },
+        {
+          "label": "Eradicate",
+          "effects": {
+            "resource.medicine": "-6",
+            "social.morale": "-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "void_contact",
+      "type": "crisis",
+      "weight": 4,
+      "cooldown": 35,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 30
+          }
+        ]
+      },
+      "title": "Contact in the void",
+      "body": "Shared dreams converge — something answers the science scan.",
+      "options": [
+        {
+          "label": "Open channel",
+          "effects": {
+            "flag.void_contact": "1",
+            "social.morale": "-5"
+          }
+        },
+        {
+          "label": "Seal the lab",
+          "effects": {
+            "social.order": "5"
+          },
+          "deptGate": "Science"
+        },
+        {
+          "label": "Join the garden",
+          "effects": {
+            "flag.joined_cult": "1",
+            "social.morale": "3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "void_war",
+      "type": "crisis",
+      "weight": 4,
+      "cooldown": 40,
+      "trigger": {
+        "any": [
+          {
+            "flag": "void_contact"
+          }
+        ]
+      },
+      "title": "Void entity manifests",
+      "body": "Instruments scream. Half the crew sees the garden open.",
+      "options": [
+        {
+          "label": "Fight back",
+          "effects": {
+            "flag.void_war": "1",
+            "resource.parts": "-10",
+            "social.morale": "-8"
+          }
+        },
+        {
+          "label": "Negotiate",
+          "effects": {
+            "flag.void_peace": "1",
+            "social.morale": "-3"
+          }
+        },
+        {
+          "label": "Evacuate core sections",
+          "effects": {
+            "resource.food": "-20",
+            "social.order": "4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "wanderer_petition",
+      "type": "social",
+      "weight": 6,
+      "cooldown": 28,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 22
+          }
+        ]
+      },
+      "title": "Petition to never land",
+      "body": "A faction wants to abandon the ark mission and wander forever.",
+      "options": [
+        {
+          "label": "Put to ship vote",
+          "effects": {
+            "flag.wander_vote": "1",
+            "social.morale": "-2"
+          }
+        },
+        {
+          "label": "Reject outright",
+          "effects": {
+            "social.order": "6",
+            "social.morale": "-4"
+          }
+        },
+        {
+          "label": "Captain mediates",
+          "effects": {
+            "social.playerrep": "4"
+          },
+          "roleGate": "captain"
+        }
+      ]
+    },
+    {
+      "id": "generation_ritual",
+      "type": "social",
+      "weight": 5,
+      "cooldown": 30,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 18
+          }
+        ]
+      },
+      "title": "Generation handoff ritual",
+      "body": "Elders request a ceremony before succession planning.",
+      "options": [
+        {
+          "label": "Fund full ritual",
+          "effects": {
+            "resource.food": "-10",
+            "social.morale": "6",
+            "flag.generation_ritual": "1"
+          }
+        },
+        {
+          "label": "Minimal observance",
+          "effects": {
+            "social.morale": "1"
+          }
+        },
+        {
+          "label": "Skip — work continues",
+          "effects": {
+            "social.morale": "-5",
+            "crew.maya.loyalty": "-5"
+          }
+        }
+      ]
+    },
+    {
+      "id": "parts_shortage",
+      "type": "operational",
+      "weight": 13,
+      "cooldown": 12,
+      "trigger": {
+        "any": [
+          {
+            "resource": "parts",
+            "below": 25
+          }
+        ]
+      },
+      "title": "Critical parts shortage",
+      "body": "Manufacturing halts without polymer stock.",
+      "options": [
+        {
+          "label": "Emergency requisition",
+          "effects": {
+            "resource.rawmaterials": "-15",
+            "resource.parts": "8"
+          }
+        },
+        {
+          "label": "Scrap non-vital modules",
+          "effects": {
+            "resource.parts": "12",
+            "resource.power": "-10"
+          }
+        },
+        {
+          "label": "Wait for next route bonus",
+          "effects": {
+            "social.morale": "-3",
+            "flag.parts_crisis": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "morale_concert",
+      "type": "social",
+      "weight": 8,
+      "cooldown": 16,
+      "trigger": {
+        "any": [
+          {
+            "moraleBelow": 60
+          }
+        ]
+      },
+      "title": "Unauthorized concert in cargo",
+      "body": "Crew set up speakers in Bay D. Shut it down or join?",
+      "options": [
+        {
+          "label": "Join the concert",
+          "effects": {
+            "social.morale": "7",
+            "social.order": "-3"
+          }
+        },
+        {
+          "label": "Shut it down",
+          "effects": {
+            "social.order": "5",
+            "social.morale": "-4"
+          }
+        },
+        {
+          "label": "Relocate to commons",
+          "effects": {
+            "resource.power": "-5",
+            "social.morale": "5"
+          }
+        }
+      ]
+    },
+    {
+      "id": "medicine_expiry",
+      "type": "operational",
+      "weight": 10,
+      "cooldown": 14,
+      "trigger": {
+        "any": [
+          {
+            "resource": "medicine",
+            "below": 20
+          }
+        ]
+      },
+      "title": "Medicine nearing expiry",
+      "body": "Pharmacy must use or discard aging antibiotics.",
+      "options": [
+        {
+          "label": "Mass preventive dose",
+          "effects": {
+            "resource.medicine": "-8",
+            "social.morale": "2"
+          }
+        },
+        {
+          "label": "Discard safely",
+          "effects": {
+            "resource.medicine": "-5",
+            "social.order": "2"
+          }
+        },
+        {
+          "label": "Trade to convoy",
+          "effects": {
+            "resource.medicine": "-3",
+            "resource.food": "15"
+          }
+        }
+      ]
+    },
+    {
+      "id": "navigation_drift",
+      "type": "operational",
+      "weight": 9,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 5
+          }
+        ]
+      },
+      "title": "Navigation drift detected",
+      "body": "Star fix error suggests accumulated course bias.",
+      "options": [
+        {
+          "label": "Full recalibration",
+          "effects": {
+            "resource.power": "-12",
+            "flag.nav_fixed": "1"
+          },
+          "deptGate": "Science"
+        },
+        {
+          "label": "Minor correction",
+          "effects": {
+            "flag.nav_drift": "1"
+          }
+        },
+        {
+          "label": "Ignore until next vote",
+          "effects": {
+            "social.morale": "-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bay_pest",
+      "type": "operational",
+      "weight": 11,
+      "cooldown": 15,
+      "trigger": {
+        "any": [
+          {
+            "resource": "food",
+            "below": 600
+          }
+        ]
+      },
+      "title": "Pest infestation in Bay A",
+      "body": "Insects in the grain trays threaten the whole bay.",
+      "options": [
+        {
+          "label": "Biological control",
+          "effects": {
+            "resource.medicine": "-2",
+            "resource.food": "-5"
+          },
+          "deptGate": "Ecology"
+        },
+        {
+          "label": "Chemical wipe",
+          "effects": {
+            "resource.medicine": "-4",
+            "social.morale": "-3",
+            "resource.food": "-10"
+          }
+        },
+        {
+          "label": "Burn affected trays",
+          "effects": {
+            "resource.food": "-18",
+            "social.order": "3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sleep_deprivation",
+      "type": "social",
+      "weight": 8,
+      "cooldown": 17,
+      "trigger": {
+        "any": [
+          {
+            "moraleBelow": 52
+          }
+        ]
+      },
+      "title": "Crew sleep debt",
+      "body": "Fatigue incidents spike across night shift.",
+      "options": [
+        {
+          "label": "Mandate rest day",
+          "effects": {
+            "resource.food": "-5",
+            "social.morale": "5",
+            "crew.jin.loyalty": "3"
+          }
+        },
+        {
+          "label": "Stimulant ration",
+          "effects": {
+            "resource.medicine": "-3",
+            "social.morale": "-2"
+          }
+        },
+        {
+          "label": "Push through",
+          "effects": {
+            "social.morale": "-6",
+            "flag.fatigue_crisis": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "recycling_fault",
+      "type": "operational",
+      "weight": 12,
+      "cooldown": 13,
+      "trigger": {
+        "any": [
+          {
+            "resource": "water",
+            "below": 200
+          }
+        ]
+      },
+      "title": "Water recycler fault",
+      "body": "The primary recycler output dropped 20%.",
+      "options": [
+        {
+          "label": "Emergency repair",
+          "effects": {
+            "resource.water": "20"
+          },
+          "require": {
+            "parts": 5
+          }
+        },
+        {
+          "label": "Ration washing water",
+          "effects": {
+            "social.morale": "-5",
+            "resource.water": "10"
+          }
+        },
+        {
+          "label": "Bypass to storage tanks",
+          "effects": {
+            "flag.recycler_bypass": "1",
+            "resource.power": "-6"
+          }
+        }
+      ]
+    },
+    {
+      "id": "diplomatic_envoy",
+      "type": "serendipity",
+      "weight": 5,
+      "cooldown": 32,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 16
+          }
+        ]
+      },
+      "title": "Envoy from another ark",
+      "body": "A sister ship requests population exchange talks.",
+      "options": [
+        {
+          "label": "Welcome delegation",
+          "effects": {
+            "social.morale": "4",
+            "flag.diplomatic_envoy": "1"
+          }
+        },
+        {
+          "label": "Exchange specialists",
+          "effects": {
+            "resource.parts": "-5",
+            "crew.elena.skill": "5"
+          }
+        },
+        {
+          "label": "Refuse contact",
+          "effects": {
+            "social.order": "4",
+            "social.morale": "-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cult_recruitment",
+      "type": "social",
+      "weight": 6,
+      "cooldown": 25,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 12
+          }
+        ]
+      },
+      "title": "Cult recruitment pamphlets",
+      "body": "Anonymous leaflets promise peace in the void garden.",
+      "options": [
+        {
+          "label": "Counter-information campaign",
+          "effects": {
+            "social.order": "4",
+            "social.morale": "-1"
+          }
+        },
+        {
+          "label": "Find the printer",
+          "effects": {
+            "flag.cult_whisper": "1"
+          },
+          "deptGate": "Logistics"
+        },
+        {
+          "label": "Tolerate — free speech",
+          "effects": {
+            "social.morale": "2",
+            "social.order": "-5"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fusion_specimen",
+      "type": "serendipity",
+      "weight": 5,
+      "cooldown": 28,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 18
+          }
+        ]
+      },
+      "title": "Hybrid specimen viable",
+      "body": "Cross-species tissue sample survives in quarantine.",
+      "options": [
+        {
+          "label": "Advance fusion research",
+          "effects": {
+            "flag.gene_mod": "1",
+            "flag.alienSpecies": "1"
+          }
+        },
+        {
+          "label": "Pause for ethics board",
+          "effects": {
+            "social.order": "3"
+          }
+        },
+        {
+          "label": "Destroy sample",
+          "effects": {
+            "social.order": "5",
+            "crew.elena.loyalty": "-5"
+          }
+        }
+      ]
+    },
+    {
+      "id": "earth_memorial",
+      "type": "social",
+      "weight": 7,
+      "cooldown": 20,
+      "trigger": {
+        "any": [
+          {
+            "flag": "earth_broadcast"
+          }
+        ]
+      },
+      "title": "Memorial for Earth",
+      "body": "Crew asks for a day of remembrance.",
+      "options": [
+        {
+          "label": "Ship-wide memorial",
+          "effects": {
+            "resource.food": "-8",
+            "social.morale": "6",
+            "flag.earth_memorial": "1"
+          }
+        },
+        {
+          "label": "Moment of silence only",
+          "effects": {
+            "social.morale": "2"
+          }
+        },
+        {
+          "label": "Decline — focus on survival",
+          "effects": {
+            "social.morale": "-4",
+            "social.order": "2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ark_landfall_prep",
+      "type": "operational",
+      "weight": 6,
+      "cooldown": 25,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 35
+          }
+        ]
+      },
+      "title": "Landfall preparation debate",
+      "body": "Navigation reports a viable world within reach.",
+      "options": [
+        {
+          "label": "Begin landing protocols",
+          "effects": {
+            "flag.landfall_prep": "1",
+            "resource.parts": "-6"
+          }
+        },
+        {
+          "label": "Send probes only",
+          "effects": {
+            "resource.power": "-8"
+          },
+          "deptGate": "Science"
+        },
+        {
+          "label": "Vote to bypass",
+          "effects": {
+            "flag.wander_vote": "1",
+            "social.morale": "-3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "power_surge",
+      "type": "crisis",
+      "weight": 9,
+      "cooldown": 16,
+      "trigger": {
+        "any": [
+          {
+            "resource": "power",
+            "below": 50
+          }
+        ]
+      },
+      "title": "Reactor power surge",
+      "body": "Automatic SCRAM or ride through?",
+      "options": [
+        {
+          "label": "SCRAM immediately",
+          "effects": {
+            "resource.power": "-30",
+            "social.morale": "-3"
+          }
+        },
+        {
+          "label": "Ride through",
+          "effects": {
+            "flag.engine_risk": "1",
+            "resource.power": "10"
+          },
+          "deptGate": "Engineering"
+        },
+        {
+          "label": "Evacuate engineering",
+          "effects": {
+            "crew.chen.health": "10",
+            "resource.parts": "-4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quarantine_breach",
+      "type": "crisis",
+      "weight": 7,
+      "cooldown": 22,
+      "trigger": {
+        "any": [
+          {
+            "flag": "alien_sample"
+          }
+        ]
+      },
+      "title": "Quarantine breach alarm",
+      "body": "Bay C isolation door failed during maintenance.",
+      "options": [
+        {
+          "label": "Full lockdown",
+          "effects": {
+            "resource.food": "-10",
+            "social.order": "8"
+          }
+        },
+        {
+          "label": "Selective decon",
+          "effects": {
+            "resource.medicine": "-5",
+            "flag.alienSpecies": "1"
+          }
+        },
+        {
+          "label": "Blame maintenance",
+          "effects": {
+            "social.morale": "-4",
+            "crew.viktor.loyalty": "-5"
+          }
+        }
+      ]
+    },
+    {
+      "id": "player_promotion",
+      "type": "social",
+      "weight": 6,
+      "cooldown": 30,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 10
+          }
+        ]
+      },
+      "title": "Promotion recommendation",
+      "body": "Department heads nominate you for tier advancement.",
+      "options": [
+        {
+          "label": "Accept promotion track",
+          "effects": {
+            "social.playerrep": "8",
+            "flag.promotion_track": "1"
+          }
+        },
+        {
+          "label": "Decline — stay specialist",
+          "effects": {
+            "social.morale": "2"
+          }
+        },
+        {
+          "label": "Request transfer",
+          "effects": {
+            "social.playerrep": "-2",
+            "flag.transfer_request": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "smuggler_cache",
+      "type": "serendipity",
+      "weight": 6,
+      "cooldown": 24,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Hidden cache found",
+      "body": "Maintenance discovers a smuggler stash behind a panel.",
+      "options": [
+        {
+          "label": "Report to Lee",
+          "effects": {
+            "social.order": "5",
+            "resource.medicine": "5"
+          }
+        },
+        {
+          "label": "Split among crew",
+          "effects": {
+            "social.morale": "6",
+            "social.order": "-6"
+          }
+        },
+        {
+          "label": "Turn in anonymously",
+          "effects": {
+            "social.playerrep": "3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "education_strike",
+      "type": "social",
+      "weight": 8,
+      "cooldown": 19,
+      "trigger": {
+        "any": [
+          {
+            "moraleBelow": 48
+          }
+        ]
+      },
+      "title": "Teachers refuse shifts",
+      "body": "The education ring stops covering childcare.",
+      "options": [
+        {
+          "label": "Pay stipend from food",
+          "effects": {
+            "resource.food": "-12",
+            "social.morale": "4"
+          }
+        },
+        {
+          "label": "Draft volunteers",
+          "effects": {
+            "social.order": "4",
+            "social.morale": "-5"
+          }
+        },
+        {
+          "label": "Captain executive order",
+          "effects": {
+            "social.order": "6",
+            "social.morale": "-2"
+          },
+          "roleGate": "captain"
+        }
+      ]
+    },
+    {
+      "id": "greenhouse_algae",
+      "type": "operational",
+      "weight": 10,
+      "cooldown": 14,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 4
+          }
+        ]
+      },
+      "title": "Algae bloom in hydroponics",
+      "body": "Nutrient imbalance causes explosive algae growth.",
+      "options": [
+        {
+          "label": "Harvest algae as food",
+          "effects": {
+            "resource.food": "15",
+            "social.morale": "-2"
+          }
+        },
+        {
+          "label": "Flush system",
+          "effects": {
+            "resource.water": "-20",
+            "resource.food": "-5"
+          }
+        },
+        {
+          "label": "Adjust nutrients",
+          "effects": {
+            "resource.medicine": "-1",
+            "resource.food": "8"
+          },
+          "deptGate": "Ecology"
+        }
+      ]
+    },
+    {
+      "id": "cold_sleep_fault",
+      "type": "crisis",
+      "weight": 5,
+      "cooldown": 30,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 25
+          }
+        ]
+      },
+      "title": "Cryo pod alarm",
+      "body": "One archival pod reports temperature drift.",
+      "options": [
+        {
+          "label": "Emergency warming",
+          "effects": {
+            "resource.power": "-15",
+            "social.morale": "-3"
+          }
+        },
+        {
+          "label": "Sacrifice pod",
+          "effects": {
+            "social.morale": "-8",
+            "social.order": "-4",
+            "flag.cryo_loss": "1"
+          }
+        },
+        {
+          "label": "Full diagnostic",
+          "effects": {
+            "crew.elena.loyalty": "5"
+          },
+          "require": {
+            "parts": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "market_index",
+      "type": "operational",
+      "weight": 8,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 6
+          }
+        ]
+      },
+      "title": "Internal barter index skew",
+      "body": "Prices between departments no longer align.",
+      "options": [
+        {
+          "label": "Reset index centrally",
+          "effects": {
+            "social.order": "4"
+          },
+          "deptGate": "Logistics"
+        },
+        {
+          "label": "Free market experiment",
+          "effects": {
+            "social.morale": "3",
+            "social.order": "-4"
+          }
+        },
+        {
+          "label": "Captain price controls",
+          "effects": {
+            "resource.food": "-5",
+            "social.order": "5"
+          },
+          "roleGate": "captain"
+        }
+      ]
+    },
+    {
+      "id": "observation_deck",
+      "type": "social",
+      "weight": 6,
+      "cooldown": 22,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 7
+          }
+        ]
+      },
+      "title": "Observation deck overcrowded",
+      "body": "Crew gather at the forward windows during downtime.",
+      "options": [
+        {
+          "label": "Schedule shifts",
+          "effects": {
+            "social.order": "3",
+            "social.morale": "1"
+          }
+        },
+        {
+          "label": "Open 24h with limits",
+          "effects": {
+            "resource.power": "-4",
+            "social.morale": "4"
+          }
+        },
+        {
+          "label": "Close for safety",
+          "effects": {
+            "social.morale": "-5",
+            "social.order": "5"
+          }
+        }
+      ]
+    },
+    {
+      "id": "research_sabotage",
+      "type": "crisis",
+      "weight": 6,
+      "cooldown": 26,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 13
+          }
+        ]
+      },
+      "title": "Lab sabotage suspected",
+      "body": "Elena's samples were tampered with overnight.",
+      "options": [
+        {
+          "label": "Internal investigation",
+          "effects": {
+            "social.order": "3",
+            "crew.elena.loyalty": "-3"
+          }
+        },
+        {
+          "label": "Increase security",
+          "effects": {
+            "resource.power": "-6",
+            "social.order": "5"
+          }
+        },
+        {
+          "label": "Accuse cult",
+          "effects": {
+            "flag.cult_whisper": "1",
+            "social.morale": "-4"
+          }
+        }
+      ]
+    }
+  ]
+}

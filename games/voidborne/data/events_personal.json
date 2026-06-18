@@ -1,0 +1,1850 @@
+{
+  "events": [
+    {
+      "id": "eco_tray_mistake",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Ecology",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Overwatered tray #2",
+      "body": "You logged the wrong valve — two trays got double water. No one noticed yet.",
+      "options": [
+        {
+          "label": "Fix quietly",
+          "effects": {
+            "player.perf": "-2",
+            "player.skill": "2"
+          }
+        },
+        {
+          "label": "Report to Jin",
+          "effects": {
+            "player.rep": "3",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Blame timer fault",
+          "effects": {
+            "player.rep": "-4",
+            "player.perf": "2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eco_shift_swap",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Ecology",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Shift swap request",
+      "body": "Viktor asks to swap your evening slot for his morning — he has a med check.",
+      "options": [
+        {
+          "label": "Swap",
+          "effects": {
+            "player.rep": "2",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Decline — quota due",
+          "effects": {
+            "player.perf": "2",
+            "player.rep": "-2"
+          }
+        },
+        {
+          "label": "Swap if he covers Bay C",
+          "effects": {
+            "player.skill": "2",
+            "player.rep": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eco_mentor_praise",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Ecology",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 5
+          }
+        ]
+      },
+      "title": "Maya's note on your log",
+      "body": "Chief Okonkwo left a sticky: 'CO₂ readings improved — keep the night checks.'",
+      "options": [
+        {
+          "label": "Ask for more training",
+          "effects": {
+            "player.skill": "4",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Just keep working",
+          "effects": {
+            "player.perf": "2"
+          }
+        },
+        {
+          "label": "Share credit with Viktor",
+          "effects": {
+            "player.rep": "4",
+            "player.skill": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eco_hybrid_curiosity",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Ecology",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Unlabeled seed packet",
+      "body": "A packet in the seed drawer has no tag. It might be an approved hybrid — or a mistake.",
+      "options": [
+        {
+          "label": "Plant one slot to test",
+          "effects": {
+            "player.skill": "3",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Turn in to seed bank",
+          "effects": {
+            "player.rep": "3",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Ignore",
+          "effects": {
+            "player.perf": "-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eco_glove_tear",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Ecology",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Torn glove in Bay A",
+      "body": "Your glove ripped on a trellis hook. Stock says spares are two decks away.",
+      "options": [
+        {
+          "label": "Walk to stores now",
+          "effects": {
+            "player.perf": "-2",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Work bare-handed briefly",
+          "effects": {
+            "player.skill": "-2",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Borrow Viktor's spare",
+          "effects": {
+            "player.rep": "2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eco_lunch_line",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Ecology",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Mess line cuts into shift",
+      "body": "The B-crew queue is long; your watering window closes in twenty minutes.",
+      "options": [
+        {
+          "label": "Skip lunch",
+          "effects": {
+            "player.perf": "2",
+            "player.skill": "-1"
+          }
+        },
+        {
+          "label": "Eat fast",
+          "effects": {
+            "player.perf": "-1",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Ask Hana for a ration pack",
+          "effects": {
+            "player.rep": "2",
+            "player.perf": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eco_night_hum",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Ecology",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 6
+          }
+        ]
+      },
+      "title": "Strange hum in Bay D",
+      "body": "The vines vibrate faintly when the lights dim. You are alone on the night check.",
+      "options": [
+        {
+          "label": "Log it in the book",
+          "effects": {
+            "player.skill": "2",
+            "void.clue": "1"
+          }
+        },
+        {
+          "label": "Ignore — equipment noise",
+          "effects": {
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Wake Jin",
+          "effects": {
+            "player.rep": "2",
+            "player.perf": "-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eco_compost_burn",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Ecology",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Compost bin smells wrong",
+      "body": "Tray trimmings smell sweet-sick, not earthy. Could be normal rot — could be contamination.",
+      "options": [
+        {
+          "label": "Seal and tag",
+          "effects": {
+            "player.skill": "2",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Dump in recycler",
+          "effects": {
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Leave for morning crew",
+          "effects": {
+            "player.perf": "-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eng_tool_missing",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Engineering",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Missing torque wrench",
+      "body": "Alex swears he returned it. Your maintenance ticket is due before the hour ends.",
+      "options": [
+        {
+          "label": "Search crawlway",
+          "effects": {
+            "player.perf": "-2",
+            "player.skill": "2"
+          }
+        },
+        {
+          "label": "Improvise with spare",
+          "effects": {
+            "player.skill": "-1",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "File missing tool report",
+          "effects": {
+            "player.rep": "2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eng_safety_drill",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Engineering",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Unscheduled drill bell",
+      "body": "Chen runs a pressure drill. You can follow procedure or stay on your task.",
+      "options": [
+        {
+          "label": "Join drill",
+          "effects": {
+            "player.rep": "3",
+            "player.perf": "-2"
+          }
+        },
+        {
+          "label": "Finish task first",
+          "effects": {
+            "player.perf": "2",
+            "player.rep": "-2"
+          }
+        },
+        {
+          "label": "Help Alex close valves",
+          "effects": {
+            "player.skill": "3",
+            "player.rep": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eng_overtime",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Engineering",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Overtime sign-up",
+      "body": "Extra shift on the water loop — double pay in reputation, not sleep.",
+      "options": [
+        {
+          "label": "Take shift",
+          "effects": {
+            "player.perf": "3",
+            "player.skill": "2",
+            "player.rep": "-1"
+          }
+        },
+        {
+          "label": "Decline",
+          "effects": {
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Split with Alex",
+          "effects": {
+            "player.rep": "2",
+            "player.perf": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eng_ozone_smell",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Engineering",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Ozone near junction 4",
+      "body": "A sharp smell when the panel opens. Could be a minor arc — could be nothing.",
+      "options": [
+        {
+          "label": "Shut breaker",
+          "effects": {
+            "player.skill": "2",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Sniff and continue",
+          "effects": {
+            "player.perf": "1",
+            "player.skill": "-3"
+          }
+        },
+        {
+          "label": "Call Chen",
+          "effects": {
+            "player.rep": "3",
+            "player.perf": "-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eng_manual_annotated",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Engineering",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Manual with Chen's notes",
+      "body": "You found margin notes on the electrolyzer — shortcuts not in the official SOP.",
+      "options": [
+        {
+          "label": "Follow official SOP",
+          "effects": {
+            "player.rep": "2",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Try Chen's shortcut",
+          "effects": {
+            "player.skill": "4",
+            "player.perf": "-2"
+          }
+        },
+        {
+          "label": "Copy notes to your pad",
+          "effects": {
+            "player.skill": "3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eng_coffee_favor",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Engineering",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Chen wants coffee",
+      "body": "Chief Engineer asks you to fetch mess coffee before the briefing.",
+      "options": [
+        {
+          "label": "Go now",
+          "effects": {
+            "player.rep": "3",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Politely refuse",
+          "effects": {
+            "player.rep": "-2",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Send Alex",
+          "effects": {
+            "player.rep": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "log_clipboard_error",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Logistics",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Wrong count on clipboard",
+      "body": "Your tally for crate 7-B differs from Lee's master sheet by two units.",
+      "options": [
+        {
+          "label": "Recount",
+          "effects": {
+            "player.perf": "-1",
+            "player.skill": "2"
+          }
+        },
+        {
+          "label": "Trust Lee's sheet",
+          "effects": {
+            "player.rep": "1",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Flag discrepancy",
+          "effects": {
+            "player.rep": "3",
+            "player.perf": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "log_ration_queue",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Logistics",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Ration queue argument",
+      "body": "Two crew argue over queue order. You are holding the scanner.",
+      "options": [
+        {
+          "label": "Enforce order",
+          "effects": {
+            "player.rep": "2",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Let them sort it",
+          "effects": {
+            "player.perf": "1",
+            "player.rep": "-2"
+          }
+        },
+        {
+          "label": "Call Hana",
+          "effects": {
+            "player.rep": "1",
+            "player.skill": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "log_heavy_lift",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Logistics",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Heavy crate alone",
+      "body": "The lift is broken. One crate must move before the audit walk-through.",
+      "options": [
+        {
+          "label": "Lift alone",
+          "effects": {
+            "player.perf": "2",
+            "player.skill": "-2"
+          }
+        },
+        {
+          "label": "Wait for help",
+          "effects": {
+            "player.perf": "-2",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Drag with a sled",
+          "effects": {
+            "player.skill": "2",
+            "player.perf": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "log_night_stock",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Logistics",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Night stock check",
+      "body": "Lee asks you to verify med shelf counts while the deck is quiet.",
+      "options": [
+        {
+          "label": "Complete check",
+          "effects": {
+            "player.perf": "2",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Estimate from memory",
+          "effects": {
+            "player.perf": "-2",
+            "player.rep": "-3"
+          }
+        },
+        {
+          "label": "Defer to morning",
+          "effects": {
+            "player.rep": "-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "log_exchange_tip",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Logistics",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Exchange listing tip",
+      "body": "A trader whispers that tomorrow's offer favors raw over parts — if you list early.",
+      "options": [
+        {
+          "label": "List raw tonight",
+          "effects": {
+            "player.skill": "2",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Ignore tip",
+          "effects": {
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Tell Lee",
+          "effects": {
+            "player.rep": "3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mfg_quality_scratch",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Manufacturing",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Scratch on lathe output",
+      "body": "Your batch shows a surface scratch. Sam has not signed off yet.",
+      "options": [
+        {
+          "label": "Rework piece",
+          "effects": {
+            "player.perf": "-2",
+            "player.skill": "3"
+          }
+        },
+        {
+          "label": "Ship as-is",
+          "effects": {
+            "player.perf": "2",
+            "player.rep": "-3"
+          }
+        },
+        {
+          "label": "Ask Sam to inspect",
+          "effects": {
+            "player.rep": "2",
+            "player.skill": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mfg_queue_jump",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Manufacturing",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Someone cut the queue",
+      "body": "A priority tag appeared on a job you queued first. No name on the tag.",
+      "options": [
+        {
+          "label": "Confront operator",
+          "effects": {
+            "player.rep": "-1",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Let it go",
+          "effects": {
+            "player.rep": "-2",
+            "player.perf": "2"
+          }
+        },
+        {
+          "label": "Ask Sam",
+          "effects": {
+            "player.rep": "2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mfg_safety_goggles",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Manufacturing",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Fogged goggles",
+      "body": "Steam from the wash bay fogs your goggles mid-cut.",
+      "options": [
+        {
+          "label": "Stop and wipe",
+          "effects": {
+            "player.perf": "-1",
+            "player.skill": "1"
+          }
+        },
+        {
+          "label": "Work blind briefly",
+          "effects": {
+            "player.perf": "1",
+            "player.skill": "-4"
+          }
+        },
+        {
+          "label": "Request vent fix",
+          "effects": {
+            "player.rep": "2",
+            "player.skill": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mfg_spare_hoard",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Manufacturing",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Hidden spare bit",
+      "body": "You find a spare cutter bit under your bench — not logged in stores.",
+      "options": [
+        {
+          "label": "Return to stores",
+          "effects": {
+            "player.rep": "3"
+          }
+        },
+        {
+          "label": "Keep for emergencies",
+          "effects": {
+            "player.skill": "2",
+            "player.rep": "-2"
+          }
+        },
+        {
+          "label": "Trade with Alex",
+          "effects": {
+            "player.rep": "1",
+            "player.skill": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mfg_overtime_batch",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Manufacturing",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Extra batch request",
+      "body": "Sam asks if you can run one more batch before lights-out.",
+      "options": [
+        {
+          "label": "Stay late",
+          "effects": {
+            "player.perf": "3",
+            "player.skill": "2",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Refuse — tired",
+          "effects": {
+            "player.rep": "-1",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Split batch with partner",
+          "effects": {
+            "player.rep": "2",
+            "player.perf": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sci_label_fade",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Science",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Faded sample label",
+      "body": "A tube label smeared in the wash. You can guess the batch from color — maybe.",
+      "options": [
+        {
+          "label": "Re-test sample",
+          "effects": {
+            "player.perf": "-2",
+            "player.skill": "3"
+          }
+        },
+        {
+          "label": "Discard",
+          "effects": {
+            "player.rep": "1",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Ask Elena",
+          "effects": {
+            "player.rep": "2",
+            "player.skill": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sci_notebook_gap",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Science",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Gap in lab notebook",
+      "body": "Pages 14–15 are missing from the shared notebook. Your initials are on page 13.",
+      "options": [
+        {
+          "label": "Rewrite from memory",
+          "effects": {
+            "player.skill": "2",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Report missing pages",
+          "effects": {
+            "player.rep": "3"
+          }
+        },
+        {
+          "label": "Stay silent",
+          "effects": {
+            "player.rep": "-3",
+            "player.perf": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sci_quarantine_knock",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Science",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Knock on quarantine glass",
+      "body": "Someone tapped the Bay F window during your sample prep. No one on the log.",
+      "options": [
+        {
+          "label": "Log incident",
+          "effects": {
+            "player.rep": "2",
+            "player.skill": "1"
+          }
+        },
+        {
+          "label": "Ignore",
+          "effects": {
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Check corridor cam",
+          "effects": {
+            "player.skill": "2",
+            "player.perf": "-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sci_coffee_debate",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Science",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Caffeine vs sleep study",
+      "body": "Elena wants you awake for a dawn reading; you were up late calibrating.",
+      "options": [
+        {
+          "label": "Take stim tab",
+          "effects": {
+            "player.perf": "2",
+            "player.skill": "-1"
+          }
+        },
+        {
+          "label": "Push reading back",
+          "effects": {
+            "player.rep": "-2",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Nap then arrive early",
+          "effects": {
+            "player.skill": "2",
+            "player.rep": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sci_peer_review",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 12,
+      "deptGate": "Science",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Peer review request",
+      "body": "A junior asks you to check their math before Elena sees it.",
+      "options": [
+        {
+          "label": "Help carefully",
+          "effects": {
+            "player.rep": "3",
+            "player.skill": "2",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Refuse — not your job",
+          "effects": {
+            "player.perf": "1",
+            "player.rep": "-2"
+          }
+        },
+        {
+          "label": "Forward to Elena",
+          "effects": {
+            "player.rep": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uni_mess_gossip",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 11,
+      "cooldown": 14,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 3
+          }
+        ]
+      },
+      "title": "Mess hall rumor",
+      "body": "Someone says the next route vote is already decided in the captain's office.",
+      "options": [
+        {
+          "label": "Dismiss as gossip",
+          "effects": {
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Ask Hana quietly",
+          "effects": {
+            "player.rep": "2",
+            "player.skill": "1"
+          }
+        },
+        {
+          "label": "Spread counter-rumor",
+          "effects": {
+            "player.rep": "-3",
+            "player.perf": "2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uni_sleep_debt",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 11,
+      "cooldown": 14,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 3
+          }
+        ]
+      },
+      "title": "Sleep debt",
+      "body": "Three short nights in a row. Tomorrow's shift still on the roster.",
+      "options": [
+        {
+          "label": "Push through",
+          "effects": {
+            "player.perf": "2",
+            "player.skill": "-2"
+          }
+        },
+        {
+          "label": "Request swap",
+          "effects": {
+            "player.rep": "2",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "See medic",
+          "effects": {
+            "player.rep": "1",
+            "player.skill": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uni_dream_void",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 11,
+      "cooldown": 14,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 7
+          }
+        ]
+      },
+      "title": "Shared dream",
+      "body": "You dream of a green corridor. Two others mention the same image at breakfast.",
+      "options": [
+        {
+          "label": "Write it down",
+          "effects": {
+            "player.skill": "2",
+            "void.clue": "1"
+          }
+        },
+        {
+          "label": "Laugh it off",
+          "effects": {
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Mention to Elena",
+          "effects": {
+            "player.rep": "2",
+            "void.clue": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uni_fitness_challenge",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 11,
+      "cooldown": 14,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 3
+          }
+        ]
+      },
+      "title": "Gym challenge",
+      "body": "A crew member bets you cannot hold the corridor sprint record.",
+      "options": [
+        {
+          "label": "Accept",
+          "effects": {
+            "player.perf": "3",
+            "player.rep": "2",
+            "player.skill": "-1"
+          }
+        },
+        {
+          "label": "Decline",
+          "effects": {
+            "player.rep": "-1"
+          }
+        },
+        {
+          "label": "Train quietly instead",
+          "effects": {
+            "player.skill": "3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uni_letter_home",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 11,
+      "cooldown": 14,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 10
+          }
+        ]
+      },
+      "title": "Letter never sent",
+      "body": "You drafted a message to Earth knowing it will not arrive for decades.",
+      "options": [
+        {
+          "label": "Send anyway",
+          "effects": {
+            "player.rep": "2",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Delete draft",
+          "effects": {
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Keep private",
+          "effects": {
+            "player.skill": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uni_promotion_hint",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 11,
+      "cooldown": 14,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 12
+          }
+        ]
+      },
+      "title": "Promotion whisper",
+      "body": "A senior says T2 openings appear after the next audit — if your log stays clean.",
+      "options": [
+        {
+          "label": "Double-check logs",
+          "effects": {
+            "player.perf": "2",
+            "player.skill": "2"
+          }
+        },
+        {
+          "label": "Ask Maya directly",
+          "effects": {
+            "player.rep": "3"
+          }
+        },
+        {
+          "label": "Ignore politics",
+          "effects": {
+            "player.perf": "1",
+            "player.rep": "-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eco_fungus_spot",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 11,
+      "cooldown": 14,
+      "deptGate": "Ecology",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 4
+          }
+        ]
+      },
+      "title": "White spot on leaf",
+      "body": "A single leaf shows a pale ring. Could be mold — could be a new strain.",
+      "options": [
+        {
+          "label": "Isolate leaf",
+          "effects": {
+            "player.skill": "3",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Spray standard fungicide",
+          "effects": {
+            "player.perf": "1",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Ask Jin to look",
+          "effects": {
+            "player.rep": "3",
+            "player.skill": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eng_crawlway_note",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 10,
+      "cooldown": 16,
+      "deptGate": "Engineering",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 5
+          }
+        ]
+      },
+      "title": "Note in the crawlway",
+      "body": "Someone taped a maintenance shortcut map under a pipe. Not in the official binder.",
+      "options": [
+        {
+          "label": "Memorize route",
+          "effects": {
+            "player.skill": "3",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Report unauthorized map",
+          "effects": {
+            "player.rep": "3"
+          }
+        },
+        {
+          "label": "Remove and forget",
+          "effects": {
+            "player.perf": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "log_cold_storage",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 11,
+      "cooldown": 13,
+      "deptGate": "Logistics",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 4
+          }
+        ]
+      },
+      "title": "Cold storage alarm",
+      "body": "A secondary alarm chirps on med cold storage. Primary panel shows green.",
+      "options": [
+        {
+          "label": "Investigate manually",
+          "effects": {
+            "player.skill": "2",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Trust primary panel",
+          "effects": {
+            "player.perf": "1",
+            "player.rep": "-2"
+          }
+        },
+        {
+          "label": "Wake Lee",
+          "effects": {
+            "player.rep": "3",
+            "player.perf": "-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mfg_dust_rash",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 10,
+      "cooldown": 15,
+      "deptGate": "Manufacturing",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 3
+          }
+        ]
+      },
+      "title": "Dust rash",
+      "body": "Metal dust irritates your forearms. Sam says everyone gets used to it.",
+      "options": [
+        {
+          "label": "Wear extra sleeves",
+          "effects": {
+            "player.perf": "-1",
+            "player.skill": "1"
+          }
+        },
+        {
+          "label": "Visit medic",
+          "effects": {
+            "player.rep": "2",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Push through",
+          "effects": {
+            "player.perf": "2",
+            "player.skill": "-2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sci_glass_break",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 12,
+      "cooldown": 14,
+      "deptGate": "Science",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 3
+          }
+        ]
+      },
+      "title": "Broken slide",
+      "body": "You dropped a prepared slide. Replacement stock is locked until Elena signs.",
+      "options": [
+        {
+          "label": "Wait for sign-off",
+          "effects": {
+            "player.perf": "-2",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Use older batch",
+          "effects": {
+            "player.skill": "2",
+            "player.rep": "-1"
+          }
+        },
+        {
+          "label": "Re-prepare from scratch",
+          "effects": {
+            "player.perf": "-1",
+            "player.skill": "3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uni_corridor_music",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 10,
+      "cooldown": 16,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 6
+          }
+        ]
+      },
+      "title": "Corridor music",
+      "body": "Someone plays old Earth music over the PA at low volume after lights-out.",
+      "options": [
+        {
+          "label": "Enjoy it",
+          "effects": {
+            "player.rep": "1",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Report noise violation",
+          "effects": {
+            "player.rep": "-2",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Find the source",
+          "effects": {
+            "player.skill": "2",
+            "player.rep": "2"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uni_bunk_neighbor",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 11,
+      "cooldown": 12,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 4
+          }
+        ]
+      },
+      "title": "Bunk neighbor snores",
+      "body": "Your bunk neighbor's snoring keeps you awake before early shift.",
+      "options": [
+        {
+          "label": "Earplugs from stores",
+          "effects": {
+            "player.perf": "1",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Switch bunks unofficially",
+          "effects": {
+            "player.rep": "-1",
+            "player.perf": "2"
+          }
+        },
+        {
+          "label": "Talk to them",
+          "effects": {
+            "player.rep": "3",
+            "player.skill": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uni_void_whisper_t1",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 9,
+      "cooldown": 20,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 9
+          }
+        ]
+      },
+      "title": "Whisper in the vent",
+      "body": "Between shifts you hear a voice that might be the vent — or your tired mind.",
+      "options": [
+        {
+          "label": "Note time and place",
+          "effects": {
+            "player.skill": "2",
+            "void.clue": "1"
+          }
+        },
+        {
+          "label": "Tell no one",
+          "effects": {
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Mention at mess",
+          "effects": {
+            "player.rep": "-1",
+            "void.clue": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eco_pollen_sneeze",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 10,
+      "cooldown": 11,
+      "deptGate": "Ecology",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 2
+          }
+        ]
+      },
+      "title": "Pollen sneeze fit",
+      "body": "Bay C pollen triggers a sneezing fit during a captain walk-through.",
+      "options": [
+        {
+          "label": "Leave bay quickly",
+          "effects": {
+            "player.rep": "-1",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Apologize and continue",
+          "effects": {
+            "player.rep": "2",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Ask for mask",
+          "effects": {
+            "player.rep": "3",
+            "player.skill": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eng_wrist_strain",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 10,
+      "cooldown": 14,
+      "deptGate": "Engineering",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 7
+          }
+        ]
+      },
+      "title": "Wrist strain",
+      "body": "Torque work left your wrist sore. Chen notices you favoring it.",
+      "options": [
+        {
+          "label": "Light duty request",
+          "effects": {
+            "player.rep": "2",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Hide it",
+          "effects": {
+            "player.perf": "2",
+            "player.skill": "-2"
+          }
+        },
+        {
+          "label": "Stretch regimen",
+          "effects": {
+            "player.skill": "2",
+            "player.perf": "1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "log_scanner_glitch",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 11,
+      "cooldown": 13,
+      "deptGate": "Logistics",
+      "trigger": {
+        "any": [
+          {
+            "minDay": 5
+          }
+        ]
+      },
+      "title": "Scanner glitch",
+      "body": "Your handheld scanner double-beeps on crate 3-A. The count may be wrong.",
+      "options": [
+        {
+          "label": "Manual recount",
+          "effects": {
+            "player.perf": "-1",
+            "player.skill": "2",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Accept beep",
+          "effects": {
+            "player.perf": "1",
+            "player.rep": "-3"
+          }
+        },
+        {
+          "label": "Swap scanner",
+          "effects": {
+            "player.rep": "1",
+            "player.perf": "-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "uni_officer_tips",
+      "type": "personal",
+      "scope": "personal",
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 11
+          }
+        ]
+      },
+      "title": "Officer lunch tips",
+      "body": "A T2 officer shares how they got promoted: clean logs, visible overtime, no mess drama.",
+      "options": [
+        {
+          "label": "Take notes",
+          "effects": {
+            "player.skill": "3",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Already doing that",
+          "effects": {
+            "player.perf": "2"
+          }
+        },
+        {
+          "label": "Skeptical — politics",
+          "effects": {
+            "player.rep": "-1",
+            "player.skill": "1"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,173 @@
+{
+  "lines": [
+    {
+      "id": "maya_greeting",
+      "npcId": "maya",
+      "trigger": "near_ecology",
+      "locationId": "ecology",
+      "text": "Bay A humidity is holding. Keep an eye on CO₂ if algae spreads."
+    },
+    {
+      "id": "maya_near",
+      "npcId": "maya",
+      "trigger": "proximity_npc",
+      "text": "Rotate crops in Bay F if microbe health dips — I saw it on the board."
+    },
+    {
+      "id": "chen_overheat",
+      "npcId": "chen",
+      "trigger": "device_engine",
+      "locationId": "engineering",
+      "text": "Reactor margins are thin. Don't starve engineering for ecology lighting."
+    },
+    {
+      "id": "chen_near",
+      "npcId": "chen",
+      "trigger": "proximity_npc",
+      "text": "If you smell ozone, check the electrolyzer before the engine."
+    },
+    {
+      "id": "chen_proximity_diag",
+      "npcId": "chen",
+      "trigger": "proximity_diagnose",
+      "locationId": "engineering",
+      "text": "Symptom live on the board — pick the failing loop before you burn more parts."
+    },
+    {
+      "id": "chen_diagnose_wrong",
+      "npcId": "chen",
+      "trigger": "diagnose_wrong",
+      "text": "Wrong loop — parts wasted. Watch the SYS lights shake on your bad guess."
+    },
+    {
+      "id": "chen_cascade",
+      "npcId": "chen",
+      "trigger": "device_cascade",
+      "text": "Cascade offline — upstream fault is starving downstream systems. Diagnose before maintain."
+    },
+    {
+      "id": "hana_campaign",
+      "npcId": "hana",
+      "trigger": "captain_campaign",
+      "minDay": 25,
+      "text": "Election in days — mess hall rumors say your rep decides ecology vs reactor shares."
+    },
+    {
+      "id": "elena_quarantine",
+      "npcId": "elena",
+      "trigger": "near_science",
+      "locationId": "science",
+      "requiredFlag": "quarantine_lab",
+      "text": "Bay F is sealed. Specimens only leave quarantine after ethics sign-off."
+    },
+    {
+      "id": "lee_ration",
+      "npcId": "lee",
+      "trigger": "food_low",
+      "minDay": 3,
+      "text": "Warehouse queues grow when rations tighten. I need a captain call soon."
+    },
+    {
+      "id": "lee_logistics",
+      "npcId": "lee",
+      "trigger": "near_logistics",
+      "locationId": "logistics",
+      "text": "Exchange ledger is open. Surplus listings refresh each settlement."
+    },
+    {
+      "id": "lee_near",
+      "npcId": "lee",
+      "trigger": "proximity_npc",
+      "text": "Strict audit clears books fast — lenient keeps morale. Your call."
+    },
+    {
+      "id": "elena_lab",
+      "npcId": "elena",
+      "trigger": "near_science",
+      "locationId": "science",
+      "text": "Specimens go through quarantine first — then hypothesis, then publish."
+    },
+    {
+      "id": "elena_near",
+      "npcId": "elena",
+      "trigger": "proximity_npc",
+      "text": "Alien assays fail more often — budget extra power to science if you can."
+    },
+    {
+      "id": "sam_workshop",
+      "npcId": "sam",
+      "trigger": "near_workshop",
+      "locationId": "manufacturing",
+      "text": "Two lathes run in parallel now. Queue fills when both are busy."
+    },
+    {
+      "id": "sam_near",
+      "npcId": "sam",
+      "trigger": "proximity_npc",
+      "text": "Nudge manufacturing power if you need parts yesterday."
+    },
+    {
+      "id": "hana_mess",
+      "npcId": "hana",
+      "trigger": "near_mess",
+      "locationId": "mess",
+      "text": "Mess shift overlaps both crews. I prep while A works, serve while B eats."
+    },
+    {
+      "id": "hana_near",
+      "npcId": "hana",
+      "trigger": "proximity_npc",
+      "text": "Lee and I sync exchange meals — ask if rations feel tight."
+    },
+    {
+      "id": "lee_exchange",
+      "npcId": "lee",
+      "trigger": "formal_exchange",
+      "requiredFlag": "formal_exchange",
+      "text": "Regulated exchange is live. All surplus trades go through my ledger now."
+    },
+    {
+      "id": "elena_void_clue",
+      "npcId": "elena",
+      "trigger": "void_contact",
+      "requiredFlag": "void_contact",
+      "minDay": 10,
+      "text": "Three EEG anomalies share a frequency with the void sample. I did not put that in the public report."
+    },
+    {
+      "id": "maya_spore",
+      "npcId": "maya",
+      "trigger": "void_spore_network",
+      "requiredFlag": "spore_bays",
+      "text": "Two bays show pollen that is not in our catalog. Burn or isolate — your call."
+    },
+    {
+      "id": "hana_gathering",
+      "npcId": "hana",
+      "trigger": "void_gathering",
+      "text": "Someone left vine trimmings by the crawlway hatch. Mess staff are pretending not to see."
+    },
+    {
+      "id": "chen_void_hum",
+      "npcId": "chen",
+      "trigger": "proximity_npc",
+      "requiredFlag": "void_contact",
+      "text": "Coolant telemetry picked up a hum I cannot source. It syncs with science sample logs."
+    },
+    {
+      "id": "lee_audit_chain",
+      "npcId": "lee",
+      "trigger": "food_low",
+      "requiredFlag": "audit_deferred",
+      "text": "Deferred audit left holes in the ledger. Next shortage will look like theft."
+    },
+    {
+      "id": "sam_void_order",
+      "npcId": "sam",
+      "trigger": "near_workshop",
+      "locationId": "manufacturing",
+      "requiredFlag": "void_contact",
+      "text": "Anonymous work order for lattice couplers — no project code. I stashed the printout."
+    }
+  ]
+}

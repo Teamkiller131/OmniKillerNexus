@@ -1,0 +1,103 @@
+{
+  "projects": [
+    {
+      "id": "water_recycling",
+      "name": "Water Recycling II",
+      "line": "survival",
+      "days": 3,
+      "powerPerDay": 2,
+      "unlockTech": "recycling_2",
+      "description": "Improve water loop efficiency",
+      "failRate": 0.08
+    },
+    {
+      "id": "led_spectrum",
+      "name": "LED Grow Spectrum",
+      "line": "engineering",
+      "days": 4,
+      "powerPerDay": 2,
+      "unlockTech": "efficient_light",
+      "description": "Better crop lighting per watt",
+      "failRate": 0.1
+    },
+    {
+      "id": "crew_morale",
+      "name": "Morale Program",
+      "line": "social",
+      "days": 3,
+      "powerPerDay": 1,
+      "unlockTech": "morale_program",
+      "description": "Structured rest rotations",
+      "failRate": 0.08
+    },
+    {
+      "id": "gene_stabilizer",
+      "name": "Gene Stabilizer Assay",
+      "line": "engineering",
+      "days": 5,
+      "powerPerDay": 3,
+      "unlockTech": "gene_tools",
+      "description": "Stabilize crop gene edits in Bay C",
+      "requiresProject": "led_spectrum",
+      "failRate": 0.12
+    },
+    {
+      "id": "alloy_sintering",
+      "name": "Alloy Sintering",
+      "line": "manufacturing",
+      "days": 4,
+      "powerPerDay": 3,
+      "unlockTech": "alloy_sintering",
+      "description": "Higher-yield parts sintering on the lathes",
+      "requiresProject": "led_spectrum",
+      "failRate": 0.12
+    },
+    {
+      "id": "vacuum_hood",
+      "name": "Vacuum Acoustic Hood",
+      "line": "manufacturing",
+      "days": 5,
+      "powerPerDay": 2,
+      "unlockTech": "vacuum_acoustic_hood",
+      "description": "Vacuum-baffled shroud around lathes — removes ship-wide manufacturing noise debuff",
+      "requiresProject": "alloy_sintering",
+      "failRate": 0.1
+    },
+    {
+      "id": "void_scan",
+      "name": "Void Anomaly Scan",
+      "line": "frontier",
+      "days": 4,
+      "powerPerDay": 2,
+      "unlockTech": "void_scan",
+      "description": "Detect cult whisper patterns",
+      "requiresProject": "crew_morale",
+      "failRate": 0.15
+    },
+    {
+      "id": "lichen_assay",
+      "name": "Void Lichen Assay",
+      "line": "frontier",
+      "days": 4,
+      "powerPerDay": 2,
+      "unlockTech": "lichen_symbiosis",
+      "description": "Harness lichen O₂ without hull stain",
+      "requiresAlien": "lichen",
+      "specimenCost": 1,
+      "failRate": 0.22
+    },
+    {
+      "id": "moth_pollination",
+      "name": "Crystal Moth Pollination",
+      "line": "frontier",
+      "days": 5,
+      "powerPerDay": 3,
+      "unlockTech": "moth_pollination",
+      "description": "Controlled moth vectors for Bay E",
+      "requiresAlien": "moth",
+      "specimenCost": 1,
+      "requiresProject": "gene_stabilizer",
+      "failRate": 0.28
+    }
+  ]
+}

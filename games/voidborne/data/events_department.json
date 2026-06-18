@@ -1,0 +1,948 @@
+{
+  "events": [
+    {
+      "id": "dept_eco_bay_rotation",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Bay rotation dispute",
+      "body": "Two senior techs disagree on which bay gets the new LED strip. You must arbitrate before the week ends.",
+      "options": [
+        {
+          "label": "Prioritize food bays",
+          "effects": {
+            "resource.food": "4",
+            "player.rep": "2",
+            "crew.maya.loyalty": "3"
+          }
+        },
+        {
+          "label": "Prioritize science samples",
+          "effects": {
+            "player.skill": "2",
+            "crew.elena.loyalty": "2",
+            "resource.food": "-3"
+          }
+        },
+        {
+          "label": "Split strip between bays",
+          "effects": {
+            "player.rep": "3",
+            "player.perf": "-1"
+          }
+        }
+      ],
+      "deptGate": "Ecology"
+    },
+    {
+      "id": "dept_eco_water_ration",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 12
+          }
+        ]
+      },
+      "title": "Water ration for trays",
+      "body": "Engineering cut flow 8%. Your department must choose which bays go dry first.",
+      "options": [
+        {
+          "label": "Cut ornamental trays",
+          "effects": {
+            "resource.water": "3",
+            "social.morale": "-2"
+          }
+        },
+        {
+          "label": "Cut protein algae",
+          "effects": {
+            "resource.food": "-4",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Negotiate with Chen",
+          "effects": {
+            "player.rep": "4",
+            "player.skill": "2",
+            "resource.water": "1"
+          }
+        }
+      ],
+      "deptGate": "Ecology"
+    },
+    {
+      "id": "dept_eco_trainee",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Trainee placement",
+      "body": "A new T1 asks to shadow you full-time. Productivity drops if you accept.",
+      "options": [
+        {
+          "label": "Mentor them",
+          "effects": {
+            "player.rep": "5",
+            "player.perf": "-2",
+            "player.skill": "3"
+          }
+        },
+        {
+          "label": "Assign to Viktor",
+          "effects": {
+            "player.perf": "1",
+            "crew.viktor.loyalty": "2"
+          }
+        },
+        {
+          "label": "Decline — quota month",
+          "effects": {
+            "player.perf": "2",
+            "player.rep": "-2"
+          }
+        }
+      ],
+      "deptGate": "Ecology"
+    },
+    {
+      "id": "dept_eco_seed_audit",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Seed bank spot check",
+      "body": "Logistics wants a count before exchange week. Your team is behind on harvest.",
+      "options": [
+        {
+          "label": "Stop harvest to count",
+          "effects": {
+            "player.perf": "-2",
+            "player.rep": "4"
+          }
+        },
+        {
+          "label": "Estimate from last week",
+          "effects": {
+            "player.rep": "-3",
+            "player.perf": "2"
+          }
+        },
+        {
+          "label": "Split team",
+          "effects": {
+            "player.skill": "2",
+            "player.perf": "1",
+            "player.rep": "2"
+          }
+        }
+      ],
+      "deptGate": "Ecology"
+    },
+    {
+      "id": "dept_eng_loop_priority",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Loop priority ticket",
+      "body": "Ecology and Manufacturing both filed urgent repairs. You can only staff one tonight.",
+      "options": [
+        {
+          "label": "Ecology water loop",
+          "effects": {
+            "resource.water": "5",
+            "crew.maya.loyalty": "4",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Manufacturing lathe",
+          "effects": {
+            "resource.parts": "4",
+            "crew.sam.loyalty": "3",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Patch both halfway",
+          "effects": {
+            "player.perf": "-3",
+            "player.skill": "2"
+          }
+        }
+      ],
+      "deptGate": "Engineering"
+    },
+    {
+      "id": "dept_eng_safety_report",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Near-miss report",
+      "body": "Alex filed a near-miss on junction 4. Chen wants your signature before it goes ship-wide.",
+      "options": [
+        {
+          "label": "Sign and escalate",
+          "effects": {
+            "player.rep": "4",
+            "player.perf": "1",
+            "social.order": "2"
+          }
+        },
+        {
+          "label": "Handle in-dept",
+          "effects": {
+            "player.rep": "2",
+            "player.skill": "2",
+            "social.order": "-1"
+          }
+        },
+        {
+          "label": "Reject — not verified",
+          "effects": {
+            "player.rep": "-3",
+            "crew.alex.loyalty": "-4"
+          }
+        }
+      ],
+      "deptGate": "Engineering"
+    },
+    {
+      "id": "dept_eng_spare_debate",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 14
+          }
+        ]
+      },
+      "title": "Spare parts hoard",
+      "body": "Your team hid critical gaskets. Stores is asking questions.",
+      "options": [
+        {
+          "label": "Return all spares",
+          "effects": {
+            "resource.parts": "6",
+            "player.rep": "3",
+            "social.order": "2"
+          }
+        },
+        {
+          "label": "Keep half for emergencies",
+          "effects": {
+            "player.skill": "2",
+            "player.rep": "-2",
+            "resource.parts": "3"
+          }
+        },
+        {
+          "label": "Blame manufacturing rush",
+          "effects": {
+            "player.rep": "-4",
+            "player.perf": "1"
+          }
+        }
+      ],
+      "deptGate": "Engineering"
+    },
+    {
+      "id": "dept_eng_overtime_pool",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Overtime pool",
+      "body": "Three volunteers for a double shift. Only two slots — who gets the reputation credit?",
+      "options": [
+        {
+          "label": "Most senior",
+          "effects": {
+            "player.rep": "2",
+            "crew.chen.loyalty": "2"
+          }
+        },
+        {
+          "label": "Most need",
+          "effects": {
+            "player.rep": "4",
+            "crew.alex.loyalty": "3"
+          }
+        },
+        {
+          "label": "Lottery",
+          "effects": {
+            "player.rep": "3",
+            "social.morale": "2"
+          }
+        }
+      ],
+      "deptGate": "Engineering"
+    },
+    {
+      "id": "dept_log_exchange_slot",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Exchange listing slot",
+      "body": "Only one premium slot on tomorrow's exchange. Raw or medicine?",
+      "options": [
+        {
+          "label": "List raw materials",
+          "effects": {
+            "resource.rawmaterials": "-8",
+            "resource.parts": "5",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "List medicine surplus",
+          "effects": {
+            "resource.medicine": "-6",
+            "resource.food": "4",
+            "player.rep": "3"
+          }
+        },
+        {
+          "label": "Hold for captain review",
+          "effects": {
+            "player.rep": "-2",
+            "player.perf": "1"
+          }
+        }
+      ],
+      "deptGate": "Logistics"
+    },
+    {
+      "id": "dept_log_ration_cut",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Ration cut proposal",
+      "body": "Food stores are tight. You can trim B-crew portions or delay science supplements.",
+      "options": [
+        {
+          "label": "Trim B-crew",
+          "effects": {
+            "resource.food": "5",
+            "social.morale": "-4",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Delay science supplements",
+          "effects": {
+            "resource.food": "3",
+            "crew.elena.loyalty": "-3",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Find waste instead",
+          "effects": {
+            "player.skill": "3",
+            "player.perf": "-2",
+            "resource.food": "2"
+          }
+        }
+      ],
+      "deptGate": "Logistics"
+    },
+    {
+      "id": "dept_log_theft_trace",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 16
+          }
+        ]
+      },
+      "title": "Missing crate trace",
+      "body": "Crate 7-B vanished between decks. Your scanners show a blind spot.",
+      "options": [
+        {
+          "label": "Lock down deck",
+          "effects": {
+            "social.order": "3",
+            "social.morale": "-3",
+            "player.rep": "3"
+          }
+        },
+        {
+          "label": "Quiet internal search",
+          "effects": {
+            "player.skill": "2",
+            "player.rep": "2",
+            "resource.parts": "-2"
+          }
+        },
+        {
+          "label": "Write off as error",
+          "effects": {
+            "player.rep": "-4",
+            "player.perf": "2"
+          }
+        }
+      ],
+      "deptGate": "Logistics"
+    },
+    {
+      "id": "dept_log_mess_contract",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Mess hall contract",
+      "body": "Hana wants a fixed weekly food draw for the galley. Your ledger says no.",
+      "options": [
+        {
+          "label": "Approve draw",
+          "effects": {
+            "resource.food": "-5",
+            "social.morale": "4",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Deny — variable only",
+          "effects": {
+            "player.rep": "-2",
+            "social.morale": "-2",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Split difference",
+          "effects": {
+            "resource.food": "-2",
+            "social.morale": "2",
+            "player.rep": "3"
+          }
+        }
+      ],
+      "deptGate": "Logistics"
+    },
+    {
+      "id": "dept_mfg_batch_priority",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Batch priority order",
+      "body": "Science needs sample holders; Engineering needs gasket sets. Same shift, one line.",
+      "options": [
+        {
+          "label": "Science first",
+          "effects": {
+            "resource.parts": "-3",
+            "crew.elena.loyalty": "4",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Engineering first",
+          "effects": {
+            "resource.parts": "4",
+            "crew.chen.loyalty": "3",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Run split batch",
+          "effects": {
+            "player.perf": "-2",
+            "player.skill": "3",
+            "resource.parts": "1"
+          }
+        }
+      ],
+      "deptGate": "Manufacturing"
+    },
+    {
+      "id": "dept_mfg_quality_hold",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Quality hold",
+      "body": "Sam flagged a whole lot for surface defects. Shipping keeps pressure to release.",
+      "options": [
+        {
+          "label": "Hold lot",
+          "effects": {
+            "resource.parts": "-4",
+            "player.rep": "4",
+            "social.order": "2"
+          }
+        },
+        {
+          "label": "Release with tag",
+          "effects": {
+            "resource.parts": "3",
+            "player.rep": "-3",
+            "social.order": "-2"
+          }
+        },
+        {
+          "label": "Rework overnight",
+          "effects": {
+            "player.perf": "-3",
+            "player.skill": "3",
+            "resource.parts": "2"
+          }
+        }
+      ],
+      "deptGate": "Manufacturing"
+    },
+    {
+      "id": "dept_mfg_tool_share",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 15
+          }
+        ]
+      },
+      "title": "Tool sharing feud",
+      "body": "Two teams share one precision lathe. Schedule conflict every evening.",
+      "options": [
+        {
+          "label": "Strict roster",
+          "effects": {
+            "social.order": "2",
+            "social.morale": "-2",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Merge teams temporarily",
+          "effects": {
+            "player.rep": "3",
+            "player.perf": "-1",
+            "player.skill": "2"
+          }
+        },
+        {
+          "label": "Request second lathe parts",
+          "effects": {
+            "resource.parts": "-5",
+            "player.rep": "4"
+          }
+        }
+      ],
+      "deptGate": "Manufacturing"
+    },
+    {
+      "id": "dept_mfg_waste_audit",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Scrap audit",
+      "body": "Scrap bins weigh 12% heavy. Someone is dumping failed work unlogged.",
+      "options": [
+        {
+          "label": "Name-and-shame meeting",
+          "effects": {
+            "social.morale": "-3",
+            "social.order": "3",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Anonymous amnesty hour",
+          "effects": {
+            "resource.parts": "3",
+            "player.rep": "3",
+            "social.order": "-1"
+          }
+        },
+        {
+          "label": "Ignore — within tolerance",
+          "effects": {
+            "player.perf": "1",
+            "player.rep": "-3"
+          }
+        }
+      ],
+      "deptGate": "Manufacturing"
+    },
+    {
+      "id": "dept_sci_sample_share",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Sample sharing request",
+      "body": "Ecology wants early access to your pathogen scans. Protocol says wait for peer review.",
+      "options": [
+        {
+          "label": "Share early",
+          "effects": {
+            "crew.maya.loyalty": "4",
+            "player.rep": "2",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Wait for review",
+          "effects": {
+            "player.rep": "3",
+            "player.skill": "2",
+            "crew.maya.loyalty": "-2"
+          }
+        },
+        {
+          "label": "Share summary only",
+          "effects": {
+            "player.rep": "4",
+            "player.skill": "1"
+          }
+        }
+      ],
+      "deptGate": "Science"
+    },
+    {
+      "id": "dept_sci_lab_power",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Lab power budget",
+      "body": "Your spectrometer draws peak load during ecology's dark cycle.",
+      "options": [
+        {
+          "label": "Shift to day cycle",
+          "effects": {
+            "resource.power": "3",
+            "crew.maya.loyalty": "-2",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Keep peak load",
+          "effects": {
+            "player.skill": "3",
+            "resource.power": "-4",
+            "player.rep": "-1"
+          }
+        },
+        {
+          "label": "Negotiate shared window",
+          "effects": {
+            "player.rep": "4",
+            "player.skill": "2",
+            "resource.power": "-1"
+          }
+        }
+      ],
+      "deptGate": "Science"
+    },
+    {
+      "id": "dept_sci_quarantine_call",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 18
+          }
+        ]
+      },
+      "title": "Quarantine call",
+      "body": "A sample shows an anomaly. Full quarantine costs a week of deck access.",
+      "options": [
+        {
+          "label": "Full quarantine",
+          "effects": {
+            "resource.medicine": "-3",
+            "social.order": "3",
+            "player.rep": "4",
+            "void.clue": "1"
+          }
+        },
+        {
+          "label": "Monitor only",
+          "effects": {
+            "player.rep": "-2",
+            "player.perf": "2",
+            "void.clue": "1"
+          }
+        },
+        {
+          "label": "Destroy sample",
+          "effects": {
+            "player.rep": "2",
+            "resource.medicine": "-1"
+          }
+        }
+      ],
+      "deptGate": "Science"
+    },
+    {
+      "id": "dept_sci_publication",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Internal publication",
+      "body": "Your team wants to publish findings ship-wide. Captain has not cleared it.",
+      "options": [
+        {
+          "label": "Publish internally",
+          "effects": {
+            "social.morale": "3",
+            "player.rep": "3",
+            "social.order": "-1"
+          }
+        },
+        {
+          "label": "Wait for captain",
+          "effects": {
+            "player.rep": "-1",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Leak to mess hall",
+          "effects": {
+            "social.morale": "5",
+            "player.rep": "-4",
+            "social.order": "-3"
+          }
+        }
+      ],
+      "deptGate": "Science"
+    },
+    {
+      "id": "dept_cross_shift_clash",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 20
+          }
+        ]
+      },
+      "title": "Shift clash between departments",
+      "body": "Ecology night checks overlap Manufacturing noise curfew. Both chiefs want your tie-break as senior T2.",
+      "options": [
+        {
+          "label": "Side with ecology quiet hours",
+          "effects": {
+            "crew.maya.loyalty": "3",
+            "crew.sam.loyalty": "-2",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Side with manufacturing",
+          "effects": {
+            "crew.sam.loyalty": "3",
+            "crew.maya.loyalty": "-2",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Split curfew windows",
+          "effects": {
+            "player.skill": "3",
+            "player.rep": "4",
+            "player.perf": "-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "dept_cross_mentor_pool",
+      "type": "department",
+      "scope": "department",
+      "minTier": 2,
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 22
+          }
+        ]
+      },
+      "title": "Cross-dept mentor pool",
+      "body": "HR asks you to nominate one T1 for cross-training. Each dept lobbyists you.",
+      "options": [
+        {
+          "label": "Nominate from your dept",
+          "effects": {
+            "player.rep": "3",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Nominate fairly by score",
+          "effects": {
+            "player.rep": "5",
+            "player.skill": "2"
+          }
+        },
+        {
+          "label": "Decline to nominate",
+          "effects": {
+            "player.rep": "-3",
+            "player.perf": "2"
+          }
+        }
+      ]
+    }
+  ]
+}

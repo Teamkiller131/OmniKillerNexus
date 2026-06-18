@@ -1,0 +1,57 @@
+{
+  "crops": [
+    {
+      "id": "grain",
+      "name": "Main Grain",
+      "growthDays": 4,
+      "yield": 8,
+      "waterPerDay": 1,
+      "powerPerDay": 0.5,
+      "color": "d9c873",
+      "category": "staple",
+      "idealTemp": 22,
+      "idealHumidity": 62,
+      "idealCo2": 0.40
+    },
+    {
+      "id": "herb",
+      "name": "Medic Herb",
+      "growthDays": 6,
+      "yield": 4,
+      "waterPerDay": 1,
+      "powerPerDay": 0.5,
+      "color": "7fb069",
+      "category": "medicine",
+      "idealTemp": 20,
+      "idealHumidity": 70,
+      "idealCo2": 0.38
+    },
+    {
+      "id": "algae",
+      "name": "Algae",
+      "growthDays": 3,
+      "yield": 3,
+      "waterPerDay": 1,
+      "powerPerDay": 1.0,
+      "color": "3fa7a0",
+      "category": "oxygen",
+      "idealTemp": 24,
+      "idealHumidity": 75,
+      "idealCo2": 0.55
+    },
+    {
+      "id": "hybrid_vigor",
+      "name": "Vigor Hybrid",
+      "growthDays": 5,
+      "yield": 12,
+      "waterPerDay": 1.5,
+      "powerPerDay": 0.6,
+      "color": "9fd356",
+      "category": "staple",
+      "idealTemp": 21,
+      "idealHumidity": 64,
+      "idealCo2": 0.41,
+      "hybridParents": "grain,herb"
+    }
+  ]
+}

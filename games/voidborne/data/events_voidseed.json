@@ -1,0 +1,284 @@
+{
+  "events": [
+    {
+      "id": "void_garden_whisper",
+      "type": "voidseed",
+      "weight": 14,
+      "cooldown": 18,
+      "trigger": { "any": [{ "minDay": 4 }] },
+      "title": "Whispers in the hydroponics bay",
+      "body": "A farmer swears the vines hummed when no one was touching them. The sound matched alpha-wave sleep recordings.",
+      "options": [
+        { "label": "Log it quietly", "effects": { "void.clue": "1" } },
+        { "label": "Quarantine the tray", "deptGate": "Ecology", "effects": { "resource.food": "-8", "void.pollute": "hydro_a", "social.order": "3" } },
+        { "label": "Dismiss as fatigue", "effects": { "social.morale": "-2" } }
+      ]
+    },
+    {
+      "id": "void_spore_bloom",
+      "type": "voidseed",
+      "weight": 12,
+      "cooldown": 20,
+      "trigger": { "any": [{ "flag": "spore_bays", "flagMin": 1 }] },
+      "title": "Spore bloom in ecology",
+      "body": "Purple dust coats a planter rim. Lab says it is not in the seed catalog. Cult activity or alien cross-contamination?",
+      "options": [
+        { "label": "Burn the tray", "effects": { "resource.food": "-12", "social.morale": "-3", "social.order": "4" } },
+        { "label": "Sample for science", "deptGate": "Science", "effects": { "void.clue": "1", "resource.power": "-4" } },
+        { "label": "Look away", "effects": { "void.infection": "3", "flag.void_silent": "1" } }
+      ]
+    },
+    {
+      "id": "void_gathering_invite",
+      "type": "voidseed",
+      "weight": 16,
+      "cooldown": 12,
+      "trigger": { "any": [{ "flag": "void_gathering_pending" }] },
+      "title": "Invitation to the crawlway",
+      "body": "A note in your locker: 'Tonight. Cargo crawlway. Touch the green vine. You will understand.'",
+      "options": [
+        { "label": "Attend in secret", "effects": { "void.infection": "6", "flag.void_infiltrator": "1" } },
+        { "label": "Report to security", "effects": { "void.investigation": "1", "social.order": "5", "social.morale": "-4" } },
+        { "label": "Ignore", "effects": { "social.morale": "-1" } }
+      ]
+    },
+    {
+      "id": "void_brainwave_flag",
+      "type": "voidseed",
+      "weight": 10,
+      "cooldown": 25,
+      "trigger": { "any": [{ "flag": "void_contact" }] },
+      "title": "Medical flags three brainwaves",
+      "body": "Dr. Sato marks three crew EEGs as 'anomalous but subclinical'. Names are redacted from your clearance level.",
+      "options": [
+        { "label": "Demand full names (captain)", "roleGate": "captain", "effects": { "void.investigation": "1", "social.order": "3" } },
+        { "label": "Cross-check ecology logs", "deptGate": "Ecology", "effects": { "void.clue": "1" } },
+        { "label": "File and forget", "effects": { "flag.void_silent": "1" } }
+      ]
+    },
+    {
+      "id": "void_chalk_symbols",
+      "type": "voidseed",
+      "weight": 11,
+      "cooldown": 22,
+      "trigger": { "any": [{ "flag": "infectionRate", "flagMin": 0.05 }] },
+      "title": "Chalk symbols near the elevator",
+      "body": "Spiral marks appear overnight on D3 corridor panels. Security scrubbed them once — they returned.",
+      "options": [
+        { "label": "Stake out the corridor", "effects": { "void.clue": "1", "resource.power": "-3" } },
+        { "label": "Public announcement", "effects": { "social.morale": "-6", "social.order": "6", "void.investigation": "1" } },
+        { "label": "Paint over quietly", "effects": { "social.order": "-2" } }
+      ]
+    },
+    {
+      "id": "void_herbal_tea",
+      "type": "voidseed",
+      "weight": 9,
+      "cooldown": 16,
+      "trigger": { "any": [{ "moraleBelow": 60 }] },
+      "title": "Herbal tea circle",
+      "body": "Several crew skip dinner and drink a bitter tea brewed from hydroponics trimmings. They smile too calmly.",
+      "options": [
+        { "label": "Ban the tea", "effects": { "social.morale": "-5", "social.order": "4", "void.investigation": "1" } },
+        { "label": "Join once to observe", "effects": { "void.infection": "8", "void.clue": "1" } },
+        { "label": "Let mess hall handle it", "effects": { "flag.cult_whisper": "1" } }
+      ]
+    },
+    {
+      "id": "void_double_agent_test",
+      "type": "voidseed",
+      "weight": 8,
+      "cooldown": 30,
+      "trigger": { "any": [{ "flag": "void_double" }] },
+      "title": "Both sides want a name",
+      "body": "Captain's aide and a cult courier each ask you to name the other's contact tonight. You cannot satisfy both.",
+      "options": [
+        { "label": "Feed captain a decoy", "effects": { "social.playerRep": "-8", "void.investigation": "1" } },
+        { "label": "Feed cult a decoy", "effects": { "void.infection": "5", "flag.cult_whisper": "1" } },
+        { "label": "Confess to medical", "effects": { "social.morale": "-4", "void.investigation": "1", "social.order": "6" } }
+      ]
+    },
+    {
+      "id": "void_joiner_gift",
+      "type": "voidseed",
+      "weight": 10,
+      "cooldown": 28,
+      "trigger": { "any": [{ "flag": "joined_cult" }] },
+      "title": "The gift of green sight",
+      "body": "After touching the sample vine, you perceive nutrient flow in every planter. It feels like love. It also feels like hunger.",
+      "options": [
+        { "label": "Embrace the sense", "effects": { "void.infection": "10", "flag.joined_cult": "1" } },
+        { "label": "Try to resist", "effects": { "void.infection": "4", "social.morale": "-3" } },
+        { "label": "Report to medical", "effects": { "void.investigation": "1", "resource.medicine": "-3" } }
+      ]
+    },
+    {
+      "id": "void_investigation_raid",
+      "type": "voidseed",
+      "weight": 13,
+      "cooldown": 24,
+      "trigger": { "any": [{ "flag": "void_investigation" }] },
+      "title": "Security sweep of ecology",
+      "body": "Armed detail searches Bay C at midnight. Someone tipped them off. Cultists scatter; two trays are torched.",
+      "options": [
+        { "label": "Lead the sweep", "effects": { "social.order": "8", "resource.food": "-10", "social.morale": "-5" } },
+        { "label": "Warn a friend first", "effects": { "void.infection": "6", "social.playerRep": "-10", "flag.cult_whisper": "1" } },
+        { "label": "Stay in quarters", "effects": { "social.morale": "-2" } }
+      ]
+    },
+    {
+      "id": "void_chief_infected",
+      "type": "voidseed",
+      "weight": 7,
+      "cooldown": 35,
+      "trigger": { "any": [{ "flag": "infectionRate", "flagMin": 0.12 }] },
+      "title": "A chief stops blinking",
+      "body": "During briefing, the ecology chief holds eye contact for four minutes without blinking. The room notices.",
+      "options": [
+        { "label": "Medical isolation", "effects": { "resource.medicine": "-5", "social.order": "5", "void.investigation": "1" } },
+        { "label": "Private talk", "effects": { "void.clue": "1", "void.infection": "5" } },
+        { "label": "Say nothing", "effects": { "void.infection": "3", "flag.void_silent": "1" } }
+      ]
+    },
+    {
+      "id": "void_manifestation",
+      "type": "voidseed",
+      "weight": 6,
+      "cooldown": 40,
+      "trigger": { "any": [{ "flag": "void_contact", "flagMin": 1 }, { "flag": "infectionRate", "flagMin": 0.2 }] },
+      "title": "The vine knocks twice",
+      "body": "Void sample container registers impact from inside. No crew logged nearby. The pulse frequency matches human REM.",
+      "options": [
+        { "label": "Open under quarantine", "deptGate": "Science", "effects": { "void.clue": "1", "void.infection": "8", "resource.power": "-8" } },
+        { "label": "Eject the sample", "effects": { "resource.rawMaterials": "-5", "social.morale": "-4", "flag.void_war": "1" } },
+        { "label": "Pray with them", "effects": { "void.infection": "12", "flag.joined_cult": "1", "social.morale": "3" } }
+      ]
+    },
+    {
+      "id": "void_silent_captain",
+      "type": "voidseed",
+      "weight": 5,
+      "cooldown": 45,
+      "trigger": { "any": [{ "flag": "void_silent", "flagMin": 1 }, { "minDay": 45 }] },
+      "title": "Captain hums in the mess",
+      "body": "The captain hums a melody you heard in the crawlway. No one else reacts. You are the only one who knows what it means.",
+      "options": [
+        { "label": "Break silence — report", "effects": { "void.investigation": "1", "social.order": "4" } },
+        { "label": "Break silence — join", "effects": { "void.infection": "15", "flag.joined_cult": "1" } },
+        { "label": "Remain silent", "effects": { "flag.void_silent": "1", "social.morale": "-3" } }
+      ]
+    },
+    {
+      "id": "void_ecology_touch",
+      "type": "voidseed",
+      "weight": 11,
+      "cooldown": 16,
+      "trigger": { "any": [{ "flag": "void_infiltrator" }] },
+      "title": "Ecology after-hours access",
+      "body": "Bay D logs show your badge at 02:14. You were in the crawlway then. Someone is covering for you — or setting a trap.",
+      "options": [
+        { "label": "Confess to Maya", "deptGate": "Ecology", "effects": { "void.clue": "1", "social.playerRep": "-5" } },
+        { "label": "Plant false logs", "effects": { "void.infection": "4", "social.order": "-3" } },
+        { "label": "Say nothing", "effects": { "flag.void_silent": "1" } }
+      ]
+    },
+    {
+      "id": "void_engine_signal",
+      "type": "voidseed",
+      "weight": 10,
+      "cooldown": 22,
+      "trigger": { "any": [{ "minDay": 12 }] },
+      "title": "Harmonic in the coolant loop",
+      "body": "Chen finds a 7.83 Hz hum riding the water pump telemetry — identical to void sample pulse logs.",
+      "options": [
+        { "label": "Trace and dampen", "deptGate": "Engineering", "effects": { "resource.parts": "-4", "void.clue": "1" } },
+        { "label": "Ignore — within tolerance", "effects": { "flag.engine_risk": "1", "void.infection": "2" } },
+        { "label": "Report to science", "effects": { "void.investigation": "1", "resource.power": "-3" } }
+      ]
+    },
+    {
+      "id": "void_logistics_gap",
+      "type": "voidseed",
+      "weight": 9,
+      "cooldown": 18,
+      "trigger": { "any": [{ "flag": "spore_bays", "flagMin": 2 }] },
+      "title": "Three unmarked seed trays",
+      "body": "Lee's inventory shows three hydro trays with no origin tag. They appeared after last spore bloom.",
+      "options": [
+        { "label": "Seize and test", "deptGate": "Logistics", "effects": { "void.investigation": "1", "resource.food": "-6" } },
+        { "label": "Re-label as loss", "effects": { "social.order": "-4", "void.infection": "3" } },
+        { "label": "Sell on exchange quietly", "effects": { "resource.rawMaterials": "8", "flag.cult_whisper": "1" } }
+      ]
+    },
+    {
+      "id": "void_mfg_order",
+      "type": "voidseed",
+      "weight": 8,
+      "cooldown": 26,
+      "trigger": { "any": [{ "flag": "void_contact" }] },
+      "title": "Unmarked manufacturing order",
+      "body": "Sam receives a work order for 'root lattice couplers' — no project code. The spec matches void sample housing.",
+      "options": [
+        { "label": "Build one — study it", "deptGate": "Manufacturing", "effects": { "resource.parts": "-6", "void.clue": "1" } },
+        { "label": "Refuse the order", "effects": { "social.order": "3", "void.infection": "4" } },
+        { "label": "Fulfill without asking", "effects": { "void.infection": "8", "flag.joined_cult": "1" } }
+      ]
+    },
+    {
+      "id": "void_whistleblower_backlash",
+      "type": "voidseed",
+      "weight": 12,
+      "cooldown": 20,
+      "trigger": { "any": [{ "flag": "void_investigation", "flagMin": 1 }] },
+      "title": "Accused of panic-mongering",
+      "body": "Anonymous posters call you a alarmist wrecking morale. Two cultists smile when you pass — they know you started the sweep.",
+      "options": [
+        { "label": "Double down — public briefing", "effects": { "social.order": "6", "social.morale": "-8", "void.investigation": "1" } },
+        { "label": "Back off", "effects": { "social.playerRep": "-6", "void.infection": "5" } },
+        { "label": "Trap the poster", "effects": { "void.clue": "1", "resource.power": "-2" } }
+      ]
+    },
+    {
+      "id": "void_infiltrator_payoff",
+      "type": "voidseed",
+      "weight": 11,
+      "cooldown": 18,
+      "trigger": { "any": [{ "flag": "void_intel", "flagMin": 2 }] },
+      "title": "Names on the crawlway wall",
+      "body": "After your third gathering you memorized six faces. Security wants a list. The cult wants you to stay silent one more week.",
+      "options": [
+        { "label": "Hand list to captain", "roleGate": "captain", "effects": { "void.investigation": "1", "social.order": "7", "void.infection": "10" } },
+        { "label": "Feed security decoys", "effects": { "social.playerRep": "-8", "void.infection": "6" } },
+        { "label": "Wait for more intel", "effects": { "flag.void_infiltrator": "1", "void.infection": "4" } }
+      ]
+    },
+    {
+      "id": "void_spore_purge",
+      "type": "voidseed",
+      "weight": 10,
+      "cooldown": 30,
+      "trigger": { "any": [{ "flag": "spore_bays", "flagMin": 3 }] },
+      "title": "Ecology purge vote",
+      "body": "Half the bays show contamination markers. Burn three trays now and lose a month of calories — or risk full network spread.",
+      "options": [
+        { "label": "Purge bays B, C, D", "deptGate": "Ecology", "effects": { "resource.food": "-25", "social.order": "5", "flag.spore_purge": "1" } },
+        { "label": "Partial burn — one bay", "effects": { "resource.food": "-8", "void.infection": "3" } },
+        { "label": "Vote down — keep growing", "effects": { "void.infection": "6", "social.morale": "2" } }
+      ]
+    },
+    {
+      "id": "void_science_direct",
+      "type": "voidseed",
+      "weight": 9,
+      "cooldown": 24,
+      "trigger": { "any": [{ "minDay": 20 }, { "flag": "void_clue", "flagMin": 2 }] },
+      "title": "Direct exposure waiver",
+      "body": "Elena offers you supervised contact with the void sample — fastest research path. Medical warns of irreversible neural coupling.",
+      "options": [
+        { "label": "Sign waiver — touch sample", "deptGate": "Science", "effects": { "void.infection": "14", "void.clue": "1", "resource.power": "-5" } },
+        { "label": "Remote instruments only", "effects": { "resource.power": "-8", "void.clue": "1" } },
+        { "label": "Decline", "effects": { "social.morale": "1" } }
+      ]
+    }
+  ]
+}

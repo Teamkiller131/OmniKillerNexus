@@ -1,0 +1,251 @@
+{
+  "events": [
+    {
+      "id": "trade_food_variance",
+      "type": "operational",
+      "scope": "department",
+      "weight": 13,
+      "cooldown": 16,
+      "minTier": 2,
+      "deptGate": "Logistics",
+      "trigger": { "any": [{ "resource": "food", "below": 180 }] },
+      "title": "Food ledger vs warehouse gap",
+      "body": "Inventory shows 12 days of food; exchange listings imply 9. Lee asks whether to reconcile before the next convoy offer.",
+      "options": [
+        { "label": "Reconcile now", "effects": { "social.order": "3", "resource.power": "-2", "flag.audit_resolved": "1" } },
+        { "label": "Tighten ration one notch", "effects": { "social.morale": "-4", "resource.food": "10" } },
+        { "label": "Defer — accept drift", "effects": { "flag.audit_deferred": "1", "social.order": "-3" } }
+      ]
+    },
+    {
+      "id": "trade_parts_convoy",
+      "type": "operational",
+      "scope": "ship",
+      "weight": 11,
+      "cooldown": 20,
+      "trigger": { "any": [{ "resource": "parts", "below": 12 }, { "flag": "audit_routine", "flagMin": 1 }] },
+      "title": "Convoy parts offer — verify first?",
+      "body": "A flotilla offers bulk parts at food cost. Manufacturing wants it immediately; Logistics wants a pre-trade audit while variance is hot.",
+      "options": [
+        { "label": "Audit then trade", "deptGate": "Logistics", "effects": { "resource.food": "-8", "resource.parts": "6", "social.order": "3", "flag.audit_resolved": "1" } },
+        { "label": "Trade now — deadline", "effects": { "resource.food": "-10", "resource.parts": "8", "flag.audit_deferred": "1" } },
+        { "label": "Decline convoy", "effects": { "social.morale": "-2", "player.rep": "2" } }
+      ]
+    },
+    {
+      "id": "trade_medicine_hoard",
+      "type": "social",
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": { "any": [{ "resource": "medicine", "below": 8 }] },
+      "title": "Medicine hoarding rumor",
+      "body": "Exchange logs show medicine moved to private lockers after the last disputed audit. Infirmary chief threatens to lock the dispensary.",
+      "options": [
+        { "label": "Mandatory return + audit", "tierGate": 2, "effects": { "resource.medicine": "4", "social.order": "5", "social.morale": "-4", "flag.audit_resolved": "1" } },
+        { "label": "Amnesty window — no names", "effects": { "resource.medicine": "2", "social.morale": "2", "social.order": "-2" } },
+        { "label": "Infirmary self-governs", "effects": { "social.playerRep": "-2", "flag.audit_ignored": "1" } }
+      ]
+    },
+    {
+      "id": "trade_exchange_reform",
+      "type": "operational",
+      "scope": "department",
+      "weight": 12,
+      "cooldown": 24,
+      "minTier": 2,
+      "deptGate": "Logistics",
+      "trigger": { "any": [{ "flag": "audit_resolved", "flagMin": 1 }, { "flag": "audit_routine", "flagMin": 1 }] },
+      "title": "Exchange reform proposal",
+      "body": "Lee proposes dual-signature on every listing above 5 parts. Manufacturing calls it bureaucracy; habitation calls it overdue.",
+      "options": [
+        { "label": "Adopt dual-signature", "effects": { "social.order": "6", "social.morale": "-1", "flag.audit_routine": "1" } },
+        { "label": "Pilot on high-value only", "effects": { "social.order": "3", "social.playerRep": "2" } },
+        { "label": "Reject — trust crew", "effects": { "social.morale": "2", "flag.audit_deferred": "1", "social.order": "-4" } }
+      ]
+    },
+    {
+      "id": "trade_ration_lobby_link",
+      "type": "operational",
+      "scope": "department",
+      "weight": 11,
+      "cooldown": 18,
+      "minTier": 2,
+      "deptGate": "Logistics",
+      "trigger": { "any": [{ "flag": "route_votes", "flagMin": 1 }, { "resource": "food", "below": 160 }] },
+      "title": "Ration board vs route lobby",
+      "body": "Lee notices food listings spike whenever council posts a flyby segment. Someone is trading ahead of the vote lean.",
+      "options": [
+        { "label": "Freeze listings during vote week", "effects": { "social.order": "4", "social.morale": "-3", "player.rep": "2" } },
+        { "label": "Audit the spike", "effects": { "player.skill": "3", "flag.audit_resolved": "1", "resource.power": "-2" } },
+        { "label": "Ignore — market freedom", "effects": { "resource.food": "-5", "flag.audit_deferred": "1" } }
+      ]
+    },
+    {
+      "id": "trade_dual_sig_violation",
+      "type": "operational",
+      "scope": "department",
+      "weight": 12,
+      "cooldown": 20,
+      "minTier": 2,
+      "deptGate": "Logistics",
+      "trigger": { "any": [{ "flag": "audit_routine", "flagMin": 1 }] },
+      "title": "Dual-signature violation",
+      "body": "A parts listing cleared exchange without a second signature — classic post-reform mistake or deliberate bypass.",
+      "options": [
+        { "label": "Void trade + retrain", "effects": { "social.order": "5", "resource.parts": "-2", "player.rep": "3" } },
+        { "label": "Warning only", "effects": { "social.morale": "1", "social.order": "-2" } },
+        { "label": "Investigate seller", "effects": { "player.skill": "2", "flag.audit_disputed": "1" } }
+      ]
+    },
+    {
+      "id": "trade_water_exchange",
+      "type": "operational",
+      "scope": "ship",
+      "weight": 10,
+      "cooldown": 17,
+      "trigger": { "any": [{ "resource": "water", "below": 120 }] },
+      "title": "Water-for-parts barter",
+      "body": "Manufacturing proposes trading stored water for emergency parts before the recycler catches up. Ecology calls it bay suicide.",
+      "options": [
+        { "label": "Approve barter", "effects": { "resource.water": "-15", "resource.parts": "6", "social.morale": "-3" } },
+        { "label": "Parts only from raw stock", "effects": { "resource.rawmaterials": "-10", "resource.parts": "3", "player.rep": "2" } },
+        { "label": "Deny — protect bays", "effects": { "social.order": "3", "crew.omar.loyalty": "3" } }
+      ]
+    },
+    {
+      "id": "trade_black_market_tip",
+      "type": "social",
+      "scope": "ship",
+      "weight": 13,
+      "cooldown": 15,
+      "trigger": { "any": [{ "flag": "audit_disputed", "flagMin": 1 }] },
+      "title": "Black market tip",
+      "body": "An anonymous note lists a locker combo and 'medicine moved off-ledger.' Security wants a sting; Logistics wants a quiet reconcile.",
+      "options": [
+        { "label": "Sting operation", "effects": { "social.order": "6", "social.morale": "-5", "resource.medicine": "3" } },
+        { "label": "Quiet amnesty hour", "effects": { "resource.medicine": "2", "social.morale": "2", "flag.audit_deferred": "1" } },
+        { "label": "Burn the note", "effects": { "player.rep": "-3", "flag.audit_ignored": "1" } }
+      ]
+    },
+    {
+      "id": "trade_route_smuggle_tip",
+      "type": "social",
+      "scope": "ship",
+      "weight": 12,
+      "cooldown": 18,
+      "trigger": { "any": [{ "minDay": 12 }] },
+      "title": "Route smuggle tip",
+      "body": "Dock crew report vacuum-sealed pouches leaving on a maintenance sled before route vote. Contents unknown; exchange has no listing.",
+      "options": [
+        { "label": "Search sled — full inventory", "effects": { "social.order": "6", "social.morale": "-4", "resource.medicine": "2" } },
+        { "label": "Amnesty if self-declared in 6h", "effects": { "resource.food": "3", "social.morale": "2", "flag.audit_deferred": "1" } },
+        { "label": "Ignore — focus on vote", "effects": { "player.rep": "-2", "flag.audit_ignored": "1" } }
+      ]
+    },
+    {
+      "id": "trade_captain_tariff",
+      "type": "operational",
+      "scope": "ship",
+      "weight": 11,
+      "cooldown": 20,
+      "trigger": { "any": [{ "minDay": 18 }] },
+      "title": "Captain exchange tariff",
+      "body": "Captain proposes a 5% tariff on off-ledger trades to fund audit staff. Manufacturing calls it a lathe tax.",
+      "options": [
+        { "label": "Enact tariff", "effects": { "social.order": "4", "resource.parts": "3", "social.morale": "-3" } },
+        { "label": "Voluntary disclosure instead", "effects": { "player.rep": "4", "flag.audit_routine": "1" } },
+        { "label": "Reject — exchange stays flat", "effects": { "social.morale": "2", "crew.sam.loyalty": "3" } }
+      ]
+    },
+    {
+      "id": "trade_parts_futures",
+      "type": "operational",
+      "scope": "ship",
+      "weight": 13,
+      "cooldown": 14,
+      "trigger": { "any": [{ "resource": "parts", "below": 10 }] },
+      "title": "Parts futures listing",
+      "body": "Logistics offers 'future parts' contracts — pay food now for delivery after the next lathe sprint. Ecology warns it looks like ration futures.",
+      "options": [
+        { "label": "Allow futures board", "effects": { "resource.food": "-8", "resource.parts": "5", "flag.audit_deferred": "1" } },
+        { "label": "Ban futures — spot trades only", "effects": { "social.order": "4", "player.rep": "3" } },
+        { "label": "Captain guarantee — ship backs contracts", "effects": { "resource.food": "-5", "resource.parts": "4", "player.rep": "-2" } }
+      ]
+    },
+    {
+      "id": "trade_medicine_ration_swap",
+      "type": "social",
+      "scope": "ship",
+      "weight": 14,
+      "cooldown": 16,
+      "trigger": { "any": [{ "resource": "medicine", "below": 8 }, { "resource": "food", "below": 80 }] },
+      "title": "Medicine-for-ration swap",
+      "body": "Families offer stored ration coupons for cold medicine. Medical officer wants centralized triage; exchange wants open bidding.",
+      "options": [
+        { "label": "Central triage — no swaps", "effects": { "social.order": "5", "social.morale": "-3", "resource.medicine": "2" } },
+        { "label": "Open swap hour", "effects": { "resource.medicine": "-2", "resource.food": "6", "social.morale": "3" } },
+        { "label": "Audit all coupons first", "effects": { "resource.power": "-2", "flag.audit_routine": "1", "player.rep": "2" } }
+      ]
+    },
+    {
+      "id": "trade_crew_skill_auction",
+      "type": "social",
+      "scope": "ship",
+      "weight": 12,
+      "cooldown": 19,
+      "trigger": { "any": [{ "minDay": 14 }] },
+      "title": "Skill auction listing",
+      "body": "Junior crew post 'skill hours' on the exchange — tutoring for food coupons. HR warns it bypasses department quotas.",
+      "options": [
+        { "label": "Ban skill auctions", "effects": { "social.order": "5", "social.morale": "-3" } },
+        { "label": "Regulate with caps", "effects": { "social.order": "3", "player.rep": "4", "flag.audit_routine": "1" } },
+        { "label": "Let market run", "effects": { "resource.food": "4", "social.morale": "2", "flag.audit_deferred": "1" } }
+      ]
+    },
+    {
+      "id": "trade_generation_inheritance",
+      "type": "operational",
+      "scope": "ship",
+      "weight": 10,
+      "cooldown": 28,
+      "trigger": { "any": [{ "minDay": 35 }] },
+      "title": "Generation inheritance trade",
+      "body": "Families ask whether Gen-1 contribution points transfer to heirs on succession day. Exchange has no precedent.",
+      "options": [
+        { "label": "Allow 50% transfer", "effects": { "social.morale": "4", "social.order": "-2", "flag.audit_deferred": "1" } },
+        { "label": "Reset points on succession", "effects": { "social.order": "5", "social.morale": "-5" } },
+        { "label": "Captain decree — case by case", "effects": { "player.rep": "5", "flag.audit_disputed": "1" } }
+      ]
+    },
+    {
+      "id": "trade_void_coupon",
+      "type": "social",
+      "scope": "ship",
+      "weight": 11,
+      "cooldown": 20,
+      "trigger": { "any": [{ "flag": "infectionRate", "flagMin": 0.08 }, { "flag": "void_gathering_pending", "flagMin": 1 }] },
+      "title": "Void coupon listings",
+      "body": "Exchange shows 'wellness coupons' with no department issuer. Logistics suspects cultists laundered favors into ration tokens.",
+      "options": [
+        { "label": "Freeze suspicious listings", "effects": { "social.order": "5", "social.morale": "-3", "void.clue": "1" } },
+        { "label": "Undercover buy — trace issuer", "effects": { "resource.food": "-6", "player.skill": "3", "flag.audit_deferred": "1" } },
+        { "label": "Allow — shortage is real", "effects": { "social.morale": "3", "flag.audit_ignored": "1" } }
+      ]
+    },
+    {
+      "id": "trade_audit_witness_fee",
+      "type": "operational",
+      "scope": "ship",
+      "weight": 12,
+      "cooldown": 16,
+      "trigger": { "any": [{ "flag": "audit_disputed", "flagMin": 1 }, { "flag": "audit_resolved", "flagMin": 1 }] },
+      "title": "Audit witness fee",
+      "body": "Support proposes paying witnesses in food coupons for audit testimony. Habitation calls it bribery; Logistics calls it necessary.",
+      "options": [
+        { "label": "Approve witness stipends", "effects": { "resource.food": "-8", "social.order": "4", "flag.audit_resolved": "1" } },
+        { "label": "Volunteer witnesses only", "effects": { "social.morale": "-2", "player.rep": "3" } },
+        { "label": "Reject — audits must be free", "effects": { "social.order": "2", "flag.audit_disputed": "1" } }
+      ]
+    }
+  ]
+}

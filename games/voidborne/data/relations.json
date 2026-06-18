@@ -1,0 +1,24 @@
+{
+  "pairs": [
+    { "a": "maya", "b": "elena", "value": 35 },
+    { "a": "maya", "b": "jin", "value": 55 },
+    { "a": "chen", "b": "alex", "value": 40 },
+    { "a": "chen", "b": "elena", "value": -10 },
+    { "a": "lee", "b": "hana", "value": 50 },
+    { "a": "lee", "b": "sam", "value": 20 },
+    { "a": "elena", "b": "sam", "value": 15 },
+    { "a": "hana", "b": "maya", "value": 30 },
+    { "a": "maya", "b": "nadia", "value": 45 },
+    { "a": "jin", "b": "omar", "value": 38 },
+    { "a": "nadia", "b": "sela", "value": 30 },
+    { "a": "chen", "b": "priya", "value": 42 },
+    { "a": "priya", "b": "tomas", "value": 25 },
+    { "a": "lee", "b": "raj", "value": 35 },
+    { "a": "hana", "b": "mei", "value": 28 },
+    { "a": "sam", "b": "lena", "value": -5 },
+    { "a": "lena", "b": "kato", "value": 40 },
+    { "a": "elena", "b": "yuki", "value": 48 },
+    { "a": "yuki", "b": "dmitri", "value": 33 },
+    { "a": "chen", "b": "lena", "value": 22 }
+  ]
+}

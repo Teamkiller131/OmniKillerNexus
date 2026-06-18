@@ -1,0 +1,292 @@
+{
+  "events": [
+    {
+      "id": "chen_elena_rivalry",
+      "a": "chen",
+      "b": "elena",
+      "threshold": -5,
+      "compare": "below",
+      "minDay": 8,
+      "text": "Chen and Elena clash over reactor draw vs lab power.",
+      "options": [
+        { "label": "Back engineering (more reactor share)", "moraleDelta": -1, "orderDelta": 2, "relA": 8, "relB": -10, "setFlag": "rel_chen_elena_eng" },
+        { "label": "Back science (protect lab uptime)", "moraleDelta": 0, "orderDelta": -1, "relA": -8, "relB": 8, "setFlag": "rel_chen_elena_sci" },
+        { "label": "Split the difference in power budget", "moraleDelta": 1, "orderDelta": 1, "relA": 3, "relB": 3, "setFlag": "rel_chen_elena_split" }
+      ]
+    },
+    {
+      "id": "chen_elena_eng_blowback",
+      "a": "chen",
+      "b": "elena",
+      "requiredFlag": "rel_chen_elena_eng",
+      "threshold": -15,
+      "compare": "below",
+      "minDay": 14,
+      "text": "Elena publishes a memo accusing engineering of starving cold-lab samples. Crew forums split.",
+      "options": [
+        { "label": "Public apology + restore lab draw", "moraleDelta": 2, "orderDelta": -1, "relA": -5, "relB": 12 },
+        { "label": "Captain memo: both chiefs share blame", "moraleDelta": 0, "orderDelta": 2, "relA": 2, "relB": 2 },
+        { "label": "Support Chen — science waits for reactor stability", "moraleDelta": -3, "orderDelta": 3, "relA": 10, "relB": -15 }
+      ]
+    },
+    {
+      "id": "chen_elena_sci_backlash",
+      "a": "chen",
+      "b": "elena",
+      "requiredFlag": "rel_chen_elena_sci",
+      "threshold": -12,
+      "compare": "below",
+      "minDay": 14,
+      "text": "Chen logs three near-trips on dim corridor lighting after science kept LED drivers for experiments.",
+      "options": [
+        { "label": "Reallocate drivers to corridors immediately", "moraleDelta": 1, "orderDelta": 1, "relA": 6, "relB": -4 },
+        { "label": "Staged rollout — science keeps half the batch", "moraleDelta": 0, "orderDelta": 0, "relA": -2, "relB": 5 },
+        { "label": "Science priority — issue glow-strips to crew", "moraleDelta": -2, "orderDelta": -2, "relA": -8, "relB": 10 }
+      ]
+    },
+    {
+      "id": "lee_hana_trust",
+      "a": "lee",
+      "b": "hana",
+      "threshold": 45,
+      "compare": "above",
+      "minDay": 5,
+      "text": "Lee and Hana want to expand exchange meal coordination.",
+      "options": [
+        { "label": "Approve expanded exchange hours", "moraleDelta": 3, "orderDelta": 0, "relA": 5, "relB": 5, "setFlag": "rel_meal_exchange" },
+        { "label": "Keep current schedule only", "moraleDelta": 0, "orderDelta": 2, "relA": -2, "relB": -2 }
+      ]
+    },
+    {
+      "id": "meal_exchange_shortage",
+      "a": "lee",
+      "b": "hana",
+      "requiredFlag": "rel_meal_exchange",
+      "threshold": 40,
+      "compare": "above",
+      "minDay": 12,
+      "text": "Expanded meals drain protein reserves faster than projected. Lee and Hana disagree on ration cuts.",
+      "options": [
+        { "label": "Trim exchange to weekends only", "moraleDelta": -1, "orderDelta": 1, "relA": 3, "relB": -2 },
+        { "label": "Hana sources lab yeast supplement", "moraleDelta": 1, "orderDelta": 0, "relA": -3, "relB": 6 },
+        { "label": "Keep exchange — cut elsewhere", "moraleDelta": 2, "orderDelta": -2, "relA": 5, "relB": 5 }
+      ]
+    },
+    {
+      "id": "maya_jin_mentor",
+      "a": "maya",
+      "b": "jin",
+      "threshold": 50,
+      "compare": "above",
+      "minDay": 12,
+      "text": "Maya asks to formally mentor Jin on hybrid crops.",
+      "options": [
+        { "label": "Grant mentorship time (eco cap +)", "moraleDelta": 2, "orderDelta": 0, "relA": 6, "relB": 10, "setFlag": "rel_maya_jin_mentor" },
+        { "label": "Deny — Jin needed on standard shifts", "moraleDelta": -1, "orderDelta": 1, "relA": -4, "relB": -8 }
+      ]
+    },
+    {
+      "id": "maya_jin_hybrid_success",
+      "a": "maya",
+      "b": "jin",
+      "requiredFlag": "rel_maya_jin_mentor",
+      "threshold": 55,
+      "compare": "above",
+      "minDay": 20,
+      "text": "Jin's hybrid line shows promise but needs Bay C isolation. Maya wants credit shared on the report.",
+      "options": [
+        { "label": "Co-authorship — morale boost ecology", "moraleDelta": 3, "orderDelta": 0, "relA": 4, "relB": 8 },
+        { "label": "Jin lead, Maya advisory only", "moraleDelta": 0, "orderDelta": 1, "relA": -6, "relB": 10 },
+        { "label": "Delay publication until route vote passes", "moraleDelta": -2, "orderDelta": 2, "relA": 5, "relB": -5 }
+      ]
+    },
+    {
+      "id": "sam_lena_shift_fight",
+      "a": "sam",
+      "b": "lena",
+      "threshold": -5,
+      "compare": "below",
+      "minDay": 10,
+      "text": "Sam and Lena argue over running all three lathes at once — vibration carries through the hull into habitation rings.",
+      "options": [
+        { "label": "Idle one lathe until complaints drop", "moraleDelta": 2, "orderDelta": 1, "relA": 8, "relB": -6 },
+        { "label": "Keep full throughput — bonus rations", "moraleDelta": -1, "orderDelta": 2, "relA": -5, "relB": 8, "setFlag": "rel_mfg_noise_ignore", "relDriftPerDay": -0.35 },
+        { "label": "Rotate lead weekly between them", "moraleDelta": 0, "orderDelta": 0, "relA": 4, "relB": 4, "relDriftPerDay": 0.15 }
+      ]
+    },
+    {
+      "id": "night_lathe_accident",
+      "a": "sam",
+      "b": "lena",
+      "requiredFlag": "rel_mfg_noise_ignore",
+      "threshold": -8,
+      "compare": "below",
+      "minDay": 18,
+      "text": "A coolant spill during a loud triple-lathe run injures Kato's hand. Habitation submits a noise complaint petition; Sam blames Lena's throughput targets.",
+      "options": [
+        { "label": "Cap active lathes to two pending review", "moraleDelta": 1, "orderDelta": 3, "relA": 6, "relB": -4, "relDriftPerDay": 0.2 },
+        { "label": "Keep runs — add safety buddy rule", "moraleDelta": -2, "orderDelta": 1, "relA": -4, "relB": 6, "relDriftPerDay": -0.25 },
+        { "label": "Replace Lena as shift lead temporarily", "moraleDelta": -3, "orderDelta": 4, "relA": 10, "relB": -12, "relDriftPerDay": -0.5 }
+      ]
+    },
+    {
+      "id": "sam_lena_quality_pact",
+      "a": "sam",
+      "b": "lena",
+      "threshold": 45,
+      "compare": "above",
+      "minDay": 15,
+      "text": "Sam and Lena propose a joint 5★ parts initiative for the next maintenance window.",
+      "options": [
+        { "label": "Fund extra raw stock for the sprint", "moraleDelta": 1, "orderDelta": 1, "relA": 6, "relB": 6, "setFlag": "rel_quality_sprint" },
+        { "label": "Approve time only — no extra materials", "moraleDelta": 0, "orderDelta": 0, "relA": 3, "relB": 3 },
+        { "label": "Defer until engineering signs off", "moraleDelta": -1, "orderDelta": 2, "relA": -4, "relB": -4 }
+      ]
+    },
+    {
+      "id": "priya_tomas_reactor",
+      "a": "priya",
+      "b": "tomas",
+      "threshold": 35,
+      "compare": "above",
+      "minDay": 9,
+      "text": "Priya wants Tomas to log extra reactor checks; Tomas says it duplicates Chen's checklist.",
+      "options": [
+        { "label": "Mandate dual sign-off on reactor logs", "moraleDelta": 0, "orderDelta": 3, "relA": 5, "relB": -3 },
+        { "label": "Let Tomas skip — trust senior checklist", "moraleDelta": 1, "orderDelta": -1, "relA": -4, "relB": 6 },
+        { "label": "Merge into one shared tablet form", "moraleDelta": 2, "orderDelta": 2, "relA": 8, "relB": 8 }
+      ]
+    },
+    {
+      "id": "nadia_sela_vault",
+      "a": "nadia",
+      "b": "sela",
+      "threshold": 40,
+      "compare": "above",
+      "minDay": 11,
+      "text": "Nadia requests seed vault access for drought-resistant trials. Sela cites contamination protocol.",
+      "options": [
+        { "label": "Allow paired access with Sela present", "moraleDelta": 1, "orderDelta": 2, "relA": 6, "relB": 4 },
+        { "label": "Deny — use duplicate seed cache in Bay B", "moraleDelta": 0, "orderDelta": 1, "relA": -3, "relB": 5 },
+        { "label": "Expedite vault retrofit for dual entry", "moraleDelta": 2, "orderDelta": 0, "relA": 8, "relB": 8, "setFlag": "rel_vault_retrofit" }
+      ]
+    },
+    {
+      "id": "raj_mei_ration_audit",
+      "a": "raj",
+      "b": "mei",
+      "threshold": 20,
+      "compare": "below",
+      "minDay": 7,
+      "text": "Raj found discrepancies in Mei's ration ledger. Mei accuses him of spreadsheet errors.",
+      "options": [
+        { "label": "Independent audit by logistics chief", "moraleDelta": -1, "orderDelta": 3, "relA": 5, "relB": -5 },
+        { "label": "Pair them on reconciliation shift", "moraleDelta": 1, "orderDelta": 1, "relA": 8, "relB": 8 },
+        { "label": "Drop investigation — morale fragile", "moraleDelta": 2, "orderDelta": -3, "relA": -6, "relB": 4 }
+      ]
+    },
+    {
+      "id": "elena_yuki_data",
+      "a": "elena",
+      "b": "yuki",
+      "threshold": 35,
+      "compare": "below",
+      "minDay": 13,
+      "text": "Yuki withheld preliminary xenobiology notes from Elena, citing premature hype risk.",
+      "options": [
+        { "label": "Require Elena review before any external share", "moraleDelta": 0, "orderDelta": 2, "relA": 6, "relB": -4 },
+        { "label": "Back Yuki — junior researchers own drafts", "moraleDelta": 1, "orderDelta": -1, "relA": -8, "relB": 10 },
+        { "label": "Mediation session with ethics officer", "moraleDelta": 2, "orderDelta": 1, "relA": 4, "relB": 6 }
+      ]
+    },
+    {
+      "id": "alex_chen_apprentice",
+      "a": "chen",
+      "b": "alex",
+      "threshold": 50,
+      "compare": "above",
+      "minDay": 16,
+      "text": "Alex asks Chen to sponsor him for tier-2 certification before the next election cycle.",
+      "options": [
+        { "label": "Sponsor — assign Alex to electrolyzer team", "moraleDelta": 1, "orderDelta": 0, "relA": 4, "relB": 12, "setFlag": "rel_alex_sponsored" },
+        { "label": "Defer until reactor maintenance completes", "moraleDelta": 0, "orderDelta": 1, "relA": 2, "relB": -4 },
+        { "label": "Deny — senior slots frozen this year", "moraleDelta": -2, "orderDelta": 2, "relA": 5, "relB": -10 }
+      ]
+    },
+    {
+      "id": "alex_sponsored_mistake",
+      "a": "chen",
+      "b": "alex",
+      "requiredFlag": "rel_alex_sponsored",
+      "threshold": 45,
+      "compare": "above",
+      "minDay": 22,
+      "text": "Alex mis-calibrates a valve during supervised work. Chen takes heat from the council.",
+      "options": [
+        { "label": "Publicly defend Alex — training gap, not malice", "moraleDelta": 2, "orderDelta": -1, "relA": -3, "relB": 10 },
+        { "label": "Demote Alex to observation-only shifts", "moraleDelta": -1, "orderDelta": 3, "relA": 6, "relB": -12 },
+        { "label": "Pair Alex with Priya for remedial week", "moraleDelta": 0, "orderDelta": 2, "relA": 5, "relB": 6 }
+      ]
+    },
+    {
+      "id": "harvest_seal_breach",
+      "a": "omar",
+      "b": "yuki",
+      "requiredFlag": "harvest_then_seal",
+      "threshold": 40,
+      "compare": "below",
+      "minDay": 25,
+      "text": "Bay F seal failed 6 hours after harvest. Omar accuses Yuki of rushing the window; Yuki cites captain's compromise order.",
+      "options": [
+        { "label": "Re-seal Bay F — discard harvest batch", "moraleDelta": -2, "orderDelta": 4, "relA": 6, "relB": -4 },
+        { "label": "Blame process — joint review", "moraleDelta": 0, "orderDelta": 2, "relA": 4, "relB": 4, "setFlag": "bay_f_review" },
+        { "label": "Back Yuki — harvest stands", "moraleDelta": 1, "orderDelta": -2, "relA": -8, "relB": 10 }
+      ]
+    },
+    {
+      "id": "bay_g_abandon_aftermath",
+      "a": "omar",
+      "b": "mei",
+      "requiredFlag": "bay_g_abandoned",
+      "threshold": 35,
+      "compare": "below",
+      "minDay": 26,
+      "text": "Mei wants to replant Bay G; Omar says abandoned soil must stay fallow one full cycle. Families ask who pays the ration gap.",
+      "options": [
+        { "label": "Fallow cycle — ecology wins", "moraleDelta": -1, "orderDelta": 3, "relA": 8, "relB": -6 },
+        { "label": "Fast replant — accept trace risk", "moraleDelta": 2, "orderDelta": -1, "relA": -6, "relB": 8 },
+        { "label": "Convert Bay G to storage — no crop", "moraleDelta": 0, "orderDelta": 2, "relA": 2, "relB": 2 }
+      ]
+    },
+    {
+      "id": "bay_f_review_hearing",
+      "a": "omar",
+      "b": "yuki",
+      "requiredFlag": "bay_f_review",
+      "threshold": 40,
+      "compare": "below",
+      "minDay": 28,
+      "text": "The joint Bay F review becomes a public hearing. Omar wants fallow time; Yuki wants data release.",
+      "options": [
+        { "label": "Back fallow recommendation", "moraleDelta": -1, "orderDelta": 4, "relA": 10, "relB": -6 },
+        { "label": "Publish Yuki's dataset", "moraleDelta": 1, "orderDelta": 1, "relA": -4, "relB": 10 },
+        { "label": "Close hearing — captain decides", "moraleDelta": -2, "orderDelta": 3, "relA": 2, "relB": 2 }
+      ]
+    },
+    {
+      "id": "pest_policy_expanded_pushback",
+      "a": "omar",
+      "b": "mei",
+      "requiredFlag": "pest_policy_expanded",
+      "threshold": 38,
+      "compare": "below",
+      "minDay": 29,
+      "text": "Mei demands end to monitor-only harvest policy after another pest tick. Omar says expanded monitoring saved two bays.",
+      "options": [
+        { "label": "End monitor-only — burn on sight", "moraleDelta": -1, "orderDelta": 4, "relA": 6, "relB": -8 },
+        { "label": "Keep expanded monitoring", "moraleDelta": 0, "orderDelta": 2, "relA": 8, "relB": -4 },
+        { "label": "Split Bay A — half harvest half fallow", "moraleDelta": 1, "orderDelta": 1, "relA": 2, "relB": 4 }
+      ]
+    }
+  ]
+}

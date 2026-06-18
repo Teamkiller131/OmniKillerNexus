@@ -1,0 +1,1478 @@
+{
+  "events": [
+    {
+      "id": "memo_hydro_flush",
+      "weight": 9,
+      "cooldown": 20,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 10
+          }
+        ]
+      },
+      "title": "RE: Form 7-B — hydro bay flush exemption",
+      "body": "Logistics requests signed waiver for 400L flush during exchange week. Engineering counters with power draw appendix. Your signature line is blank.",
+      "options": [
+        {
+          "label": "Approve waiver",
+          "effects": {
+            "resource.water": "-4",
+            "player.rep": "2",
+            "crew.lee.loyalty": "2"
+          }
+        },
+        {
+          "label": "Deny — schedule post-exchange",
+          "effects": {
+            "player.rep": "3",
+            "crew.maya.loyalty": "2",
+            "resource.food": "-2"
+          }
+        },
+        {
+          "label": "Approve with reduced volume",
+          "effects": {
+            "player.skill": "3",
+            "player.rep": "4",
+            "resource.water": "-2"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "memo",
+      "deptGate": "Ecology",
+      "minTier": 2
+    },
+    {
+      "id": "memo_overtime_cap",
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 9
+          }
+        ]
+      },
+      "title": "RE: Overtime pool cap exceeded (Eng)",
+      "body": "HR flag: Engineering logged 14% over cap. Chen wants retroactive approval. HR wants names.",
+      "options": [
+        {
+          "label": "Approve retroactively",
+          "effects": {
+            "player.rep": "2",
+            "social.order": "-2",
+            "crew.chen.loyalty": "3"
+          }
+        },
+        {
+          "label": "Reject — trim next week",
+          "effects": {
+            "player.rep": "3",
+            "social.order": "3",
+            "crew.chen.loyalty": "-2"
+          }
+        },
+        {
+          "label": "Split — approve half",
+          "effects": {
+            "player.skill": "2",
+            "player.rep": "4"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "memo",
+      "deptGate": "Engineering",
+      "minTier": 2
+    },
+    {
+      "id": "memo_ration_variance",
+      "weight": 10,
+      "cooldown": 19,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 11
+          }
+        ]
+      },
+      "title": "RE: Ration variance report (±2.1%)",
+      "body": "Audit appendix shows B-crew portions trending high. Mei attributes it to scale drift. Lee attributes it to theft.",
+      "options": [
+        {
+          "label": "Recalibrate scales",
+          "effects": {
+            "resource.parts": "-2",
+            "player.rep": "3",
+            "social.order": "2"
+          }
+        },
+        {
+          "label": "Internal investigation",
+          "effects": {
+            "player.perf": "-2",
+            "player.rep": "4",
+            "social.morale": "-2"
+          }
+        },
+        {
+          "label": "Accept variance",
+          "effects": {
+            "player.rep": "-2",
+            "social.order": "-3"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "memo",
+      "deptGate": "Logistics",
+      "minTier": 2
+    },
+    {
+      "id": "debate_light_vs_yield",
+      "weight": 9,
+      "cooldown": 22,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 12
+          }
+        ]
+      },
+      "title": "Light spectrum vs yield",
+      "body": "Jin wants red-heavy spectrum for morale crops. Nadia wants blue-heavy for protein algae. Maya waits for your tie-break as senior T2.",
+      "options": [
+        {
+          "label": "Red — morale first",
+          "effects": {
+            "social.morale": "4",
+            "resource.food": "-3",
+            "crew.jin.loyalty": "4"
+          }
+        },
+        {
+          "label": "Blue — yield first",
+          "effects": {
+            "resource.food": "5",
+            "social.morale": "-2",
+            "crew.nadia.loyalty": "4"
+          }
+        },
+        {
+          "label": "Alternate weekly",
+          "effects": {
+            "player.skill": "3",
+            "player.rep": "4",
+            "player.perf": "-1"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "debate",
+      "deptGate": "Ecology",
+      "minTier": 2
+    },
+    {
+      "id": "debate_lab_vs_reactor",
+      "weight": 9,
+      "cooldown": 21,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 13
+          }
+        ]
+      },
+      "title": "Lab window vs reactor maintenance",
+      "body": "Yuki scheduled a 6-hour spectrometer run. Priya scheduled a reactor bleed in the same window. Both chiefs cite safety.",
+      "options": [
+        {
+          "label": "Science first",
+          "effects": {
+            "player.rep": "2",
+            "crew.yuki.loyalty": "4",
+            "crew.priya.loyalty": "-3",
+            "resource.power": "-3"
+          }
+        },
+        {
+          "label": "Engineering first",
+          "effects": {
+            "player.rep": "2",
+            "crew.priya.loyalty": "4",
+            "crew.yuki.loyalty": "-3"
+          }
+        },
+        {
+          "label": "Stagger both to 3 hours",
+          "effects": {
+            "player.skill": "4",
+            "player.perf": "-2",
+            "player.rep": "3"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "debate",
+      "deptGate": "Science",
+      "minTier": 2
+    },
+    {
+      "id": "debate_scrap_vs_art",
+      "weight": 10,
+      "cooldown": 20,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 11
+          }
+        ]
+      },
+      "title": "Scrap policy vs corridor art",
+      "body": "Lena wants zero-tolerance scrap reclamation. Sam wants to keep the welded sprint trophy and two mess murals made from shavings.",
+      "options": [
+        {
+          "label": "Reclaim all scrap",
+          "effects": {
+            "resource.parts": "5",
+            "social.morale": "-3",
+            "crew.lena.loyalty": "3"
+          }
+        },
+        {
+          "label": "Art exemption list",
+          "effects": {
+            "social.morale": "4",
+            "resource.parts": "-2",
+            "crew.sam.loyalty": "4"
+          }
+        },
+        {
+          "label": "Monthly art lottery",
+          "effects": {
+            "player.rep": "4",
+            "player.skill": "2",
+            "resource.parts": "1"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "debate",
+      "deptGate": "Manufacturing",
+      "minTier": 2
+    },
+    {
+      "id": "noir_dept_missing_meds",
+      "weight": 8,
+      "cooldown": 24,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 15
+          }
+        ]
+      },
+      "title": "Missing med vials — no report",
+      "body": "Three vials short on the night count. Hana says she will not file until you decide whether it is error or theft.",
+      "options": [
+        {
+          "label": "File full report",
+          "effects": {
+            "player.rep": "4",
+            "social.order": "3",
+            "resource.medicine": "-2"
+          }
+        },
+        {
+          "label": "Absorb into spoilage",
+          "effects": {
+            "player.rep": "-3",
+            "social.order": "-2",
+            "crew.hana.loyalty": "3"
+          }
+        },
+        {
+          "label": "Quiet search of bunks",
+          "effects": {
+            "player.skill": "2",
+            "social.morale": "-4",
+            "void.clue": "1"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "noir",
+      "deptGate": "Logistics",
+      "minTier": 2
+    },
+    {
+      "id": "noir_dept_sample_gone",
+      "weight": 8,
+      "cooldown": 25,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 16
+          }
+        ]
+      },
+      "title": "Sample logged out, never back",
+      "body": "Dmitri's quarantine sample left the lab under your signature chain. The log ends at your name.",
+      "options": [
+        {
+          "label": "Lock down lab",
+          "effects": {
+            "social.order": "4",
+            "player.rep": "3",
+            "void.clue": "1"
+          }
+        },
+        {
+          "label": "Cover with duplicate label",
+          "effects": {
+            "player.rep": "-5",
+            "player.perf": "2",
+            "void.clue": "1"
+          }
+        },
+        {
+          "label": "Confess chain gap to Elena",
+          "effects": {
+            "player.rep": "5",
+            "player.perf": "-2",
+            "crew.elena.loyalty": "3"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "noir",
+      "deptGate": "Science",
+      "minTier": 2
+    },
+    {
+      "id": "ritual_shift_handoff",
+      "weight": 10,
+      "cooldown": 17,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Shift handoff ritual",
+      "body": "A-crew insists on reading yesterday's faults aloud before B-crew signs. Chen calls it theater. Morale calls it sanity.",
+      "options": [
+        {
+          "label": "Codify the ritual",
+          "effects": {
+            "social.morale": "3",
+            "social.order": "2",
+            "player.rep": "3"
+          }
+        },
+        {
+          "label": "Ban it — time waste",
+          "effects": {
+            "player.perf": "2",
+            "social.morale": "-4",
+            "crew.chen.loyalty": "2"
+          }
+        },
+        {
+          "label": "Shorten to top three faults",
+          "effects": {
+            "player.skill": "3",
+            "player.rep": "4"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "ritual",
+      "deptGate": "Engineering",
+      "minTier": 2
+    },
+    {
+      "id": "ritual_harvest_song",
+      "weight": 10,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 9
+          }
+        ]
+      },
+      "title": "Harvest song tradition",
+      "body": "Omar started humming during tray cut. Now half the bay joins. Productivity is up. Noise complaints are up too.",
+      "options": [
+        {
+          "label": "Protect the song",
+          "effects": {
+            "social.morale": "4",
+            "player.rep": "2",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Quiet hours only",
+          "effects": {
+            "social.order": "2",
+            "social.morale": "-2",
+            "player.rep": "3"
+          }
+        },
+        {
+          "label": "Join the humming",
+          "effects": {
+            "player.rep": "4",
+            "player.skill": "1",
+            "player.perf": "-1"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "ritual",
+      "deptGate": "Ecology",
+      "minTier": 2
+    },
+    {
+      "id": "ritual_mess_tasting",
+      "weight": 11,
+      "cooldown": 16,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 7
+          }
+        ]
+      },
+      "title": "Pre-ration tasting panel",
+      "body": "Hana wants T2 volunteers to taste new protein batches before ship-wide rollout. Lee worries about liability.",
+      "options": [
+        {
+          "label": "Volunteer your shift",
+          "effects": {
+            "player.perf": "-2",
+            "player.rep": "5",
+            "social.morale": "3"
+          }
+        },
+        {
+          "label": "Assign by lottery",
+          "effects": {
+            "player.rep": "3",
+            "social.morale": "2"
+          }
+        },
+        {
+          "label": "Skip tasting — ship eats together",
+          "effects": {
+            "player.rep": "-1",
+            "resource.food": "-3",
+            "social.morale": "-2"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "ritual",
+      "deptGate": "Logistics",
+      "minTier": 2
+    },
+    {
+      "id": "proc_joint_inspection",
+      "weight": 9,
+      "cooldown": 23,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 18
+          }
+        ]
+      },
+      "title": "Joint inspection — Ecology + Engineering",
+      "body": "Mold trace near a coolant line. Each department's checklist contradicts the other's priority order.",
+      "options": [
+        {
+          "label": "Ecology leads",
+          "effects": {
+            "crew.maya.loyalty": "3",
+            "crew.chen.loyalty": "-2",
+            "resource.food": "-2",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Engineering leads",
+          "effects": {
+            "crew.chen.loyalty": "3",
+            "crew.maya.loyalty": "-2",
+            "resource.water": "-3",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Parallel teams",
+          "effects": {
+            "player.perf": "-3",
+            "player.skill": "3",
+            "player.rep": "4"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "memo",
+      "minTier": 2
+    },
+    {
+      "id": "proc_trainee_rotation",
+      "weight": 10,
+      "cooldown": 20,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 14
+          }
+        ]
+      },
+      "title": "Cross-dept trainee rotation",
+      "body": "HR proposes one T1 from each dept spends a week elsewhere. Chiefs worry about quota loss.",
+      "options": [
+        {
+          "label": "Approve full rotation",
+          "effects": {
+            "player.rep": "4",
+            "player.skill": "3",
+            "social.morale": "3",
+            "player.perf": "-2"
+          }
+        },
+        {
+          "label": "Pilot one dept only",
+          "effects": {
+            "player.rep": "2",
+            "player.skill": "1"
+          }
+        },
+        {
+          "label": "Defer to captain",
+          "effects": {
+            "player.rep": "-2",
+            "player.perf": "1"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "debate",
+      "minTier": 2
+    },
+    {
+      "id": "proc_night_noise_curfew",
+      "weight": 10,
+      "cooldown": 19,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 12
+          }
+        ]
+      },
+      "title": "Lathe hull noise petition",
+      "body": "Habitation B-crew petition to cap manufacturing lathe runs — hull vibration keeps sleep metrics red. Manufacturing cites parts deadline for route vote prep.",
+      "options": [
+        {
+          "label": "Impose curfew",
+          "effects": {
+            "social.morale": "3",
+            "resource.parts": "-4",
+            "crew.sam.loyalty": "-3"
+          }
+        },
+        {
+          "label": "Deny petition",
+          "effects": {
+            "resource.parts": "3",
+            "social.morale": "-4",
+            "crew.sam.loyalty": "3"
+          }
+        },
+        {
+          "label": "Sound baffles project",
+          "effects": {
+            "resource.parts": "-3",
+            "player.rep": "4",
+            "player.skill": "2"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "debate",
+      "minTier": 2
+    },
+    {
+      "id": "sport_gym_hours",
+      "weight": 11,
+      "cooldown": 15,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Gym hours reallocation",
+      "body": "Observatory deck wants evening slots for yoga. Manufacturing wants morning slots for strength. One gym, zero overlap.",
+      "options": [
+        {
+          "label": "Split 50/50",
+          "effects": {
+            "social.morale": "3",
+            "player.rep": "3"
+          }
+        },
+        {
+          "label": "Priority to manufacturing",
+          "effects": {
+            "resource.parts": "2",
+            "social.morale": "-2",
+            "crew.sam.loyalty": "3"
+          }
+        },
+        {
+          "label": "Priority to observatory",
+          "effects": {
+            "social.morale": "4",
+            "crew.yuki.loyalty": "2",
+            "player.rep": "2"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "ritual",
+      "minTier": 2
+    },
+    {
+      "id": "sport_team_captain",
+      "weight": 10,
+      "cooldown": 17,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 10
+          }
+        ]
+      },
+      "title": "Inter-dept corridor sprint",
+      "body": "Unofficial tournament. Ecology vs Engineering. Betting is in ration bars. Lee wants it shut down. Crew wants a holiday.",
+      "options": [
+        {
+          "label": "Sanction the race",
+          "effects": {
+            "social.morale": "5",
+            "social.order": "-2",
+            "player.rep": "4"
+          }
+        },
+        {
+          "label": "Shut it down",
+          "effects": {
+            "social.order": "4",
+            "social.morale": "-5",
+            "player.rep": "-2"
+          }
+        },
+        {
+          "label": "Race but ban betting",
+          "effects": {
+            "player.skill": "2",
+            "player.rep": "3",
+            "social.morale": "2"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "comedy",
+      "minTier": 2
+    },
+    {
+      "id": "phil_trolley_parts",
+      "weight": 8,
+      "cooldown": 25,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 16
+          }
+        ]
+      },
+      "title": "Trolley problem with parts",
+      "body": "One batch of parts fits either med device repair or food recycler seal. Both fail tomorrow without them.",
+      "options": [
+        {
+          "label": "Med device",
+          "effects": {
+            "resource.medicine": "3",
+            "resource.food": "-4",
+            "player.rep": "2",
+            "flag.utilitarian": "1"
+          }
+        },
+        {
+          "label": "Food recycler",
+          "effects": {
+            "resource.food": "5",
+            "resource.medicine": "-2",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Split batch — both half-fixed",
+          "effects": {
+            "player.skill": "3",
+            "player.rep": "3",
+            "player.perf": "-2"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "philosophical",
+      "deptGate": "Manufacturing",
+      "minTier": 2
+    },
+    {
+      "id": "phil_truth_vs_calm",
+      "weight": 8,
+      "cooldown": 24,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 15
+          }
+        ]
+      },
+      "title": "Truth vs calm ledger",
+      "body": "Mei asks whether to show real spoilage numbers at dept meeting or rounded figures 'to prevent panic'.",
+      "options": [
+        {
+          "label": "Real numbers",
+          "effects": {
+            "social.morale": "-3",
+            "social.order": "4",
+            "player.rep": "4"
+          }
+        },
+        {
+          "label": "Rounded figures",
+          "effects": {
+            "social.morale": "2",
+            "player.rep": "-3",
+            "flag.deception": "1"
+          }
+        },
+        {
+          "label": "Delayed release 24h",
+          "effects": {
+            "player.skill": "2",
+            "player.rep": "2"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "philosophical",
+      "deptGate": "Logistics",
+      "minTier": 2
+    },
+    {
+      "id": "exch_counterfeit_bar",
+      "weight": 10,
+      "cooldown": 20,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 11
+          }
+        ]
+      },
+      "title": "Counterfeit ration bars",
+      "body": "Exchange post flagged bars with wrong protein ratio. Source unknown. Lee wants dept-only investigation.",
+      "options": [
+        {
+          "label": "Pull all flagged bars",
+          "effects": {
+            "resource.food": "-4",
+            "social.order": "3",
+            "player.rep": "3"
+          }
+        },
+        {
+          "label": "Trace maker quietly",
+          "effects": {
+            "player.skill": "3",
+            "player.perf": "-2",
+            "void.clue": "1"
+          }
+        },
+        {
+          "label": "Blame external trader",
+          "effects": {
+            "player.rep": "-2",
+            "social.morale": "-2"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "exchange",
+      "deptGate": "Logistics",
+      "minTier": 2
+    },
+    {
+      "id": "exch_favor_bank",
+      "weight": 10,
+      "cooldown": 19,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 10
+          }
+        ]
+      },
+      "title": "Inter-dept favor bank",
+      "body": "Unofficial ledger of favors circulates. Ecology owes Engineering 12 hours. You are asked to formalize or ban it.",
+      "options": [
+        {
+          "label": "Formalize ledger",
+          "effects": {
+            "social.order": "3",
+            "player.rep": "4",
+            "social.morale": "-1"
+          }
+        },
+        {
+          "label": "Ban unofficial ledger",
+          "effects": {
+            "social.order": "4",
+            "social.morale": "-3",
+            "crew.lee.loyalty": "2"
+          }
+        },
+        {
+          "label": "Ignore — human glue",
+          "effects": {
+            "social.morale": "3",
+            "social.order": "-3",
+            "player.rep": "-1"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "exchange",
+      "minTier": 2
+    },
+    {
+      "id": "int_dept_peer_review",
+      "weight": 9,
+      "cooldown": 21,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 13
+          }
+        ]
+      },
+      "title": "Peer review panel",
+      "body": "Elena asks you to chair a blind review of Yuki's paper. Dmitri is a co-author and your friend.",
+      "options": [
+        {
+          "label": "Recuse yourself",
+          "effects": {
+            "player.rep": "4",
+            "crew.dmitri.loyalty": "-2"
+          }
+        },
+        {
+          "label": "Chair fairly",
+          "effects": {
+            "player.rep": "5",
+            "player.skill": "2",
+            "crew.yuki.loyalty": "3"
+          }
+        },
+        {
+          "label": "Softball review",
+          "effects": {
+            "player.rep": "-4",
+            "crew.dmitri.loyalty": "4",
+            "crew.elena.loyalty": "-3"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "interview",
+      "deptGate": "Science",
+      "minTier": 2
+    },
+    {
+      "id": "int_dept_promotion_panel",
+      "weight": 10,
+      "cooldown": 22,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 14
+          }
+        ]
+      },
+      "title": "Promotion panel — two T1s",
+      "body": "Maya asks you to help choose between Omar and Sela for T2 track. Both qualified. One is your shift partner.",
+      "options": [
+        {
+          "label": "Score by log only",
+          "effects": {
+            "player.rep": "4",
+            "player.skill": "2"
+          }
+        },
+        {
+          "label": "Advocate shift partner",
+          "effects": {
+            "player.rep": "-3",
+            "player.perf": "1"
+          }
+        },
+        {
+          "label": "Split — dual trial period",
+          "effects": {
+            "player.skill": "3",
+            "player.rep": "3",
+            "player.perf": "-2"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "interview",
+      "deptGate": "Ecology",
+      "minTier": 2
+    },
+    {
+      "id": "news_dept_budget",
+      "weight": 9,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 9
+          }
+        ]
+      },
+      "title": "Dept bulletin: budget cut draft",
+      "body": "INTERNAL ENG BULLETIN — Draft: 6% parts reduction next month. Chen wants feedback before ship-wide.",
+      "options": [
+        {
+          "label": "Accept cut — prioritize reactor",
+          "effects": {
+            "resource.parts": "3",
+            "social.morale": "-2",
+            "crew.chen.loyalty": "3"
+          }
+        },
+        {
+          "label": "Protest cut",
+          "effects": {
+            "player.rep": "3",
+            "crew.chen.loyalty": "-2",
+            "resource.parts": "-2"
+          }
+        },
+        {
+          "label": "Propose efficiency audit first",
+          "effects": {
+            "player.skill": "3",
+            "player.rep": "4",
+            "player.perf": "-2"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "newsletter",
+      "deptGate": "Engineering",
+      "minTier": 2
+    },
+    {
+      "id": "ritual_tool_blessing",
+      "weight": 10,
+      "cooldown": 20,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 10
+          }
+        ]
+      },
+      "title": "Tool blessing before launch day",
+      "body": "Old tradition: name your primary tool before annual maintenance. New crew find it embarrassing.",
+      "options": [
+        {
+          "label": "Revive full ceremony",
+          "effects": {
+            "social.morale": "4",
+            "player.rep": "3",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "One-minute version",
+          "effects": {
+            "social.morale": "2",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "End tradition",
+          "effects": {
+            "social.morale": "-3",
+            "social.order": "2",
+            "crew.lena.loyalty": "2"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "ritual",
+      "deptGate": "Manufacturing",
+      "minTier": 2
+    },
+    {
+      "id": "ritual_mess_silent_meal",
+      "weight": 9,
+      "cooldown": 22,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 12
+          }
+        ]
+      },
+      "title": "Silent meal proposal",
+      "body": "Hana proposes one silent mess hour per week for grief processing. Lee worries about morale metrics.",
+      "options": [
+        {
+          "label": "Pilot silent hour",
+          "effects": {
+            "social.morale": "3",
+            "social.order": "1",
+            "player.rep": "3"
+          }
+        },
+        {
+          "label": "Reject — mess is social",
+          "effects": {
+            "social.morale": "-2",
+            "crew.hana.loyalty": "-3"
+          }
+        },
+        {
+          "label": "Silent hour optional side room",
+          "effects": {
+            "player.skill": "2",
+            "player.rep": "4",
+            "social.morale": "2"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "ritual",
+      "deptGate": "Logistics",
+      "minTier": 2
+    },
+    {
+      "id": "com_dept_prank_war",
+      "weight": 10,
+      "cooldown": 17,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          }
+        ]
+      },
+      "title": "Dept prank war escalation",
+      "body": "Alex wrapped Priya's console in foil. Priya rerouted Alex's boots to the wrong locker. Chen threatens both.",
+      "options": [
+        {
+          "label": "Mediate truce",
+          "effects": {
+            "player.rep": "4",
+            "social.morale": "2"
+          }
+        },
+        {
+          "label": "Join Alex's side",
+          "effects": {
+            "player.rep": "-2",
+            "crew.alex.loyalty": "4",
+            "social.order": "-2"
+          }
+        },
+        {
+          "label": "Escalate to formal discipline",
+          "effects": {
+            "social.order": "4",
+            "social.morale": "-4",
+            "crew.chen.loyalty": "2"
+          }
+        }
+      ],
+      "type": "department",
+      "scope": "department",
+      "style": "comedy",
+      "deptGate": "Engineering",
+      "minTier": 2
+    },
+    {
+      "id": "dept_eng_cascade_drill",
+      "type": "department",
+      "scope": "department",
+      "style": "debate",
+      "weight": 12,
+      "cooldown": 20,
+      "minTier": 2,
+      "deptGate": "Engineering",
+      "trigger": { "any": [{ "device": "engine" }] },
+      "title": "Cascade drill on D1",
+      "body": "Chen wants a live cascade drill: trip the main engine feed and time how long until O₂ and water loop flags blink on SYS. Manufacturing refuses to pause lathes.",
+      "options": [
+        { "label": "Run drill — document times", "effects": { "social.order": "4", "resource.parts": "-2", "player.skill": "3", "crew.chen.loyalty": "4" } },
+        { "label": "Table-top only — no trip", "effects": { "player.rep": "3", "social.morale": "1" } },
+        { "label": "Skip — lathes can't stop", "effects": { "crew.sam.loyalty": "3", "social.order": "-3" } }
+      ]
+    },
+    {
+      "id": "dept_mfg_noise_petition",
+      "type": "department",
+      "scope": "department",
+      "style": "debate",
+      "weight": 11,
+      "cooldown": 18,
+      "minTier": 2,
+      "deptGate": "Manufacturing",
+      "trigger": { "any": [{ "flag": "rel_mfg_noise_ignore", "flagMin": 1 }] },
+      "title": "Hull noise shift petition",
+      "body": "Sam submits a petition to stagger lathe runs after habitation sleep metrics dipped. Lena counters that vacuum hood research is two weeks out and parts backlog is critical.",
+      "options": [
+        { "label": "Stagger runs until hood", "effects": { "social.morale": "4", "resource.parts": "-3", "crew.lena.loyalty": "-3" } },
+        { "label": "Fund hood research power", "effects": { "resource.power": "-5", "player.rep": "4", "flag.audit_resolved": "1" } },
+        { "label": "Reject — throughput first", "effects": { "crew.sam.loyalty": "-4", "social.order": "3", "resource.parts": "4" } }
+      ]
+    },
+    {
+      "id": "dept_log_dual_sig_rollout",
+      "type": "department",
+      "scope": "department",
+      "style": "memo",
+      "weight": 10,
+      "cooldown": 22,
+      "minTier": 2,
+      "deptGate": "Logistics",
+      "trigger": { "any": [{ "flag": "audit_routine", "flagMin": 1 }] },
+      "title": "Dual-signature rollout day",
+      "body": "Lee activates dual-signature listings fleet-wide. Three departments forgot the memo and queued trades before breakfast.",
+      "options": [
+        { "label": "Grace window — educate", "effects": { "social.morale": "2", "social.order": "2", "player.rep": "3" } },
+        { "label": "Reject non-compliant trades", "effects": { "social.order": "5", "social.morale": "-4", "resource.food": "-5" } },
+        { "label": "Pause exchange 24h", "effects": { "social.order": "3", "resource.parts": "-2", "player.rep": "2" } }
+      ]
+    },
+    {
+      "id": "dept_eco_light_ration",
+      "type": "department",
+      "scope": "department",
+      "style": "vignette",
+      "weight": 13,
+      "cooldown": 16,
+      "minTier": 2,
+      "deptGate": "Ecology",
+      "trigger": { "any": [{ "resource": "power", "below": 45 }] },
+      "title": "Grow-light ration hour",
+      "body": "Engineering capped ecology draw at fifteen percent. Omar asks which bays lose light first — grain or algae O₂ buffer.",
+      "options": [
+        { "label": "Protect algae — trim grain", "effects": { "resource.oxygen": "-1", "resource.food": "8", "player.rep": "2" } },
+        { "label": "Protect grain — trim algae", "effects": { "resource.food": "-6", "resource.oxygen": "2", "social.morale": "-2" } },
+        { "label": "Split loss evenly", "effects": { "social.order": "2", "player.skill": "2" } }
+      ]
+    },
+    {
+      "id": "dept_sci_borrow_power",
+      "type": "department",
+      "scope": "department",
+      "style": "debate",
+      "weight": 11,
+      "cooldown": 19,
+      "minTier": 2,
+      "deptGate": "Science",
+      "trigger": { "any": [{ "resource": "power", "below": 55 }] },
+      "title": "Spectrometer power borrow",
+      "body": "Maya requests a six-hour science power bump for a void lichen assay. Chen says the water loop already flickers yellow on SYS.",
+      "options": [
+        { "label": "Grant bump — log cascade risk", "effects": { "resource.power": "-4", "player.skill": "3", "crew.maya.loyalty": "4" } },
+        { "label": "Deny — maintain SYS greens", "effects": { "crew.chen.loyalty": "3", "social.order": "2", "crew.maya.loyalty": "-3" } },
+        { "label": "Run assay on battery buffer", "effects": { "resource.parts": "-2", "player.rep": "4" } }
+      ]
+    },
+    {
+      "id": "dept_eng_sys_briefing",
+      "type": "department",
+      "scope": "department",
+      "style": "memo",
+      "weight": 12,
+      "cooldown": 17,
+      "minTier": 1,
+      "deptGate": "Engineering",
+      "trigger": { "any": [{ "device": "water_loop" }] },
+      "title": "SYS light briefing for T1",
+      "body": "Chen walks new T1s through the engineering station lights: green steady, yellow low HP, orange offline, red broken. Someone asks if the blink means cascade yet.",
+      "options": [
+        { "label": "Full cascade walkthrough", "effects": { "player.skill": "4", "player.rep": "2", "resource.parts": "-1" } },
+        { "label": "Quick chart only", "effects": { "player.skill": "2", "player.perf": "1" } },
+        { "label": "Skip — they'll learn live", "effects": { "player.perf": "2", "social.order": "-2" } }
+      ]
+    },
+    {
+      "id": "dept_nav_vote_drill",
+      "type": "department",
+      "scope": "department",
+      "style": "memo",
+      "weight": 11,
+      "cooldown": 20,
+      "minTier": 2,
+      "deptGate": "Logistics",
+      "trigger": { "any": [{ "flag": "route_votes", "flagMin": 2 }] },
+      "title": "Nav vote drill for T2",
+      "body": "Lee runs a tabletop vote drill: lean bars, lobby caps, food-day linkage. Three T2s still think the captain breaks ties with a gavel.",
+      "options": [
+        { "label": "Full weighted sim", "effects": { "player.skill": "3", "social.order": "3", "resource.power": "-2" } },
+        { "label": "Chart walkthrough only", "effects": { "player.rep": "2", "player.perf": "1" } },
+        { "label": "Cancel — real vote tomorrow", "effects": { "social.morale": "-2", "player.perf": "2" } }
+      ]
+    },
+    {
+      "id": "dept_log_route_ration_lock",
+      "type": "department",
+      "scope": "department",
+      "style": "debate",
+      "weight": 12,
+      "cooldown": 17,
+      "minTier": 2,
+      "deptGate": "Logistics",
+      "trigger": { "any": [{ "flag": "food_promise", "flagMin": 1 }] },
+      "title": "Ration lock for segment",
+      "body": "Logistics wants to freeze ration changes until the current segment ends — honoring the bridge promise. Ecology says bay yields can't wait.",
+      "options": [
+        { "label": "Lock rations", "effects": { "social.order": "5", "resource.food": "-5", "player.rep": "3" } },
+        { "label": "Flex for bay emergency", "effects": { "social.morale": "2", "social.order": "-3", "player.rep": "-2" } },
+        { "label": "Publish weekly ledger", "effects": { "player.skill": "2", "flag.audit_routine": "1" } }
+      ]
+    },
+    {
+      "id": "dept_mfg_vote_blackout",
+      "type": "department",
+      "scope": "department",
+      "style": "vignette",
+      "weight": 10,
+      "cooldown": 19,
+      "minTier": 2,
+      "deptGate": "Manufacturing",
+      "trigger": { "any": [{ "flag": "route_votes", "flagMin": 1 }, { "resource": "power", "below": 48 }] },
+      "title": "Lathe pause for vote brief",
+      "body": "Sam wants all three lathes paused during the council brief so noise doesn't drown lean numbers. Lena says parts backlog won't pause itself.",
+      "options": [
+        { "label": "Pause lathes 2h", "effects": { "social.morale": "3", "resource.parts": "-4", "player.rep": "2" } },
+        { "label": "Run quiet recipe only", "effects": { "resource.parts": "2", "social.morale": "-2" } },
+        { "label": "Ignore — hood research soon", "effects": { "crew.sam.loyalty": "-3", "resource.parts": "5" } }
+      ]
+    },
+    {
+      "id": "dept_sci_anomaly_brief",
+      "type": "department",
+      "scope": "department",
+      "style": "hardsci",
+      "weight": 11,
+      "cooldown": 22,
+      "minTier": 2,
+      "deptGate": "Science",
+      "trigger": { "any": [{ "flag": "route_seg_anomaly", "flagMin": 1 }] },
+      "title": "Anomaly segment brief",
+      "body": "Maya briefs science staff on Anomaly Survey protocols: specimen quarantine, comms shielding, and what not to say in mess hall.",
+      "options": [
+        { "label": "Full protocol + drill", "effects": { "player.skill": "4", "resource.power": "-3", "void.clue": "1" } },
+        { "label": "Slides only", "effects": { "player.rep": "2", "social.order": "1" } },
+        { "label": "Classified — captains only", "effects": { "social.order": "4", "social.morale": "-3" } }
+      ]
+    },
+    {
+      "id": "dept_mfg_filter_rush",
+      "type": "department",
+      "scope": "department",
+      "style": "memo",
+      "weight": 12,
+      "cooldown": 18,
+      "minTier": 2,
+      "deptGate": "Manufacturing",
+      "trigger": { "any": [{ "device": "water_loop" }] },
+      "title": "Filter mesh rush order",
+      "body": "Engineering needs scrubber filter mesh before the water loop yellows again. Sam wants to bump filter_mesh to front of all lathes.",
+      "options": [
+        { "label": "Bump filter_mesh — pause queue", "effects": { "resource.parts": "4", "social.order": "2", "player.rep": "2" } },
+        { "label": "Keep queue order", "effects": { "crew.sam.loyalty": "-3", "social.order": "-2" } },
+        { "label": "Import mesh via exchange", "effects": { "resource.food": "-8", "resource.parts": "3", "flag.audit_deferred": "1" } }
+      ]
+    },
+    {
+      "id": "dept_eng_lathe_power",
+      "type": "department",
+      "scope": "department",
+      "style": "debate",
+      "weight": 11,
+      "cooldown": 17,
+      "minTier": 2,
+      "deptGate": "Engineering",
+      "trigger": { "any": [{ "resource": "power", "below": 50 }] },
+      "title": "Lathe power cap debate",
+      "body": "Chen proposes capping Manufacturing draw at twenty percent until SYS greens return. Sam says three lathes already idle half the day.",
+      "options": [
+        { "label": "Cap mfg draw", "effects": { "resource.power": "6", "resource.parts": "-4", "social.order": "3" } },
+        { "label": "Reject cap — sprint parts", "effects": { "resource.parts": "5", "resource.power": "-4", "crew.chen.loyalty": "-3" } },
+        { "label": "Two lathes max until green", "effects": { "player.rep": "3", "social.order": "2" } }
+      ]
+    },
+    {
+      "id": "dept_log_audit_mfg",
+      "type": "department",
+      "scope": "department",
+      "style": "memo",
+      "weight": 13,
+      "cooldown": 20,
+      "minTier": 2,
+      "deptGate": "Logistics",
+      "trigger": { "any": [{ "flag": "audit_routine", "flagMin": 1 }] },
+      "title": "Cross-dept audit with Manufacturing",
+      "body": "Lee wants Sam at the next audit to reconcile lathe counters with exchange listings live. Sam calls it public shaming.",
+      "options": [
+        { "label": "Joint audit session", "effects": { "social.order": "5", "flag.audit_resolved": "1", "social.morale": "-2" } },
+        { "label": "Private reconcile first", "effects": { "player.rep": "3", "crew.sam.loyalty": "2" } },
+        { "label": "Skip — trust counters", "effects": { "flag.audit_deferred": "1", "crew.sam.loyalty": "4" } }
+      ]
+    },
+    {
+      "id": "dept_sci_specimen_trade",
+      "type": "department",
+      "scope": "department",
+      "style": "hardsci",
+      "weight": 10,
+      "cooldown": 23,
+      "minTier": 2,
+      "deptGate": "Science",
+      "trigger": { "any": [{ "flag": "audit_disputed", "flagMin": 1 }] },
+      "title": "Specimen listing dispute",
+      "body": "Maya finds alien specimens logged to Science but listed on exchange as 'misc organic.' Audit wants to know if it's error or smuggling.",
+      "options": [
+        { "label": "Quarantine specimens — investigate", "effects": { "social.order": "4", "void.clue": "1", "flag.audit_resolved": "1" } },
+        { "label": "Re-label as research reserve", "effects": { "player.skill": "3", "player.rep": "2" } },
+        { "label": "Allow limited barter", "effects": { "resource.food": "6", "social.order": "-4", "flag.audit_disputed": "1" } }
+      ]
+    },
+    {
+      "id": "dept_crew_shift_swap",
+      "type": "department",
+      "scope": "department",
+      "style": "memo",
+      "weight": 11,
+      "cooldown": 17,
+      "deptGate": "Support",
+      "trigger": { "any": [{ "minDay": 10 }] },
+      "title": "Shift swap petition",
+      "body": "Twelve B-shift workers petition to swap with A-shift for one week. Ecology warns harvest windows cannot absorb the churn.",
+      "options": [
+        { "label": "Approve one-week swap", "effects": { "social.morale": "4", "resource.food": "-4", "social.order": "-2" } },
+        { "label": "Deny — keep rotations frozen", "effects": { "social.order": "5", "social.morale": "-4" } },
+        { "label": "Pilot swap in Support only", "effects": { "social.order": "3", "player.rep": "3" } }
+      ]
+    },
+    {
+      "id": "dept_gen_heir_training",
+      "type": "department",
+      "scope": "department",
+      "style": "debate",
+      "weight": 10,
+      "cooldown": 24,
+      "minTier": 2,
+      "trigger": { "any": [{ "minDay": 30 }] },
+      "title": "Heir training budget",
+      "body": "Departments argue over who trains the heir candidate — Engineering wants reactor hours; Science wants lab safety; Support wants crisis drills.",
+      "options": [
+        { "label": "Rotate heir across departments", "effects": { "player.skill": "4", "resource.power": "-3", "player.rep": "3" } },
+        { "label": "Engineering-only track", "effects": { "resource.parts": "4", "crew.chen.loyalty": "4", "crew.maya.loyalty": "-3" } },
+        { "label": "Defer until succession nears", "effects": { "social.order": "2", "flag.audit_deferred": "1" } }
+      ]
+    },
+    {
+      "id": "dept_void_hydro_seal",
+      "type": "department",
+      "scope": "department",
+      "style": "hardsci",
+      "weight": 11,
+      "cooldown": 20,
+      "deptGate": "Ecology",
+      "trigger": { "any": [{ "flag": "spore_bays", "flagMin": 1 }] },
+      "title": "Hydro bay emergency seal",
+      "body": "Ecology requests emergency seals on spore-touched bays. Manufacturing needs those bays for filter mesh staging.",
+      "options": [
+        { "label": "Seal bays — ecology priority", "effects": { "social.order": "4", "resource.food": "-5", "void.clue": "1" } },
+        { "label": "Shared access windows", "effects": { "resource.parts": "3", "social.morale": "-2", "flag.audit_deferred": "1" } },
+        { "label": "Reject seal — mesh sprint first", "effects": { "resource.parts": "5", "social.order": "-3" } }
+      ]
+    },
+    {
+      "id": "dept_audit_inventory_blitz",
+      "type": "department",
+      "scope": "department",
+      "style": "memo",
+      "weight": 12,
+      "cooldown": 16,
+      "deptGate": "Logistics",
+      "trigger": { "any": [{ "flag": "audit_routine", "flagMin": 1 }, { "flag": "audit_deferred", "flagMin": 1 }] },
+      "title": "Inventory blitz audit",
+      "body": "Logistics schedules a 48h inventory blitz across all departments. Science protests specimen custody interruptions.",
+      "options": [
+        { "label": "Full blitz — all departments", "effects": { "social.order": "6", "social.morale": "-5", "flag.audit_resolved": "1", "resource.power": "-3" } },
+        { "label": "Exclude Science specimens", "effects": { "player.rep": "3", "crew.elena.loyalty": "3", "flag.audit_deferred": "1" } },
+        { "label": "Cancel blitz — too costly", "effects": { "social.morale": "2", "flag.audit_ignored": "1" } }
+      ]
+    }
+  ]
+}

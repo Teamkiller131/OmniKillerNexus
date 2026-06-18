@@ -1,0 +1,2056 @@
+{
+  "events": [
+    {
+      "id": "hardsci_co2_spike",
+      "weight": 11,
+      "cooldown": 16,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 8
+          },
+          {
+            "resource": "oxygen",
+            "below": 95
+          }
+        ]
+      },
+      "title": "CO₂ scrubber efficiency drop",
+      "body": "Partial pressure rising 0.3 kPa above nominal. Maya recommends increasing algae throughput. Chen recommends reducing non-critical loads.",
+      "options": [
+        {
+          "label": "Increase algae throughput",
+          "effects": {
+            "resource.food": "-5",
+            "resource.power": "-4",
+            "social.morale": "-2"
+          }
+        },
+        {
+          "label": "Reduce lighting company-wide",
+          "effects": {
+            "engineering.ecology": "0.15",
+            "social.morale": "-4"
+          }
+        },
+        {
+          "label": "Run hot scrubber (risk)",
+          "effects": {
+            "resource.parts": "-3",
+            "flag.engine_risk": "1"
+          }
+        }
+      ],
+      "type": "operational",
+      "scope": "ship",
+      "style": "hardsci"
+    },
+    {
+      "id": "hardsci_micrometeor",
+      "weight": 10,
+      "cooldown": 22,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 15
+          }
+        ]
+      },
+      "title": "Micrometeor ping on hull",
+      "body": "Sonar picked a 2mm penetration in sector 7. No breach yet. Patch now costs EVA time. Wait risks cascade.",
+      "options": [
+        {
+          "label": "Immediate patch",
+          "effects": {
+            "resource.parts": "-6",
+            "resource.power": "-5",
+            "social.order": "3"
+          }
+        },
+        {
+          "label": "Monitor 48h",
+          "effects": {
+            "flag.hull_watch": "1",
+            "social.morale": "-2"
+          }
+        },
+        {
+          "label": "Redirect power to auto-seal",
+          "effects": {
+            "resource.power": "-8",
+            "resource.parts": "-2"
+          }
+        }
+      ],
+      "type": "operational",
+      "scope": "ship",
+      "style": "hardsci"
+    },
+    {
+      "id": "hardsci_water_recycler",
+      "weight": 12,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "resource": "water",
+            "below": 80
+          }
+        ]
+      },
+      "title": "Water recycler foam event",
+      "body": "Priya reports surfactant foam in loop C. Food grade or industrial contaminant — test takes six hours.",
+      "options": [
+        {
+          "label": "Shut loop C",
+          "effects": {
+            "resource.water": "-8",
+            "social.morale": "-3"
+          }
+        },
+        {
+          "label": "Bypass to loop B",
+          "effects": {
+            "resource.water": "-3",
+            "resource.power": "-4",
+            "flag.water_risk": "1"
+          }
+        },
+        {
+          "label": "Run blind while testing",
+          "effects": {
+            "resource.water": "2",
+            "flag.water_risk": "1",
+            "social.morale": "-2"
+          }
+        }
+      ],
+      "type": "operational",
+      "scope": "ship",
+      "style": "hardsci"
+    },
+    {
+      "id": "folk_launch_day",
+      "weight": 9,
+      "cooldown": 25,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 20
+          }
+        ]
+      },
+      "title": "Launch day remembrance",
+      "body": "Old crew gather in mess to tell launch stories. New crew roll eyes. The captain has not attended in years.",
+      "options": [
+        {
+          "label": "Organize official minute of silence",
+          "effects": {
+            "social.morale": "4",
+            "social.order": "2"
+          }
+        },
+        {
+          "label": "Let it stay informal",
+          "effects": {
+            "social.morale": "3",
+            "social.order": "-1"
+          }
+        },
+        {
+          "label": "Cancel — waste of calories",
+          "effects": {
+            "social.morale": "-6",
+            "social.order": "3"
+          }
+        }
+      ],
+      "type": "social",
+      "scope": "ship",
+      "style": "folklore"
+    },
+    {
+      "id": "folk_corridor_saint",
+      "weight": 8,
+      "cooldown": 28,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 25
+          }
+        ]
+      },
+      "title": "Patron of corridor 3",
+      "body": "Someone leaves flowers at a junction where a worker died in year two. No name on the plaque anymore.",
+      "options": [
+        {
+          "label": "Restore the plaque",
+          "effects": {
+            "resource.parts": "-1",
+            "social.morale": "5",
+            "player.rep": "2"
+          }
+        },
+        {
+          "label": "Remove flowers — mold risk",
+          "effects": {
+            "social.morale": "-4",
+            "social.order": "2"
+          }
+        },
+        {
+          "label": "Move memorial to observatory",
+          "effects": {
+            "social.morale": "3",
+            "social.order": "1"
+          }
+        }
+      ],
+      "type": "social",
+      "scope": "ship",
+      "style": "folklore"
+    },
+    {
+      "id": "folk_birth_year_lottery",
+      "weight": 10,
+      "cooldown": 24,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 18
+          }
+        ]
+      },
+      "title": "Birth-year lottery for bunks",
+      "body": "Youth deck proposes reallocating bunks by birth year instead of department. Chaos or fairness?",
+      "options": [
+        {
+          "label": "Trial one month",
+          "effects": {
+            "social.morale": "3",
+            "social.order": "-3"
+          }
+        },
+        {
+          "label": "Reject — dept proximity matters",
+          "effects": {
+            "social.order": "4",
+            "social.morale": "-2"
+          }
+        },
+        {
+          "label": "Hybrid — youth only",
+          "effects": {
+            "social.morale": "2",
+            "player.rep": "2"
+          }
+        }
+      ],
+      "type": "social",
+      "scope": "ship",
+      "style": "folklore"
+    },
+    {
+      "id": "moral_one_bed",
+      "weight": 8,
+      "cooldown": 26,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 16
+          }
+        ]
+      },
+      "title": "One med bed, two fevers",
+      "body": "Only one isolation bed is free. An elder with critical skills vs a youth with no record. Both rising.",
+      "options": [
+        {
+          "label": "Elder — preserve skills",
+          "effects": {
+            "social.morale": "-5",
+            "flag.utilitarian": "1",
+            "resource.medicine": "-4"
+          }
+        },
+        {
+          "label": "Youth — preserve future",
+          "effects": {
+            "social.morale": "2",
+            "flag.humanist": "1",
+            "resource.medicine": "-4"
+          }
+        },
+        {
+          "label": "Lottery",
+          "effects": {
+            "social.morale": "-2",
+            "social.order": "3",
+            "resource.medicine": "-4"
+          }
+        }
+      ],
+      "type": "moral",
+      "scope": "ship",
+      "style": "moral_gray"
+    },
+    {
+      "id": "moral_ration_lie",
+      "weight": 9,
+      "cooldown": 24,
+      "trigger": {
+        "any": [
+          {
+            "resource": "food",
+            "below": 500
+          }
+        ]
+      },
+      "title": "Lie on the ration board",
+      "body": "Lee can post false surplus numbers to prevent panic. Hana says the mess will notice the empty trays anyway.",
+      "options": [
+        {
+          "label": "Post false surplus",
+          "effects": {
+            "social.morale": "3",
+            "social.order": "-4",
+            "flag.deception": "1"
+          }
+        },
+        {
+          "label": "Post truth",
+          "effects": {
+            "social.morale": "-5",
+            "social.order": "4"
+          }
+        },
+        {
+          "label": "Reduce portions silently",
+          "effects": {
+            "resource.food": "4",
+            "social.morale": "-3",
+            "flag.utilitarian": "1"
+          }
+        }
+      ],
+      "type": "moral",
+      "scope": "ship",
+      "style": "moral_gray"
+    },
+    {
+      "id": "moral_data_leak",
+      "weight": 8,
+      "cooldown": 27,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 19
+          }
+        ]
+      },
+      "title": "Leak the captain's health data",
+      "body": "You have seen the med file. Crew morale is fraying on rumors. Publishing would end speculation — and privacy.",
+      "options": [
+        {
+          "label": "Leak summary",
+          "effects": {
+            "social.morale": "4",
+            "social.order": "-5",
+            "flag.deception": "1"
+          }
+        },
+        {
+          "label": "Protect privacy",
+          "effects": {
+            "social.order": "3",
+            "social.morale": "-3"
+          }
+        },
+        {
+          "label": "Ask captain to address crew",
+          "effects": {
+            "social.morale": "2",
+            "social.order": "2"
+          }
+        }
+      ],
+      "type": "moral",
+      "scope": "ship",
+      "style": "moral_gray"
+    },
+    {
+      "id": "seren_aurora_dust",
+      "weight": 7,
+      "cooldown": 30,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 22
+          }
+        ]
+      },
+      "title": "Aurora in the dust lane",
+      "body": "The ship passes a charged particle lane. Observatory reports colors no camera on Earth ever caught.",
+      "options": [
+        {
+          "label": "Open observatory to all shifts",
+          "effects": {
+            "social.morale": "6",
+            "resource.power": "-5"
+          }
+        },
+        {
+          "label": "Scientists only",
+          "effects": {
+            "crew.elena.loyalty": "4",
+            "social.morale": "-2"
+          }
+        },
+        {
+          "label": "Stay on task — no window time",
+          "effects": {
+            "social.morale": "-4",
+            "resource.power": "2"
+          }
+        }
+      ],
+      "type": "serendipity",
+      "scope": "ship",
+      "style": "serendipity"
+    },
+    {
+      "id": "seren_earth_signal",
+      "weight": 6,
+      "cooldown": 35,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 30
+          }
+        ]
+      },
+      "title": "Fragment of Earth signal",
+      "body": "Comms picks a degraded broadcast — music, then static, then a child laughing. Origin timestamp impossible.",
+      "options": [
+        {
+          "label": "Play in mess",
+          "effects": {
+            "social.morale": "8",
+            "social.order": "-3",
+            "flag.earth_echo": "1"
+          }
+        },
+        {
+          "label": "Archive for science",
+          "effects": {
+            "crew.elena.loyalty": "5",
+            "flag.earth_echo": "1"
+          }
+        },
+        {
+          "label": "Erase the buffer",
+          "effects": {
+            "social.order": "4",
+            "social.morale": "-2"
+          }
+        }
+      ],
+      "type": "serendipity",
+      "scope": "ship",
+      "style": "serendipity"
+    },
+    {
+      "id": "seren_biolum_tray",
+      "weight": 8,
+      "cooldown": 28,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 17
+          }
+        ]
+      },
+      "title": "Accidental bioluminescence",
+      "body": "A cross-contamination in Bay F produces faint blue glow. Safe to eat. Beautiful to watch.",
+      "options": [
+        {
+          "label": "Serve as morale dish",
+          "effects": {
+            "social.morale": "5",
+            "resource.food": "-3"
+          }
+        },
+        {
+          "label": "Study before eating",
+          "effects": {
+            "resource.power": "-3",
+            "crew.maya.loyalty": "4",
+            "void.clue": "1"
+          }
+        },
+        {
+          "label": "Destroy — unknown",
+          "effects": {
+            "resource.food": "-5",
+            "social.order": "3"
+          }
+        }
+      ],
+      "type": "serendipity",
+      "scope": "ship",
+      "style": "serendipity"
+    },
+    {
+      "id": "doc_captain_address",
+      "weight": 10,
+      "cooldown": 20,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 12
+          }
+        ]
+      },
+      "title": "Captain's address draft",
+      "body": "The captain asks you to review a speech before route vote. Draft A is honest about shortages. Draft B is optimistic fiction.",
+      "options": [
+        {
+          "label": "Recommend honest draft",
+          "effects": {
+            "social.morale": "-2",
+            "social.order": "4",
+            "flag.honest_captain": "1"
+          }
+        },
+        {
+          "label": "Recommend optimistic draft",
+          "effects": {
+            "social.morale": "4",
+            "social.order": "-2",
+            "flag.deception": "1"
+          }
+        },
+        {
+          "label": "Suggest combining both",
+          "effects": {
+            "social.morale": "2",
+            "player.rep": "3"
+          }
+        }
+      ],
+      "type": "social",
+      "scope": "ship",
+      "style": "broadcast",
+      "minTier": 2
+    },
+    {
+      "id": "doc_quarterly_loss",
+      "weight": 11,
+      "cooldown": 18,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 11
+          }
+        ]
+      },
+      "title": "Quarterly loss statement",
+      "body": "Ship-wide memo: 2.3% resource loss to spoilage, theft, and 'unexplained'. Captain wants a public figure or a quiet fix.",
+      "options": [
+        {
+          "label": "Publish full figure",
+          "effects": {
+            "social.order": "3",
+            "social.morale": "-4"
+          }
+        },
+        {
+          "label": "Round down in public",
+          "effects": {
+            "social.morale": "2",
+            "flag.deception": "1"
+          }
+        },
+        {
+          "label": "Launch audit task force",
+          "effects": {
+            "social.order": "5",
+            "social.morale": "-2",
+            "flag.audit_pending": "1"
+          }
+        }
+      ],
+      "type": "operational",
+      "scope": "ship",
+      "style": "broadcast",
+      "minTier": 2
+    },
+    {
+      "id": "crisis_lite_vent_fire",
+      "weight": 9,
+      "cooldown": 24,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 14
+          }
+        ]
+      },
+      "title": "Vent smoke — no flame found",
+      "body": "Smoke in corridor 5. No flame sensor trip. Could be electrical — could be someone burning contraband.",
+      "options": [
+        {
+          "label": "Full deck seal",
+          "effects": {
+            "social.morale": "-4",
+            "social.order": "5",
+            "resource.power": "-6"
+          }
+        },
+        {
+          "label": "Vent flush",
+          "effects": {
+            "resource.power": "-4",
+            "resource.oxygen": "-2",
+            "social.order": "3"
+          }
+        },
+        {
+          "label": "Search before alarm",
+          "effects": {
+            "player.rep": "2",
+            "social.order": "-2",
+            "flag.contraband_hint": "1"
+          }
+        }
+      ],
+      "type": "crisis",
+      "scope": "ship",
+      "style": "hardsci"
+    },
+    {
+      "id": "crisis_lite_suit_leak",
+      "weight": 8,
+      "cooldown": 26,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 18
+          }
+        ]
+      },
+      "title": "EVA suit leak test fail",
+      "body": "One suit failed pressure test before a hull walk. Two missions queued. One suit.",
+      "options": [
+        {
+          "label": "Delay hull walk",
+          "effects": {
+            "resource.parts": "-2",
+            "social.order": "2",
+            "flag.hull_watch": "1"
+          }
+        },
+        {
+          "label": "Share suit — double shift",
+          "effects": {
+            "social.morale": "-3",
+            "resource.parts": "-4",
+            "crew.chen.loyalty": "3"
+          }
+        },
+        {
+          "label": "Patch suit with gamble",
+          "effects": {
+            "resource.parts": "-3",
+            "flag.engine_risk": "1",
+            "social.morale": "1"
+          }
+        }
+      ],
+      "type": "crisis",
+      "scope": "ship",
+      "style": "hardsci"
+    },
+    {
+      "id": "void_adjacent_comm_static",
+      "weight": 7,
+      "cooldown": 28,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 20
+          },
+          {
+            "flag": "void_contact",
+            "flagMin": 0.1
+          }
+        ]
+      },
+      "title": "Comm static in human voices",
+      "body": "Night shift comms logs phonemes that match no language on board. Elena wants the raw file. Security wants it deleted.",
+      "options": [
+        {
+          "label": "Give Elena the file",
+          "effects": {
+            "void.clue": "1",
+            "crew.elena.loyalty": "4",
+            "social.order": "-2"
+          }
+        },
+        {
+          "label": "Delete per security",
+          "effects": {
+            "social.order": "4",
+            "void.infection": "2"
+          }
+        },
+        {
+          "label": "Play it in mess — transparency",
+          "effects": {
+            "social.morale": "-5",
+            "void.clue": "1",
+            "void.infection": "3"
+          }
+        }
+      ],
+      "type": "social",
+      "scope": "ship",
+      "style": "noir",
+      "minTier": 2
+    },
+    {
+      "id": "void_adjacent_greenhouse_hum",
+      "weight": 8,
+      "cooldown": 26,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 16
+          }
+        ]
+      },
+      "title": "Greenhouse hum matches void frequency",
+      "body": "Ecology reports bay vibration matching an anomalous comm frequency. Coincidence until it is not.",
+      "options": [
+        {
+          "label": "Shut bay power",
+          "effects": {
+            "resource.food": "-6",
+            "void.clue": "1",
+            "social.morale": "-2"
+          }
+        },
+        {
+          "label": "Record and continue",
+          "effects": {
+            "void.clue": "1",
+            "resource.power": "-2"
+          }
+        },
+        {
+          "label": "Dismiss as fan harmonic",
+          "effects": {
+            "void.infection": "3",
+            "player.rep": "-2"
+          }
+        }
+      ],
+      "type": "operational",
+      "scope": "ship",
+      "style": "noir",
+      "deptGate": "Ecology",
+      "minTier": 2
+    },
+    {
+      "id": "com_ship_cat_myth",
+      "weight": 9,
+      "cooldown": 22,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 13
+          }
+        ]
+      },
+      "title": "Ship cat conspiracy",
+      "body": "Three departments claim a cat lives in the walls. Pest control finds only claw marks on ration crates.",
+      "options": [
+        {
+          "label": "Official search",
+          "effects": {
+            "social.morale": "3",
+            "resource.food": "-2",
+            "player.perf": "-1"
+          }
+        },
+        {
+          "label": "Declare mascot by vote",
+          "effects": {
+            "social.morale": "5",
+            "social.order": "-2"
+          }
+        },
+        {
+          "label": "Ignore — let myth live",
+          "effects": {
+            "social.morale": "2",
+            "social.order": "1"
+          }
+        }
+      ],
+      "type": "social",
+      "scope": "ship",
+      "style": "comedy"
+    },
+    {
+      "id": "com_ship_talent_show",
+      "weight": 10,
+      "cooldown": 20,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 15
+          }
+        ]
+      },
+      "title": "Unauthorized talent show",
+      "body": "B-crew plans a mess hall talent night during power-saving hours. Hana is thrilled. Chen is not.",
+      "options": [
+        {
+          "label": "Approve one hour",
+          "effects": {
+            "social.morale": "6",
+            "resource.power": "-4"
+          }
+        },
+        {
+          "label": "Ban it",
+          "effects": {
+            "social.order": "3",
+            "social.morale": "-5"
+          }
+        },
+        {
+          "label": "Move to observatory",
+          "effects": {
+            "social.morale": "4",
+            "resource.power": "-2",
+            "player.rep": "2"
+          }
+        }
+      ],
+      "type": "social",
+      "scope": "ship",
+      "style": "comedy"
+    },
+    {
+      "id": "gen_elder_request",
+      "weight": 9,
+      "cooldown": 23,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 17
+          }
+        ]
+      },
+      "title": "Elder council request",
+      "body": "The oldest hundred ask for a fixed voice in route votes — advisory, not binding. Youth call it a veto in disguise.",
+      "options": [
+        {
+          "label": "Grant advisory seat",
+          "effects": {
+            "social.morale": "3",
+            "social.order": "-2",
+            "flag.elder_voice": "1"
+          }
+        },
+        {
+          "label": "Reject — merit only",
+          "effects": {
+            "social.order": "4",
+            "social.morale": "-4"
+          }
+        },
+        {
+          "label": "Youth-elder paired delegates",
+          "effects": {
+            "social.morale": "2",
+            "player.rep": "3",
+            "flag.elder_voice": "1"
+          }
+        }
+      ],
+      "type": "social",
+      "scope": "ship",
+      "style": "folklore"
+    },
+    {
+      "id": "gen_youth_strike",
+      "weight": 10,
+      "cooldown": 21,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 14
+          }
+        ]
+      },
+      "title": "Youth deck slow strike",
+      "body": "Young workers refuse overtime until gym hours improve. Production is not yet affected — tomorrow it will be.",
+      "options": [
+        {
+          "label": "Negotiate gym hours",
+          "effects": {
+            "social.morale": "4",
+            "resource.parts": "-2"
+          }
+        },
+        {
+          "label": "Disciplinary rotation",
+          "effects": {
+            "social.order": "5",
+            "social.morale": "-6"
+          }
+        },
+        {
+          "label": "Ignore until production hits",
+          "effects": {
+            "social.morale": "-3",
+            "flag.youth_unrest": "1"
+          }
+        }
+      ],
+      "type": "social",
+      "scope": "ship",
+      "style": "debate"
+    },
+    {
+      "id": "iron_silent_ration",
+      "weight": 8,
+      "cooldown": 28,
+      "trigger": {
+        "any": [
+          {
+            "resource": "food",
+            "below": 450
+          },
+          {
+            "minDay": 20
+          }
+        ]
+      },
+      "title": "Silent ration cut",
+      "body": "Stores crossed a threshold you were told not to name aloud. The next week must feel normal while portions shrink.",
+      "options": [
+        {
+          "label": "Announce openly",
+          "effects": {
+            "social.morale": "-7",
+            "social.order": "5",
+            "flag.honest_captain": "1"
+          }
+        },
+        {
+          "label": "Shrink quietly",
+          "effects": {
+            "resource.food": "5",
+            "social.morale": "-3",
+            "flag.deception": "1"
+          }
+        },
+        {
+          "label": "One hungry day then honesty",
+          "effects": {
+            "social.morale": "-4",
+            "social.order": "3",
+            "flag.honest_captain": "1"
+          }
+        }
+      ],
+      "type": "operational",
+      "scope": "ship",
+      "style": "iron"
+    },
+    {
+      "id": "iron_no_med_evac",
+      "weight": 7,
+      "cooldown": 30,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 25
+          }
+        ]
+      },
+      "title": "No med evac option",
+      "body": "Three critical fevers. Medicine enough for two courses. The ship cannot turn back — that was signed in year one.",
+      "options": [
+        {
+          "label": "Triage by role criticality",
+          "effects": {
+            "resource.medicine": "-6",
+            "flag.utilitarian": "1",
+            "social.morale": "-6"
+          }
+        },
+        {
+          "label": "Lottery among three",
+          "effects": {
+            "resource.medicine": "-6",
+            "social.order": "4",
+            "social.morale": "-3"
+          }
+        },
+        {
+          "label": "Dilute doses — gamble",
+          "effects": {
+            "resource.medicine": "-4",
+            "flag.engine_risk": "1",
+            "social.morale": "-2"
+          }
+        }
+      ],
+      "type": "crisis",
+      "scope": "ship",
+      "style": "iron"
+    },
+    {
+      "id": "arch_old_manifest",
+      "weight": 7,
+      "cooldown": 32,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 28
+          }
+        ]
+      },
+      "title": "Old cargo manifest",
+      "body": "Raj finds a pre-launch manifest behind a wall panel — items never logged on Qingniao. Including a sealed crate marked PERSONAL.",
+      "options": [
+        {
+          "label": "Open crate publicly",
+          "effects": {
+            "social.morale": "4",
+            "social.order": "-3",
+            "flag.earth_echo": "1"
+          }
+        },
+        {
+          "label": "Inventory for captain",
+          "effects": {
+            "social.order": "4",
+            "flag.audit_pending": "1"
+          }
+        },
+        {
+          "label": "Re-seal and forget",
+          "effects": {
+            "flag.deception": "1",
+            "void.infection": "2"
+          }
+        }
+      ],
+      "type": "serendipity",
+      "scope": "ship",
+      "style": "archival"
+    },
+    {
+      "id": "arch_captain_log",
+      "weight": 6,
+      "cooldown": 35,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 35
+          }
+        ]
+      },
+      "title": "Captain's year-one log",
+      "body": "A data chip with the first captain's daily entries. Unfiltered. Some names still serve.",
+      "options": [
+        {
+          "label": "Publish excerpts",
+          "effects": {
+            "social.morale": "5",
+            "social.order": "-4",
+            "flag.honest_captain": "1"
+          }
+        },
+        {
+          "label": "Archive restricted",
+          "effects": {
+            "social.order": "3",
+            "crew.elena.loyalty": "3"
+          }
+        },
+        {
+          "label": "Destroy — too volatile",
+          "effects": {
+            "social.morale": "-3",
+            "social.order": "5"
+          }
+        }
+      ],
+      "type": "serendipity",
+      "scope": "ship",
+      "style": "archival"
+    },
+    {
+      "id": "epist_ship_wide_apology",
+      "weight": 9,
+      "cooldown": 24,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 16
+          }
+        ]
+      },
+      "title": "Draft apology to the ship",
+      "body": "After the last crisis, someone must sign a ship-wide apology. Draft blames systems. Draft blames people.",
+      "options": [
+        {
+          "label": "Systems blame",
+          "effects": {
+            "social.morale": "2",
+            "social.order": "-2"
+          }
+        },
+        {
+          "label": "People blame",
+          "effects": {
+            "social.morale": "-4",
+            "social.order": "4"
+          }
+        },
+        {
+          "label": "No apology — move forward",
+          "effects": {
+            "social.morale": "-2",
+            "social.order": "2"
+          }
+        }
+      ],
+      "type": "social",
+      "scope": "ship",
+      "style": "epistolary",
+      "minTier": 2
+    },
+    {
+      "id": "phil_ship_purpose",
+      "weight": 8,
+      "cooldown": 29,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 22
+          }
+        ]
+      },
+      "title": "Purpose vote",
+      "body": "Science proposes a ship-wide vote: prioritize survival, knowledge, or legacy. Results would bind resource policy.",
+      "options": [
+        {
+          "label": "Allow binding vote",
+          "effects": {
+            "social.morale": "4",
+            "social.order": "-3",
+            "flag.humanist": "1"
+          }
+        },
+        {
+          "label": "Captain decides",
+          "effects": {
+            "social.order": "5",
+            "social.morale": "-3"
+          }
+        },
+        {
+          "label": "Non-binding poll only",
+          "effects": {
+            "social.morale": "2",
+            "player.rep": "2"
+          }
+        }
+      ],
+      "type": "moral",
+      "scope": "ship",
+      "style": "philosophical",
+      "minTier": 2
+    },
+    {
+      "id": "exch_ship_trader",
+      "weight": 10,
+      "cooldown": 22,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 14
+          }
+        ]
+      },
+      "title": "Trader offers mystery crate",
+      "body": "Exchange contact offers a crate of Earth-era seeds — unverified viability — for raw and a favor log entry.",
+      "options": [
+        {
+          "label": "Buy seeds",
+          "effects": {
+            "resource.rawmaterials": "-10",
+            "resource.food": "8",
+            "flag.blight_watch": "1"
+          }
+        },
+        {
+          "label": "Decline",
+          "effects": {
+            "social.order": "2",
+            "player.rep": "1"
+          }
+        },
+        {
+          "label": "Buy and quarantine test",
+          "effects": {
+            "resource.rawmaterials": "-8",
+            "resource.power": "-4",
+            "crew.maya.loyalty": "4"
+          }
+        }
+      ],
+      "type": "operational",
+      "scope": "ship",
+      "style": "exchange"
+    },
+    {
+      "id": "hardsci_nitrogen_drift",
+      "weight": 11,
+      "cooldown": 20,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 12
+          }
+        ]
+      },
+      "title": "Nitrogen buffer drift",
+      "body": "Atmosphere mix drifting 0.4% off spec. Minor now. Tomas recommends bleed. Priya recommends software patch.",
+      "options": [
+        {
+          "label": "Physical bleed",
+          "effects": {
+            "resource.oxygen": "-3",
+            "resource.power": "-3",
+            "social.order": "2"
+          }
+        },
+        {
+          "label": "Software patch",
+          "effects": {
+            "resource.power": "-5",
+            "flag.engine_risk": "1"
+          }
+        },
+        {
+          "label": "Wait one cycle",
+          "effects": {
+            "social.morale": "1",
+            "flag.engine_risk": "1"
+          }
+        }
+      ],
+      "type": "operational",
+      "scope": "ship",
+      "style": "hardsci"
+    },
+    {
+      "id": "hardsci_fungal_filter",
+      "weight": 10,
+      "cooldown": 21,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 13
+          }
+        ]
+      },
+      "title": "Fungal filter clog",
+      "body": "Air scrubber filters show fungal growth faster than models. Ecology says normal. Science says new strain.",
+      "options": [
+        {
+          "label": "Replace all filters",
+          "effects": {
+            "resource.parts": "-5",
+            "resource.medicine": "-2",
+            "social.order": "3"
+          }
+        },
+        {
+          "label": "Sample first",
+          "effects": {
+            "void.clue": "1",
+            "crew.elena.loyalty": "3",
+            "resource.power": "-2"
+          }
+        },
+        {
+          "label": "Run until next maintenance",
+          "effects": {
+            "resource.oxygen": "-2",
+            "flag.blight_watch": "1"
+          }
+        }
+      ],
+      "type": "operational",
+      "scope": "ship",
+      "style": "hardsci"
+    },
+    {
+      "id": "folk_three_knocks",
+      "weight": 8,
+      "cooldown": 27,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 19
+          }
+        ]
+      },
+      "title": "Three knocks tradition",
+      "body": "Some crew knock three times before entering closed labs. Superstition from year three outbreak.",
+      "options": [
+        {
+          "label": "Codify as safety step",
+          "effects": {
+            "social.order": "3",
+            "social.morale": "1"
+          }
+        },
+        {
+          "label": "Discourage superstition",
+          "effects": {
+            "social.order": "2",
+            "social.morale": "-3"
+          }
+        },
+        {
+          "label": "Let it spread",
+          "effects": {
+            "social.morale": "2",
+            "void.clue": "1"
+          }
+        }
+      ],
+      "type": "social",
+      "scope": "ship",
+      "style": "folklore"
+    },
+    {
+      "id": "folk_lucky_wrench",
+      "weight": 9,
+      "cooldown": 23,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 15
+          }
+        ]
+      },
+      "title": "Lucky wrench myth",
+      "body": "Engineering claims one wrench never strips bolts. Manufacturing wants to borrow it for a critical fit.",
+      "options": [
+        {
+          "label": "Share the wrench",
+          "effects": {
+            "resource.parts": "2",
+            "social.morale": "3",
+            "crew.chen.loyalty": "-1"
+          }
+        },
+        {
+          "label": "Keep in engineering",
+          "effects": {
+            "crew.chen.loyalty": "3",
+            "crew.sam.loyalty": "-2"
+          }
+        },
+        {
+          "label": "Test — myth or metal",
+          "effects": {
+            "player.rep": "2",
+            "resource.parts": "-1",
+            "social.morale": "1"
+          }
+        }
+      ],
+      "type": "social",
+      "scope": "ship",
+      "style": "folklore"
+    },
+    {
+      "id": "moral_stowaway_child",
+      "weight": 7,
+      "cooldown": 30,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 24
+          }
+        ]
+      },
+      "title": "Stowaway in stores",
+      "body": "Not a person — a pet gene-mod rabbit in a ration crate. Youth deck knows. Adults debate disposal.",
+      "options": [
+        {
+          "label": "Adopt officially",
+          "effects": {
+            "social.morale": "5",
+            "resource.food": "-3",
+            "flag.humanist": "1"
+          }
+        },
+        {
+          "label": "Quiet disposal",
+          "effects": {
+            "social.morale": "-4",
+            "social.order": "3",
+            "flag.utilitarian": "1"
+          }
+        },
+        {
+          "label": "Youth deck cares for it unofficially",
+          "effects": {
+            "social.morale": "3",
+            "social.order": "-2"
+          }
+        }
+      ],
+      "type": "moral",
+      "scope": "ship",
+      "style": "moral_gray"
+    },
+    {
+      "id": "com_ship_recipe_war",
+      "weight": 10,
+      "cooldown": 19,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 11
+          }
+        ]
+      },
+      "title": "Recipe war in mess",
+      "body": "Two unofficial recipes for algae cake divide the ship. Hana refuses to pick a winner.",
+      "options": [
+        {
+          "label": "Ship-wide taste test",
+          "effects": {
+            "social.morale": "5",
+            "resource.food": "-4"
+          }
+        },
+        {
+          "label": "Ban unofficial recipes",
+          "effects": {
+            "social.order": "3",
+            "social.morale": "-4"
+          }
+        },
+        {
+          "label": "Alternate weekly",
+          "effects": {
+            "social.morale": "3",
+            "player.rep": "2"
+          }
+        }
+      ],
+      "type": "social",
+      "scope": "ship",
+      "style": "comedy"
+    },
+    {
+      "id": "doc_emergency_tone",
+      "weight": 9,
+      "cooldown": 25,
+      "trigger": {
+        "any": [
+          {
+            "minDay": 18
+          }
+        ]
+      },
+      "title": "Emergency tone test backlash",
+      "body": "Monthly alarm test panicked new crew. Next test: warn first or stay realistic?",
+      "options": [
+        {
+          "label": "Warn first",
+          "effects": {
+            "social.morale": "2",
+            "social.order": "-2"
+          }
+        },
+        {
+          "label": "Stay realistic",
+          "effects": {
+            "social.order": "4",
+            "social.morale": "-3"
+          }
+        },
+        {
+          "label": "Cancel tests — rely on drills",
+          "effects": {
+            "social.order": "-3",
+            "flag.engine_risk": "1"
+          }
+        }
+      ],
+      "type": "social",
+      "scope": "ship",
+      "style": "broadcast"
+    },
+    {
+      "id": "ship_food_vote_panic",
+      "type": "social",
+      "scope": "ship",
+      "style": "broadcast",
+      "weight": 14,
+      "cooldown": 18,
+      "trigger": { "any": [{ "resource": "food", "below": 150 }] },
+      "title": "Food stock vs route vote",
+      "body": "Mess hall rumor: the next council vote will pick a fast nebula hop while stores show twelve days on tight ration. Families want a food route on the ballot.",
+      "options": [
+        { "label": "Promise Verdant on next ballot", "effects": { "social.morale": "4", "social.order": "-2", "player.rep": "3" } },
+        { "label": "Stick to engineering schedule", "effects": { "social.order": "4", "social.morale": "-5" } },
+        { "label": "Emergency ration audit first", "effects": { "flag.audit_resolved": "1", "resource.power": "-2", "player.skill": "2" } }
+      ]
+    },
+    {
+      "id": "ship_route_council_quorum",
+      "type": "operational",
+      "scope": "ship",
+      "style": "debate",
+      "weight": 12,
+      "cooldown": 22,
+      "trigger": { "any": [{ "flag": "route_votes", "flagMin": 1 }] },
+      "title": "Quorum challenge on last vote",
+      "body": "Two technicians claim they were on B-shift during the last route tally and never heard the lobby window. The captain asks you to validate weighted logs.",
+      "options": [
+        { "label": "Republish vote log publicly", "effects": { "social.order": "3", "social.playerRep": "4" } },
+        { "label": "Re-run symbolic vote", "effects": { "social.morale": "2", "resource.power": "-3" } },
+        { "label": "Dismiss — tally stands", "effects": { "social.order": "5", "social.morale": "-4" } }
+      ]
+    },
+    {
+      "id": "ship_hull_watch_alarm",
+      "type": "operational",
+      "scope": "ship",
+      "style": "hardsci",
+      "weight": 13,
+      "cooldown": 20,
+      "trigger": { "any": [{ "flag": "hull_watch", "flagMin": 1 }] },
+      "title": "Hull watch alarm — sector 7",
+      "body": "Micrometeor monitor trips again in the sector you chose to watch. Pressure flutter lasts ninety seconds then flatlines. EVA team wants a go/no-go before the next route burn.",
+      "options": [
+        { "label": "Authorize EVA patch", "effects": { "resource.parts": "-5", "social.order": "4", "flag.hull_patched": "1" } },
+        { "label": "Delay burn 24h", "effects": { "social.morale": "-2", "player.rep": "3", "resource.food": "-8" } },
+        { "label": "Proceed — flutter within tolerance", "effects": { "flag.engine_risk": "1", "social.order": "-3" } }
+      ]
+    },
+    {
+      "id": "ship_nebula_radiation",
+      "type": "operational",
+      "scope": "ship",
+      "style": "hardsci",
+      "weight": 11,
+      "cooldown": 24,
+      "trigger": { "any": [{ "resource": "power", "below": 45 }] },
+      "title": "Nebula transit radiation spike",
+      "body": "If the ship holds the current nebula shortcut, shield draw will starve ecology lighting unless engineering steals from manufacturing.",
+      "options": [
+        { "label": "Steal from manufacturing", "effects": { "engineering.manufacturing": "0.15", "engineering.ecology": "0.10", "resource.power": "-4" } },
+        { "label": "Drop out of nebula early", "effects": { "social.morale": "-3", "resource.food": "-10", "player.rep": "2" } },
+        { "label": "Ride it — accept crop hit", "effects": { "social.morale": "-5", "resource.food": "-5" } }
+      ]
+    },
+    {
+      "id": "ship_anomaly_whispers",
+      "type": "social",
+      "scope": "ship",
+      "style": "noir",
+      "weight": 10,
+      "cooldown": 26,
+      "trigger": { "any": [{ "flag": "voidScan", "flagMin": 1 }] },
+      "title": "Anomaly route whispers",
+      "body": "Comms picks patterned static whenever the council lists Anomaly Survey. Cult-adjacent crew call it a sign. Scientists call it instrument bleed.",
+      "options": [
+        { "label": "Keep anomaly on ballot", "effects": { "void.clue": "1", "social.morale": "-3", "player.rep": "-2" } },
+        { "label": "Remove until screening completes", "effects": { "social.order": "4", "flag.ethics_screening": "1" } },
+        { "label": "Open forum — both sides speak", "effects": { "social.morale": "2", "social.order": "-2", "player.rep": "4" } }
+      ]
+    },
+    {
+      "id": "ship_green_dwarf_scout",
+      "type": "operational",
+      "scope": "ship",
+      "style": "vignette",
+      "weight": 12,
+      "cooldown": 19,
+      "trigger": { "any": [{ "resource": "food", "below": 200 }, { "flag": "route_votes", "flagMin": 2 }] },
+      "title": "Green dwarf flyby scout",
+      "body": "Long-range scan confirms organics on a verdant flyby path — slow segment, but could refill protein stores before the next generation milestone.",
+      "options": [
+        { "label": "Champion flyby in council", "effects": { "social.morale": "3", "player.rep": "4", "resource.power": "-2" } },
+        { "label": "Data only — no advocacy", "effects": { "player.skill": "2" } },
+        { "label": "Suppress — avoid slow route", "effects": { "resource.parts": "3", "social.morale": "-4" } }
+      ]
+    },
+    {
+      "id": "ship_seg_asteroid_dust",
+      "type": "operational",
+      "scope": "ship",
+      "style": "memo",
+      "weight": 11,
+      "cooldown": 22,
+      "trigger": { "any": [{ "flag": "route_seg_asteroid", "flagMin": 1 }] },
+      "title": "Asteroid belt dust clog",
+      "body": "Micrometeor grit from the last belt segment is clogging external radiator louvers. Engineering wants a slow purge before the next vote cycle.",
+      "options": [
+        { "label": "Full purge — burn power", "effects": { "resource.power": "-8", "social.order": "3", "player.rep": "2" } },
+        { "label": "Partial purge — accept heat risk", "effects": { "engineering.engine": "0.08", "social.morale": "-2" } },
+        { "label": "Defer until after vote", "effects": { "social.order": "-3", "player.rep": "-2" } }
+      ]
+    },
+    {
+      "id": "ship_seg_nebula_static",
+      "type": "social",
+      "scope": "ship",
+      "style": "vignette",
+      "weight": 10,
+      "cooldown": 24,
+      "trigger": { "any": [{ "flag": "route_seg_nebula", "flagMin": 1 }] },
+      "title": "Nebula static on comms",
+      "body": "After the nebula shortcut, comms arrays pick up patterned static during council briefings. Some crew swear it sounds like votes being counted before the roll.",
+      "options": [
+        { "label": "Shield arrays during votes", "effects": { "resource.power": "-4", "social.order": "4" } },
+        { "label": "Publish raw recordings", "effects": { "social.morale": "-4", "player.rep": "5", "void.clue": "1" } },
+        { "label": "Ignore — instrument bleed", "effects": { "social.morale": "1", "social.order": "-2" } }
+      ]
+    },
+    {
+      "id": "ship_voyage_memorial",
+      "type": "social",
+      "scope": "ship",
+      "style": "vignette",
+      "weight": 9,
+      "cooldown": 30,
+      "trigger": { "any": [{ "flag": "route_votes", "flagMin": 3 }] },
+      "title": "Voyage milestone memorial",
+      "body": "Three route votes in, the mess hall wants a wall of segment names — a living map of where Qingniao has been. Logistics worries it glorifies risky detours.",
+      "options": [
+        { "label": "Fund the wall", "effects": { "social.morale": "5", "resource.parts": "-4", "player.rep": "3" } },
+        { "label": "Digital archive only", "effects": { "player.skill": "2", "social.order": "2" } },
+        { "label": "Decline — focus on next vote", "effects": { "social.morale": "-3", "resource.food": "5" } }
+      ]
+    },
+    {
+      "id": "ship_bridge_comms_leak",
+      "type": "operational",
+      "scope": "ship",
+      "style": "noir",
+      "weight": 10,
+      "cooldown": 20,
+      "trigger": { "any": [{ "flag": "route_votes", "flagMin": 2 }] },
+      "title": "Bridge comms leak",
+      "body": "A junior officer overheard lobby tallies on an open channel before the last route vote. Council factions demand to know who was listening.",
+      "options": [
+        { "label": "Internal inquiry", "effects": { "social.order": "5", "player.rep": "-2", "flag.audit_disputed": "1" } },
+        { "label": "Seal nav channels", "effects": { "social.morale": "-2", "social.order": "3", "resource.power": "-2" } },
+        { "label": "Blame instrument fault", "effects": { "social.morale": "-4", "player.rep": "-4" } }
+      ]
+    },
+    {
+      "id": "ship_observatory_blackout",
+      "type": "operational",
+      "scope": "ship",
+      "style": "memo",
+      "weight": 11,
+      "cooldown": 18,
+      "trigger": { "any": [{ "resource": "power", "below": 45 }] },
+      "title": "Observatory blackout",
+      "body": "Low ship power forces a choice: dim the observatory dome or keep star-map projectors hot for the next council session.",
+      "options": [
+        { "label": "Keep star map online", "effects": { "resource.power": "-6", "social.order": "2", "player.rep": "2" } },
+        { "label": "Blackout dome — save power", "effects": { "social.morale": "-3", "resource.food": "3" } },
+        { "label": "Split shift — crew votes on hours", "effects": { "social.morale": "2", "social.order": "-2" } }
+      ]
+    },
+    {
+      "id": "ship_order_fracture_vote",
+      "type": "social",
+      "scope": "ship",
+      "style": "noir",
+      "weight": 12,
+      "cooldown": 16,
+      "trigger": { "any": [{ "moraleBelow": 38 }, { "flag": "route_votes", "flagMin": 2 }] },
+      "title": "Order fracture before vote",
+      "body": "Morale is brittle and the next route pair is posted. Factions threaten to boycott the weighted roll unless someone guarantees food rations hold through the segment.",
+      "options": [
+        { "label": "Promise tight ration hold", "effects": { "social.order": "4", "social.morale": "-2", "flag.food_promise": "1" } },
+        { "label": "Threaten brig for boycotters", "effects": { "social.order": "6", "social.morale": "-6", "player.rep": "-3" } },
+        { "label": "Delay vote — buy time", "effects": { "social.morale": "3", "resource.food": "-8", "player.rep": "2" } }
+      ]
+    },
+    {
+      "id": "ship_derelict_salvage_debate",
+      "type": "operational",
+      "scope": "ship",
+      "style": "debate",
+      "weight": 11,
+      "cooldown": 23,
+      "trigger": { "any": [{ "flag": "route_seg_derelict", "flagMin": 1 }] },
+      "title": "Derelict salvage ethics",
+      "body": "The derelict segment yielded parts — and personal effects tagged unknown crew. Legalists want a memorial; salvagers want the bay cleared for the next vote.",
+      "options": [
+        { "label": "Memorial wall + inventory", "effects": { "social.morale": "4", "resource.parts": "-3", "player.rep": "3" } },
+        { "label": "Strip bay — parts first", "effects": { "resource.parts": "6", "social.morale": "-5" } },
+        { "label": "Seal until screening", "effects": { "social.order": "4", "flag.ethics_screening": "1" } }
+      ]
+    },
+    {
+      "id": "ship_green_world_hope",
+      "type": "social",
+      "scope": "ship",
+      "style": "vignette",
+      "weight": 10,
+      "cooldown": 21,
+      "trigger": { "any": [{ "flag": "route_seg_green_world", "flagMin": 1 }] },
+      "title": "Green flyby hope spike",
+      "body": "Protein stores jumped after the verdant flyby. Mess hall playlists turn upbeat — veterans warn hope burns fast if the next segment is lean.",
+      "options": [
+        { "label": "One celebratory meal", "effects": { "social.morale": "6", "resource.food": "-12", "player.rep": "2" } },
+        { "label": "Bank surplus — no feast", "effects": { "social.order": "3", "social.morale": "-2", "resource.food": "5" } },
+        { "label": "Speech on ration discipline", "effects": { "social.order": "5", "player.rep": "4", "social.morale": "-3" } }
+      ]
+    },
+    {
+      "id": "ship_anomaly_lockdown",
+      "type": "operational",
+      "scope": "ship",
+      "style": "noir",
+      "weight": 12,
+      "cooldown": 25,
+      "trigger": { "any": [{ "flag": "route_seg_anomaly", "flagMin": 1 }] },
+      "title": "Anomaly segment lockdown",
+      "body": "Two crew report synchronized dreams after the anomaly survey segment. Security wants comms curfew; science wants uninterrupted specimen logging.",
+      "options": [
+        { "label": "Comms curfew 12h", "effects": { "social.order": "5", "social.morale": "-4", "void.clue": "1" } },
+        { "label": "Science window only", "effects": { "player.skill": "3", "resource.power": "-4" } },
+        { "label": "Open forum — no lockdown", "effects": { "social.morale": "3", "social.order": "-4", "player.rep": "3" } }
+      ]
+    },
+    {
+      "id": "ship_food_promise_break",
+      "type": "social",
+      "scope": "ship",
+      "style": "noir",
+      "weight": 13,
+      "cooldown": 14,
+      "trigger": { "any": [{ "flag": "food_promise", "flagMin": 1 }, { "resource": "food", "below": 150 }] },
+      "title": "Food promise cracks",
+      "body": "The segment ration pledge is failing — stores dip two days early. Mess hall rumor says the council lied on purpose.",
+      "options": [
+        { "label": "Emergency tight ration", "effects": { "social.order": "4", "social.morale": "-6", "resource.food": "8" } },
+        { "label": "Public apology + audit", "effects": { "player.rep": "5", "social.morale": "-2", "flag.audit_disputed": "1" } },
+        { "label": "Blame logistics drift", "effects": { "social.order": "-3", "player.rep": "-4" } }
+      ]
+    },
+    {
+      "id": "ship_council_quorum_revote",
+      "type": "social",
+      "scope": "ship",
+      "style": "debate",
+      "weight": 9,
+      "cooldown": 28,
+      "trigger": { "any": [{ "flag": "route_votes", "flagMin": 4 }] },
+      "title": "Quorum challenge revote",
+      "body": "After four route votes, a faction claims the weighted council is gerrymandered. They demand a one-time revote on the last winner with stripped lobby effects.",
+      "options": [
+        { "label": "Grant revote", "effects": { "social.order": "3", "social.morale": "2", "player.rep": "4", "resource.power": "-3" } },
+        { "label": "Reject — precedent risk", "effects": { "social.order": "5", "social.morale": "-5" } },
+        { "label": "Reform weights instead", "effects": { "player.skill": "4", "player.rep": "3" } }
+      ]
+    },
+    {
+      "id": "ship_hull_stress_segment",
+      "type": "operational",
+      "scope": "ship",
+      "style": "memo",
+      "weight": 11,
+      "cooldown": 19,
+      "trigger": { "any": [{ "device": "engine" }, { "flag": "route_votes", "flagMin": 2 }] },
+      "title": "Hull stress readout",
+      "body": "Engine telemetry shows micro-stress spikes aligned with recent route changes. Chen wants a slow segment next vote; salvagers want another derelict pass.",
+      "options": [
+        { "label": "Mandate low-risk next", "effects": { "social.order": "3", "engineering.engine": "0.10", "player.rep": "2" } },
+        { "label": "Accept stress — max yield", "effects": { "resource.parts": "5", "engineering.engine": "0.15", "social.morale": "-3" } },
+        { "label": "Full hull walk — delay vote", "effects": { "resource.parts": "-3", "social.morale": "2", "player.rep": "3" } }
+      ]
+    },
+    {
+      "id": "ship_trade_embargo_vote",
+      "type": "social",
+      "scope": "ship",
+      "style": "debate",
+      "weight": 10,
+      "cooldown": 21,
+      "trigger": { "any": [{ "flag": "route_votes", "flagMin": 2 }, { "flag": "audit_disputed", "flagMin": 1 }] },
+      "title": "Exchange embargo before vote",
+      "body": "Council factions demand a 48h exchange freeze before the next route roll — no more 'insider' food trades.",
+      "options": [
+        { "label": "Freeze exchange", "effects": { "social.order": "5", "social.morale": "-4", "player.rep": "3" } },
+        { "label": "Audit-only compromise", "effects": { "player.skill": "3", "flag.audit_routine": "1" } },
+        { "label": "Reject — commerce continues", "effects": { "social.morale": "2", "social.order": "-4" } }
+      ]
+    },
+    {
+      "id": "ship_warehouse_muster",
+      "type": "operational",
+      "scope": "ship",
+      "style": "memo",
+      "weight": 12,
+      "cooldown": 16,
+      "trigger": { "any": [{ "resource": "food", "below": 120 }] },
+      "title": "Warehouse muster",
+      "body": "Logistics calls a full muster of crate labels after a disputed audit. Habitation volunteers to count; manufacturing refuses to pause lathes.",
+      "options": [
+        { "label": "Full muster — pause mfg 4h", "effects": { "social.order": "4", "resource.parts": "-3", "flag.audit_resolved": "1" } },
+        { "label": "Sample audit 20%", "effects": { "player.perf": "2", "flag.audit_deferred": "1" } },
+        { "label": "Skip — trust Lee", "effects": { "social.morale": "-3", "player.rep": "-2" } }
+      ]
+    },
+    {
+      "id": "ship_convoy_morale",
+      "type": "social",
+      "scope": "ship",
+      "style": "vignette",
+      "weight": 11,
+      "cooldown": 19,
+      "trigger": { "any": [{ "moraleBelow": 50 }] },
+      "title": "Convoy cheer vs cynicism",
+      "body": "A friendly convoy hails with music on the relay. Half the mess wants a listen-along; half says trading grief isn't a morale fix.",
+      "options": [
+        { "label": "Relay concert hour", "effects": { "social.morale": "5", "resource.power": "-2" } },
+        { "label": "Trade only — no party", "effects": { "resource.food": "-6", "resource.medicine": "2", "social.order": "2" } },
+        { "label": "Ignore hail", "effects": { "social.morale": "-2", "player.rep": "1" } }
+      ]
+    },
+    {
+      "id": "ship_parts_ration_clash",
+      "type": "operational",
+      "scope": "ship",
+      "style": "debate",
+      "weight": 13,
+      "cooldown": 14,
+      "trigger": { "any": [{ "resource": "parts", "below": 10 }] },
+      "title": "Parts vs ration emergency",
+      "body": "Engineering needs parts for a recycler patch; Logistics wants the last crate budget for a food convoy trade. Both claim ship survival.",
+      "options": [
+        { "label": "Parts first — patch recycler", "effects": { "resource.parts": "-2", "resource.water": "8", "social.order": "2" } },
+        { "label": "Food trade first", "effects": { "resource.food": "12", "resource.parts": "-1", "social.morale": "3" } },
+        { "label": "Split crate — both half measures", "effects": { "social.order": "2", "player.rep": "3" } }
+      ]
+    },
+    {
+      "id": "ship_lathe_strike",
+      "type": "social",
+      "scope": "ship",
+      "style": "debate",
+      "weight": 12,
+      "cooldown": 17,
+      "trigger": { "any": [{ "moraleBelow": 45 }] },
+      "title": "Lathe noise strike threat",
+      "body": "Quarters near Manufacturing threaten a slowdown unless lathe hours shrink or the hood research completes. Sam says throughput targets won't wait.",
+      "options": [
+        { "label": "Mandate hood research priority", "effects": { "resource.power": "-5", "social.morale": "4", "player.rep": "3" } },
+        { "label": "Stagger lathe shifts", "effects": { "social.morale": "3", "resource.parts": "-4", "social.order": "2" } },
+        { "label": "Reject — full throughput", "effects": { "resource.parts": "6", "social.morale": "-6", "crew.sam.loyalty": "3" } }
+      ]
+    },
+    {
+      "id": "ship_filter_mesh_crisis",
+      "type": "operational",
+      "scope": "ship",
+      "style": "memo",
+      "weight": 13,
+      "cooldown": 15,
+      "trigger": { "any": [{ "device": "water_loop" }, { "resource": "parts", "below": 8 }] },
+      "title": "Filter mesh ship-wide alert",
+      "body": "Without scrubber filter mesh, the water loop risks another yellow. Engineering and Manufacturing both claim the other department hoards parts.",
+      "options": [
+        { "label": "Ship-wide mesh sprint", "effects": { "resource.rawmaterials": "-6", "resource.parts": "5", "social.order": "3" } },
+        { "label": "Emergency exchange buy", "effects": { "resource.food": "-10", "resource.parts": "4", "flag.audit_deferred": "1" } },
+        { "label": "Run degraded — accept risk", "effects": { "resource.water": "-8", "social.morale": "-4" } }
+      ]
+    },
+    {
+      "id": "ship_research_mfg_priority",
+      "type": "social",
+      "scope": "ship",
+      "style": "vignette",
+      "weight": 10,
+      "cooldown": 24,
+      "trigger": { "any": [{ "minDay": 25 }] },
+      "title": "Research vs lathe priority vote",
+      "body": "Science wants power for alloy sintering research; Manufacturing wants the same draw for a three-lathe sprint. Council asks you to break the tie.",
+      "options": [
+        { "label": "Favor research", "effects": { "player.skill": "4", "resource.parts": "-3", "crew.maya.loyalty": "3" } },
+        { "label": "Favor lathes", "effects": { "resource.parts": "6", "resource.power": "-4", "crew.sam.loyalty": "3" } },
+        { "label": "Split draw — both slow", "effects": { "social.order": "3", "player.rep": "3" } }
+      ]
+    },
+    {
+      "id": "ship_audit_mess_panic",
+      "type": "social",
+      "scope": "ship",
+      "style": "noir",
+      "weight": 14,
+      "cooldown": 14,
+      "trigger": { "any": [{ "flag": "audit_ignored", "flagMin": 1 }, { "flag": "audit_disputed", "flagMin": 1 }] },
+      "title": "Mess hall audit panic",
+      "body": "Someone posted exchange variance numbers on the galley wall. Families ask if rations are lies. Lee begs for a ship-wide statement.",
+      "options": [
+        { "label": "Open audit town hall", "effects": { "social.order": "4", "social.morale": "-2", "player.rep": "5", "flag.audit_resolved": "1" } },
+        { "label": "Remove poster — restore order", "effects": { "social.order": "6", "social.morale": "-5" } },
+        { "label": "Double ration day — buy calm", "effects": { "resource.food": "-12", "social.morale": "5", "flag.audit_deferred": "1" } }
+      ]
+    },
+    {
+      "id": "ship_captain_budget_hearing",
+      "type": "social",
+      "scope": "ship",
+      "style": "debate",
+      "weight": 12,
+      "cooldown": 22,
+      "trigger": { "any": [{ "minDay": 22 }] },
+      "title": "Captain budget hearing",
+      "body": "Departments demand a ship-wide hearing on ecology vs manufacturing power shares. The mess hall fills before night cycle.",
+      "options": [
+        { "label": "Open hearing — publish shares", "effects": { "social.order": "3", "player.rep": "5", "social.morale": "-2" } },
+        { "label": "Defer until next segment", "effects": { "social.morale": "-3", "flag.audit_deferred": "1" } },
+        { "label": "Captain decree — no hearing", "effects": { "social.order": "6", "social.morale": "-6", "player.rep": "-3" } }
+      ]
+    },
+    {
+      "id": "ship_route_dissent_petition",
+      "type": "social",
+      "scope": "ship",
+      "style": "memo",
+      "weight": 13,
+      "cooldown": 16,
+      "trigger": { "any": [{ "minDay": 14 }] },
+      "title": "Route dissent petition",
+      "body": "Forty-two signatures ask the council to reopen the last route vote after food projections worsened. Navigation warns of morale whiplash.",
+      "options": [
+        { "label": "Reopen vote — extraordinary session", "effects": { "social.order": "-2", "player.rep": "6", "resource.power": "-3" } },
+        { "label": "Publish food model — keep course", "effects": { "social.order": "4", "social.morale": "-2" } },
+        { "label": "Reject petition — quorum stands", "effects": { "social.order": "5", "social.morale": "-5" } }
+      ]
+    },
+    {
+      "id": "ship_hud_blackout_drill",
+      "type": "operational",
+      "scope": "ship",
+      "style": "vignette",
+      "weight": 11,
+      "cooldown": 24,
+      "trigger": { "any": [{ "minDay": 10 }] },
+      "title": "HUD blackout drill",
+      "body": "Engineering schedules a 20-minute ship HUD and minimap blackout drill. Crew with night shifts panic anyway.",
+      "options": [
+        { "label": "Run full blackout", "effects": { "social.order": "4", "social.morale": "-4", "player.skill": "2" } },
+        { "label": "Partial drill — keep minimap", "effects": { "social.order": "2", "social.morale": "-1" } },
+        { "label": "Cancel — morale too fragile", "effects": { "social.morale": "3", "player.rep": "-2" } }
+      ]
+    },
+    {
+      "id": "ship_council_audit_oath",
+      "type": "social",
+      "scope": "ship",
+      "style": "ritual",
+      "weight": 10,
+      "cooldown": 28,
+      "trigger": { "any": [{ "flag": "audit_resolved", "flagMin": 1 }, { "flag": "audit_disputed", "flagMin": 1 }] },
+      "title": "Council audit oath",
+      "body": "Lee proposes a public audit oath before the next exchange day. Some councilors call it theater; loaders call it overdue.",
+      "options": [
+        { "label": "Hold oath ceremony", "effects": { "social.order": "5", "social.morale": "2", "flag.audit_routine": "1" } },
+        { "label": "Private oath — officers only", "effects": { "social.order": "3", "player.rep": "2" } },
+        { "label": "Skip — focus on route", "effects": { "social.morale": "-2", "flag.audit_ignored": "1" } }
+      ]
+    },
+    {
+      "id": "ship_crew_morale_pulse",
+      "type": "social",
+      "scope": "ship",
+      "style": "vignette",
+      "weight": 12,
+      "cooldown": 16,
+      "trigger": { "any": [{ "moraleBelow": 45 }] },
+      "title": "Crew morale pulse survey",
+      "body": "Support runs an anonymous morale pulse. Results show manufacturing noise and audit rumors dominate negative comments.",
+      "options": [
+        { "label": "Publish full survey", "effects": { "social.order": "3", "player.rep": "5", "social.morale": "-2" } },
+        { "label": "Act on top two issues only", "effects": { "social.morale": "4", "resource.power": "-3" } },
+        { "label": "Suppress survey — too volatile", "effects": { "social.order": "4", "social.morale": "-6" } }
+      ]
+    },
+    {
+      "id": "ship_gen_incubator_vote",
+      "type": "social",
+      "scope": "ship",
+      "style": "debate",
+      "weight": 11,
+      "cooldown": 26,
+      "trigger": { "any": [{ "minDay": 32 }] },
+      "title": "Incubator thaw vote",
+      "body": "Council debates thawing embryos before arrival versus holding them for the next generation. Ecology and Support split the room.",
+      "options": [
+        { "label": "Thaw cohort on arrival", "effects": { "social.morale": "5", "resource.food": "-10", "player.rep": "4" } },
+        { "label": "Hold for Gen-2", "effects": { "social.order": "5", "social.morale": "-4" } },
+        { "label": "Partial thaw — 100 embryos", "effects": { "social.morale": "2", "resource.food": "-5", "player.rep": "2" } }
+      ]
+    },
+    {
+      "id": "ship_void_whistle_rumor",
+      "type": "social",
+      "scope": "ship",
+      "style": "noir",
+      "weight": 13,
+      "cooldown": 18,
+      "trigger": { "any": [{ "flag": "void_contact", "flagMin": 1 }, { "flag": "void_investigation", "flagMin": 1 }] },
+      "title": "Whistle rumor on D3",
+      "body": "Mess hall rumor: someone reported cult activity to the captain. Cultists go quiet; uninfected crew watch each other over trays.",
+      "options": [
+        { "label": "Ship-wide calm address", "effects": { "social.order": "3", "social.morale": "-2", "player.rep": "4" } },
+        { "label": "Increase crawlway patrols", "effects": { "social.order": "5", "resource.power": "-2", "void.clue": "1" } },
+        { "label": "Ignore rumor — avoid panic", "effects": { "social.morale": "1", "flag.audit_deferred": "1" } }
+      ]
+    },
+    {
+      "id": "ship_audit_food_lock",
+      "type": "operational",
+      "scope": "ship",
+      "style": "memo",
+      "weight": 12,
+      "cooldown": 17,
+      "trigger": { "any": [{ "flag": "audit_disputed", "flagMin": 1 }, { "resource": "food", "below": 70 }] },
+      "title": "Food locker audit lock",
+      "body": "Logistics locks galley reserve lockers pending audit. Families with children ask for emergency unlock before night cycle.",
+      "options": [
+        { "label": "Keep lock — audit first", "effects": { "social.order": "5", "social.morale": "-6", "flag.audit_resolved": "1" } },
+        { "label": "Child-priority unlock window", "effects": { "resource.food": "-6", "social.morale": "4", "flag.audit_deferred": "1" } },
+        { "label": "Full unlock — trust honor system", "effects": { "social.morale": "3", "flag.audit_ignored": "1", "player.rep": "-2" } }
+      ]
+    }
+  ]
+}

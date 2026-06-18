@@ -1,0 +1,40 @@
+{
+  "recipes": [
+    {
+      "id": "basic_parts",
+      "name": "Basic Parts",
+      "rawCost": 2,
+      "powerCost": 1,
+      "partsOut": 4,
+      "days": 1
+    },
+    {
+      "id": "quality_parts",
+      "name": "Quality Parts (4★)",
+      "rawCost": 4,
+      "powerCost": 2,
+      "partsOut": 1,
+      "days": 1,
+      "requiresRecipe": "basic_parts"
+    },
+    {
+      "id": "filter_mesh",
+      "name": "Scrubber Filter Mesh",
+      "rawCost": 3,
+      "powerCost": 2,
+      "partsOut": 6,
+      "days": 2,
+      "requiresTech": "recycling_2"
+    },
+    {
+      "id": "led_driver",
+      "name": "LED Driver Board",
+      "rawCost": 5,
+      "powerCost": 3,
+      "partsOut": 3,
+      "days": 2,
+      "requiresTech": "efficient_light",
+      "requiresRecipe": "basic_parts"
+    }
+  ]
+}

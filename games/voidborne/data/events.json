@@ -1,0 +1,200 @@
+{
+  "events": [
+    {
+      "id": "crop_blight",
+      "type": "operational",
+      "weight": 12,
+      "cooldown": 15,
+      "trigger": { "any": [{ "resource": "medicine", "below": 25 }] },
+      "title": "Crop blight in Bay A",
+      "body": "Brown spots spread across grain slots. The chief ecologist wants a decision today.",
+      "options": [
+        { "label": "Isolate and destroy affected trays", "effects": { "resource.food": "-10", "social.morale": "-2" } },
+        { "label": "Spray medicine (3 units)", "require": { "medicine": 3 }, "effects": { "resource.medicine": "-3", "social.morale": "1" } },
+        { "label": "Watch and wait", "deptGate": "Ecology", "effects": { "flag.blight_watch": "1" } }
+      ]
+    },
+    {
+      "id": "device_overheat",
+      "type": "operational",
+      "weight": 14,
+      "cooldown": 12,
+      "trigger": { "any": [{ "device": "engine" }] },
+      "title": "Engine compartment overheating",
+      "body": "Chen reports core temperature rising. Shut down for repair, run hot, or reduce load?",
+      "options": [
+        { "label": "Emergency shutdown (lose a day of power)", "deptGate": "Engineering", "effects": { "resource.power": "-15", "crew.chen.health": "5" } },
+        { "label": "Run hot and hope", "effects": { "resource.parts": "-4", "flag.engine_risk": "1" } },
+        { "label": "Reduce ecology lighting", "effects": { "engineering.ecology": "0.12", "social.morale": "-3" } }
+      ]
+    },
+    {
+      "id": "inventory_audit",
+      "type": "operational",
+      "weight": 10,
+      "cooldown": 20,
+      "trigger": { "any": [{ "resource": "food", "below": 550 }] },
+      "title": "Inventory numbers do not match",
+      "body": "Lee found a 3% gap in the food ledger. Investigate, write it off, or ignore?",
+      "options": [
+        { "label": "Full audit (costs time)", "deptGate": "Logistics", "tierGate": 2, "effects": { "social.order": "5", "social.morale": "-2" } },
+        { "label": "Write off as spoilage", "effects": { "resource.food": "-5", "social.order": "-2" } },
+        { "label": "Ignore for now", "effects": { "flag.audit_ignored": "1", "social.order": "-5" } }
+      ]
+    },
+    {
+      "id": "npc_feud",
+      "type": "social",
+      "weight": 8,
+      "cooldown": 18,
+      "trigger": { "any": [{ "moraleBelow": 55 }] },
+      "title": "Two crew members at odds",
+      "body": "Jin and Viktor refuse to share a shift. The bay schedule is falling apart.",
+      "options": [
+        { "label": "Mediate (costs your morning)", "effects": { "crew.jin.loyalty": "5", "crew.viktor.loyalty": "5", "social.morale": "3" } },
+        { "label": "Side with Jin", "effects": { "crew.jin.loyalty": "10", "crew.viktor.loyalty": "-10" } },
+        { "label": "Let them sort it out", "effects": { "social.morale": "-5", "flag.bay_conflict": "1" } }
+      ]
+    },
+    {
+      "id": "meteor_graze",
+      "type": "crisis",
+      "weight": 6,
+      "cooldown": 25,
+      "trigger": { "any": [{ "minDay": 8 }] },
+      "title": "Micro-meteorite graze",
+      "body": "Hull sensors ping. A small impact breached an outer conduit. Seal or all-hands repair?",
+      "options": [
+        { "label": "Seal the section (lose bay output)", "effects": { "resource.food": "-15", "crew.maya.health": "-10", "social.morale": "-5" } },
+        { "label": "All-hands repair", "effects": { "resource.parts": "-6", "resource.power": "-10", "social.morale": "2" } },
+        { "label": "Patch and pray", "tierGate": 2, "effects": { "flag.hull_breach": "1", "resource.parts": "-2" } }
+      ]
+    },
+    {
+      "id": "earth_broadcast",
+      "type": "serendipity",
+      "weight": 4,
+      "cooldown": 40,
+      "trigger": { "any": [{ "minDay": 5 }] },
+      "title": "Signal from Earth",
+      "body": "Elena picks up a fragment of a final broadcast from the homeworld. What do you do with it?",
+      "options": [
+        { "label": "Play it on ship-wide comms", "effects": { "social.morale": "8", "social.order": "-3", "flag.earth_broadcast": "1" } },
+        { "label": "Archive quietly", "effects": { "social.morale": "-2", "flag.earth_archived": "1" } },
+        { "label": "Attempt a reply", "deptGate": "Science", "tierGate": 3, "effects": { "flag.earth_reply": "1", "social.playerrep": "5" } }
+      ]
+    },
+    {
+      "id": "oxygen_drift",
+      "type": "operational",
+      "weight": 11,
+      "cooldown": 14,
+      "trigger": { "any": [{ "resource": "oxygen", "below": 19 }] },
+      "title": "Oxygen mix drifting low",
+      "body": "Atmospheric sensors show O₂ trending down. Redirect power to scrubbers or accept reduced bay output?",
+      "options": [
+        { "label": "Boost scrubbers", "deptGate": "Engineering", "effects": { "resource.power": "-12", "resource.oxygen": "2" } },
+        { "label": "Cut bay lighting", "effects": { "engineering.ecology": "0.12", "social.morale": "-4" } },
+        { "label": "Issue masks only", "effects": { "resource.medicine": "-2", "social.order": "-3" } }
+      ]
+    },
+    {
+      "id": "strike_rumor",
+      "type": "social",
+      "weight": 9,
+      "cooldown": 20,
+      "trigger": { "any": [{ "moraleBelow": 45 }] },
+      "title": "Strike rumor in Logistics",
+      "body": "Warehouse crews talk about refusing overtime. Lee asks for a public address or quiet concessions.",
+      "options": [
+        { "label": "Address the ship", "roleGate": "captain", "effects": { "social.morale": "5", "social.order": "3" } },
+        { "label": "Extra rations this week", "effects": { "resource.food": "-20", "social.morale": "6" } },
+        { "label": "Ignore", "effects": { "social.order": "-8", "flag.strike_risk": "1" } }
+      ]
+    },
+    {
+      "id": "research_breakthrough",
+      "type": "serendipity",
+      "weight": 7,
+      "cooldown": 22,
+      "trigger": { "any": [{ "minDay": 6 }] },
+      "title": "Unexpected lab result",
+      "body": "Elena's team found a cheap way to stabilize LED spectrum for Bay A. Publish or keep secret for advantage?",
+      "options": [
+        { "label": "Publish internally", "deptGate": "Science", "effects": { "social.morale": "3", "flag.gene_mod": "1" } },
+        { "label": "Patent for ship only", "effects": { "resource.parts": "5", "crew.elena.loyalty": "5" } },
+        { "label": "Delay for peer review", "effects": { "social.order": "2" } }
+      ]
+    },
+    {
+      "id": "trade_hub_opening",
+      "type": "operational",
+      "weight": 8,
+      "cooldown": 18,
+      "trigger": { "any": [{ "resource": "food", "below": 400 }] },
+      "title": "Regulated exchange proposal",
+      "body": "With food stocks tight, Lee proposes opening the ship's formal trade exchange so departments can barter surpluses through the official ledger. Maya supports it; ration purists worry about inventory drift.",
+      "options": [
+        { "label": "Open regulated exchange", "deptGate": "Logistics", "effects": { "social.morale": "4", "flag.formal_exchange": "1" } },
+        { "label": "Keep central allocation only", "effects": { "social.order": "4", "social.morale": "-3" } },
+        { "label": "Expand convoy trade windows", "tierGate": 2, "effects": { "resource.food": "-10", "resource.medicine": "5", "social.morale": "2" } }
+      ]
+    },
+    {
+      "id": "void_dream",
+      "type": "social",
+      "weight": 5,
+      "cooldown": 30,
+      "trigger": { "any": [{ "minDay": 10 }] },
+      "title": "Shared nightmares",
+      "body": "Three crew report identical dreams of a garden in the void. Medical finds nothing. Investigate or dismiss?",
+      "options": [
+        { "label": "Medical sweep", "effects": { "resource.medicine": "-4", "flag.void_dream": "1" } },
+        { "label": "Science scan", "deptGate": "Science", "effects": { "resource.power": "-5", "flag.void_clue": "1" } },
+        { "label": "Dismiss as stress", "effects": { "social.morale": "-3" } }
+      ]
+    },
+    {
+      "id": "captain_nomination",
+      "type": "crisis",
+      "weight": 6,
+      "cooldown": 35,
+      "trigger": { "any": [{ "minDay": 25 }] },
+      "title": "Captain nomination period opens",
+      "body": "The council announces nominations for the next captain term. Alliances form quickly in the corridors.",
+      "options": [
+        { "label": "Announce candidacy", "tierGate": 3, "effects": { "social.playerrep": "5", "flag.captain_run": "1" } },
+        { "label": "Back Chen", "effects": { "crew.chen.loyalty": "8", "social.morale": "1" } },
+        { "label": "Stay neutral", "effects": { "social.playerrep": "-2" } }
+      ]
+    },
+    {
+      "id": "alien_sample_offer",
+      "type": "serendipity",
+      "weight": 6,
+      "cooldown": 28,
+      "trigger": { "any": [{ "minDay": 12 }] },
+      "title": "Drift sample retrieved",
+      "body": "A probe returns organic material unlike anything in the seed banks. Introduce to Bay C quarantine or destroy?",
+      "options": [
+        { "label": "Quarantine study", "deptGate": "Science", "effects": { "flag.alien_sample": "1", "resource.medicine": "-2" } },
+        { "label": "Introduce lichen strain", "deptGate": "Ecology", "effects": { "flag.alienSpecies": "1", "resource.water": "10" } },
+        { "label": "Incinerate", "effects": { "social.order": "4", "social.morale": "-2" } }
+      ]
+    },
+    {
+      "id": "power_rationing",
+      "type": "operational",
+      "weight": 13,
+      "cooldown": 16,
+      "trigger": { "any": [{ "resource": "power", "below": 70 }] },
+      "title": "Emergency power rationing",
+      "body": "The reactor cannot meet peak demand. Chen proposes rolling brownouts across departments.",
+      "options": [
+        { "label": "Ecology first", "deptGate": "Engineering", "effects": { "engineering.ecology": "0.35", "social.morale": "-2" } },
+        { "label": "Even cuts", "effects": { "resource.power": "8", "social.morale": "-5" } },
+        { "label": "Burn spare parts", "effects": { "resource.parts": "-8", "resource.power": "15" } }
+      ]
+    }
+  ]
+}

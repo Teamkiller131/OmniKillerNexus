@@ -1,0 +1,8 @@
+{
+  "species": [
+    { "id": "lichen", "name": "Void Lichen", "benefit": 5, "risk": 2, "description": "O2 boost, mild contamination" },
+    { "id": "moth", "name": "Crystal Moth", "benefit": 8, "risk": 6, "description": "Pollination, unpredictable" },
+    { "id": "spore", "name": "Deep Spore", "benefit": 12, "risk": 10, "description": "Dark thread adjacent" },
+    { "id": "jelly", "name": "Star Jelly", "benefit": 6, "risk": 4, "description": "Water recycling aid" }
+  ]
+}

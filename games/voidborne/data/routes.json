@@ -1,0 +1,43 @@
+{
+  "routes": [
+    {
+      "id": "asteroid",
+      "name": "Asteroid Belt",
+      "risk": "low",
+      "days": 12,
+      "rawBonus": 15,
+      "description": "Mine raw materials, slow but safe"
+    },
+    {
+      "id": "nebula",
+      "name": "Nebula Shortcut",
+      "risk": "med",
+      "days": 8,
+      "description": "Save time, elevated radiation"
+    },
+    {
+      "id": "derelict",
+      "name": "Derelict Scan",
+      "risk": "high",
+      "days": 10,
+      "partsBonus": 8,
+      "description": "Salvage unknown wreck — high risk"
+    },
+    {
+      "id": "green_world",
+      "name": "Verdant Flyby",
+      "risk": "low",
+      "days": 14,
+      "foodBonus": 40,
+      "description": "Scoop organics off a green dwarf system — slow but feeds the ship"
+    },
+    {
+      "id": "anomaly",
+      "name": "Anomaly Survey",
+      "risk": "high",
+      "days": 11,
+      "scienceBonus": 2,
+      "description": "Probe a deep-space anomaly — alien specimens, but the whispers grow"
+    }
+  ]
+}
