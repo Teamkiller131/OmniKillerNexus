@@ -832,6 +832,50 @@ struct TileAtlas {
     bool active() const { return tex != 0; }
 };
 TileAtlas g_atlas;            // stays procedural until a real atlas is wired in
+
+// ── Phase 4: detail & lighting helpers ───────────────────────────────────────
+// Soft stepped light pool (pixel-art glow): concentric discs brightening inward.
+void glow(ImDrawList* dl, ImVec2 c, float r, ImU32 col, int a0 = 50) {
+    const int R = static_cast<int>(col & 0xFF), G = static_cast<int>((col >> 8) & 0xFF), B = static_cast<int>((col >> 16) & 0xFF);
+    for (int i = 4; i >= 1; --i) {
+        dl->AddCircleFilled(c, r * static_cast<float>(i) / 4.0f, IM_COL32(R, G, B, a0 * (5 - i) / 4), 20);
+    }
+}
+// Per-room-kind floor material: a cheap overlay drawn on each floor tile in PASS A.
+void floor_pattern(ImDrawList* dl, ImVec2 a, ImVec2 b, int tx, int ty, RoomKind k) {
+    using K = RoomKind;
+    switch (k) {
+        case K::Engine: case K::Reactor: case K::Fuel: case K::Power: case K::Dock:      // hazard caution diagonals
+            if (((tx * 3 + ty) % 4) == 0) { dl->AddLine(ImVec2(a.x, b.y), ImVec2(b.x, a.y), IM_COL32(214, 170, 48, 30), 2.5f); }
+            break;
+        case K::Engineering: case K::Manufacturing: case K::Storage: case K::Recycle: case K::Water: case K::Cargo:   // metal grating
+            dl->AddRectFilled(ImVec2(a.x + kTile * 0.5f - 1, a.y), ImVec2(a.x + kTile * 0.5f, b.y), IM_COL32(0, 0, 0, 26));
+            dl->AddRectFilled(ImVec2(a.x, a.y + kTile * 0.5f - 1), ImVec2(b.x, a.y + kTile * 0.5f), IM_COL32(0, 0, 0, 26));
+            break;
+        case K::Medical: case K::Lab:                                                    // clean grid tile
+            dl->AddRect(a, b, IM_COL32(120, 165, 185, 16), 0, 0, 1.0f);
+            break;
+        case K::Lounge: case K::Quarters: case K::School: case K::Gym: case K::Mess:      // soft carpet stipple
+            if ((tx + ty) & 1) { dl->AddRectFilled(ImVec2(a.x + kTile * 0.42f, a.y + kTile * 0.42f), ImVec2(a.x + kTile * 0.55f, a.y + kTile * 0.55f), IM_COL32(255, 255, 255, 9)); }
+            break;
+        default: break;
+    }
+}
+// A starfield viewport set into a space-facing hull wall.
+void hull_window(ImDrawList* dl, ImVec2 a, ImVec2 b, int tx, int ty, float driftPhase) {
+    dl->AddRectFilled(ImVec2(a.x + 2, a.y + 2), ImVec2(b.x - 2, b.y - 2), IM_COL32(5, 7, 14, 255));   // deep space
+    unsigned h = vbhash(static_cast<unsigned>(tx * 73856093) ^ static_cast<unsigned>(ty * 19349663));
+    for (int s = 0; s < 5; ++s) {                                                         // drifting stars
+        h = vbhash(h); const float fxp = static_cast<float>(h % 1000) / 1000.0f;
+        h = vbhash(h); const float fyp = static_cast<float>(h % 1000) / 1000.0f;
+        const float drift = std::fmod(fxp + driftPhase, 1.0f);
+        const float px = a.x + 3 + drift * (kTile - 7), py = a.y + 3 + fyp * (kTile - 7);
+        const int br = 150 + static_cast<int>(h % 105);
+        dl->AddRectFilled(ImVec2(px, py), ImVec2(px + 2, py + 2), IM_COL32(br, br, std::min(255, br + 12), 255));
+    }
+    dl->AddRect(a, b, IM_COL32(44, 52, 70, 255), 0, 0, 2.0f);                             // window frame
+    dl->AddRectFilled(ImVec2(a.x + 2, a.y + 2), ImVec2(b.x - 2, a.y + 4), IM_COL32(70, 80, 104, 255));   // top sill highlight
+}
 // 8x11 top-down crew sprite. keys: 0 clear,1 hair,2 skin,3 uniform,4 sheen,5 pants,6 eye,7 boots
 const char* kCrewPx[11] = {
     "01111110", "12222221", "12622621", "12222221", "03333330",
@@ -914,6 +958,7 @@ void draw_world() {
             dl->AddRectFilled(a, b, floorColAt(tx, ty));
             dl->AddRectFilled(ImVec2(b.x - 1, a.y), b, IM_COL32(0, 0, 0, 30));   // deck-plating seams
             dl->AddRectFilled(ImVec2(a.x, b.y - 1), b, IM_COL32(0, 0, 0, 30));
+            { const int pri = room_of(tx, ty); if (pri >= 0) { floor_pattern(dl, a, b, tx, ty, g.rooms[static_cast<std::size_t>(pri)].kind); } }
             if (isWall(tx - 1, ty)) { dl->AddRectFilled(a, ImVec2(a.x + 3, b.y), IM_COL32(0, 0, 0, 95)); }  // skirting
             if (isWall(tx + 1, ty)) { dl->AddRectFilled(ImVec2(b.x - 3, a.y), b, IM_COL32(0, 0, 0, 95)); }
             if (isWall(tx, ty + 1)) { dl->AddRectFilled(ImVec2(a.x, b.y - 3), b, IM_COL32(0, 0, 0, 70)); }  // wall base to S
@@ -923,6 +968,7 @@ void draw_world() {
 
     // ── PASS B: walls — lit top cap + dark front face (height) + autotiled corners ──
     const float faceH = kTile * 0.52f, riv = kTile * 0.16f, half = kTile * 0.5f;
+    const float winDrift = std::fmod(static_cast<float>(ImGui::GetTime()) * 0.015f, 1.0f);   // slow star drift
     auto cutCorner = [&](float cx, float cy, float dx, float dy) {       // exterior corner → 2-step bevel
         const float n = kTile * 0.34f, h = n * 0.5f;
         auto rect = [&](float ax, float ay, float bx, float by) {
@@ -954,7 +1000,9 @@ void draw_world() {
             if (nF) { dl->AddRectFilled(a, ImVec2(b.x, a.y + 3), capHi); }                          // lit north roof edge
             if (wF) { dl->AddRectFilled(a, ImVec2(a.x + 2, a.y + half), capHi); }                   // lit west edge (raised block)
             if (eF) { dl->AddRectFilled(ImVec2(b.x - 2, a.y), ImVec2(b.x, a.y + half), IM_COL32(0, 0, 0, 95)); }  // shaded east edge
-            dl->AddRectFilled(ImVec2(a.x + riv, a.y + riv), ImVec2(a.x + riv * 2, a.y + riv * 2), rivetC);
+            const bool hullEdge = (tx == 0 || ty == 0 || tx == g.deckW - 1 || ty == g.deckH - 1);
+            if (hullEdge && ((tx + ty) % 4 == 0)) { hull_window(dl, a, b, tx, ty, winDrift); }   // starfield viewport
+            else { dl->AddRectFilled(ImVec2(a.x + riv, a.y + riv), ImVec2(a.x + riv * 2, a.y + riv * 2), rivetC); }
             // autotiled corners (dual-grid idea on a single grid): cut exterior, shade interior
             if (nF && wF) { cutCorner(a.x, a.y, +1, +1); } else if (!nF && !wF && !isWall(tx - 1, ty - 1)) { aoCorner(a.x, a.y, +1, +1); }
             if (nF && eF) { cutCorner(b.x, a.y, -1, +1); } else if (!nF && !eF && !isWall(tx + 1, ty - 1)) { aoCorner(b.x, a.y, -1, +1); }
@@ -990,6 +1038,17 @@ void draw_world() {
                     box(px + 0.4f, py + 0.3f, 0.2f, 0.2f, IM_COL32(168, 230, 156, 255));
                 }
             }
+            for (float gy = fy0 + 1.2f; gy < fy1 - 0.8f; gy += 4.6f) {            // grow-light pools over the beds
+                for (float gx = fx0 + 1.5f; gx < fx1 - 0.8f; gx += 5.0f) { glow(dl, ImVec2(sx(gx), sy(gy)), kTile * 1.7f, IM_COL32(150, 240, 170, 255), 26); }
+            }
+        } else if (r.kind == RoomKind::Reactor) {                                 // pulsing reactor core
+            const float pt = 0.5f + 0.5f * std::sin(static_cast<float>(ImGui::GetTime()) * 2.4f);
+            const float cxT = static_cast<float>(r.x0 + r.x1) * 0.5f, cyT = static_cast<float>(r.y0 + r.y1) * 0.5f;
+            glow(dl, ImVec2(sx(cxT), sy(cyT)), kTile * (2.4f + pt), IM_COL32(255, 138, 56, 255), 64);
+            box(cxT - 1.9f, cyT - 1.9f, 3.8f, 3.8f, IM_COL32(34, 28, 30, 255));
+            box(cxT - 1.4f, cyT - 1.4f, 2.8f, 2.8f, IM_COL32(72, 42, 30, 255));
+            box(cxT - 0.95f, cyT - 0.95f, 1.9f, 1.9f, mix(IM_COL32(206, 92, 40, 255), IM_COL32(255, 224, 130, 255), pt));
+            box(cxT - 0.45f, cyT - 0.45f, 0.9f, 0.9f, IM_COL32(255, 246, 214, 255));
         } else if (r.kind == RoomKind::Mess || r.kind == RoomKind::Conference) {   // tables + plates
             const float tw = std::max(2.0f, fx1 - fx0);
             for (float yy = fy0 + 0.4f; yy < fy1 - 1.0f; yy += 2.4f) {
@@ -1047,6 +1106,7 @@ void draw_world() {
             // status light on the header: red shut → green open, with a faint glow
             const ImU32 lightCol = mix(IM_COL32(222, 72, 60, 255), IM_COL32(96, 232, 124, 255), open);
             const float lcx = dx0 + dW * 0.5f, lcy = dy0 + headH * 0.45f;
+            glow(dl, ImVec2(lcx, lcy + 1), kTile * 0.42f, lightCol, 38);
             dl->AddRectFilled(ImVec2(lcx - 7, lcy - 3), ImVec2(lcx + 7, lcy + 4), shade(lightCol, 0.35f));
             dl->AddRectFilled(ImVec2(lcx - 4, lcy - 2), ImVec2(lcx + 4, lcy + 3), lightCol);
             // frame outline + AO the doorway casts on the floor below
@@ -1056,7 +1116,7 @@ void draw_world() {
         if (r.panel >= 0) {     // console terminal
             const float cyoff = r.doorNorth ? 0.85f : -1.75f;
             const float cx = sx(static_cast<float>(r.doorx) - 0.15f), cy = sy(static_cast<float>(r.doory) + cyoff);
-            dl->AddRectFilled(ImVec2(cx - 5, cy - 5), ImVec2(cx + kTile * 1.35f + 5, cy + kTile * 0.95f + 5), IM_COL32(80, 200, 210, 30));
+            glow(dl, ImVec2(cx + kTile * 0.67f, cy + kTile * 0.45f), kTile * 1.1f, IM_COL32(90, 210, 225, 255), 44);
             dl->AddRectFilled(ImVec2(cx, cy), ImVec2(cx + kTile * 1.35f, cy + kTile * 0.95f), IM_COL32(40, 56, 70, 255));
             dl->AddRectFilled(ImVec2(cx + 3, cy + 3), ImVec2(cx + kTile * 1.35f - 3, cy + kTile * 0.5f), IM_COL32(70, 190, 205, 235));
             dl->AddRectFilled(ImVec2(cx + 5, cy + kTile * 0.2f), ImVec2(cx + kTile * 1.35f - 5, cy + kTile * 0.2f + 2), IM_COL32(150, 240, 245, 200));
@@ -1069,6 +1129,7 @@ void draw_world() {
     {
         const ImVec2 ea(sx(static_cast<float>(g.elevX)), sy(static_cast<float>(g.elevY))), eb(sx(static_cast<float>(g.elevX) + 1), sy(static_cast<float>(g.elevY) + 2));
         const float emid = (ea.y + eb.y) * 0.5f;
+        glow(dl, ImVec2((ea.x + eb.x) * 0.5f, emid), kTile * 1.3f, IM_COL32(240, 214, 120, 255), 40);
         dl->AddRectFilled(ea, ImVec2(eb.x, emid), IM_COL32(90, 80, 42, 255));
         dl->AddRectFilled(ImVec2(ea.x, emid), eb, IM_COL32(50, 44, 24, 255));
         dl->AddRect(ea, eb, IM_COL32(240, 220, 120, 255), 0, 0, 2.0f);
@@ -1721,6 +1782,8 @@ int main(int argc, char* argv[]) {
         else if (s == "command") { build_deck(5); }
         // park the player in a doorway so the airlock animates open for the capture
         else if (s == "doors") { build_deck(3); if (g.rooms.size() > 3) { const Room& rr = g.rooms[3]; g.pcx = static_cast<float>(rr.doorx) + 1.0f; g.pcy = static_cast<float>(rr.doory) + 0.5f; } }
+        // center on the reactor core for the capture
+        else if (s == "reactor") { build_deck(0); for (const Room& rr : g.rooms) { if (rr.kind == RoomKind::Reactor) { g.pcx = static_cast<float>(rr.x0 + rr.x1) * 0.5f; g.pcy = static_cast<float>(rr.y1) + 1.5f; break; } } }
     }
 
     unigui::AppConfig cfg;
