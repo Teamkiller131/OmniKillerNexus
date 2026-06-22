@@ -156,7 +156,8 @@ struct Game {
     std::vector<Room> rooms;            // the current deck's rooms
     int deckW = 0, deckH = 0;           // current deck size
     int hullCenter = 10, hullMaxHH = 8, hullStern = 6, hullBow = 16;   // fuselage profile (for the smooth hull skin)
-    int elevX = 2, elevY = 8;           // elevator tile on the current deck
+    int elevX = 2, elevY = 8;           // primary (stern) elevator — the spawn reference
+    std::vector<std::pair<int, int>> elevs;   // ALL elevator tiles on the current deck
     bool elevatorOpen = false;          // deck-select overlay up?
     std::vector<WorldNpc> npcsHere;     // crew standing on the current deck
     float pcx = 3.5f, pcy = 8.5f;       // continuous tile position
@@ -878,9 +879,15 @@ void build_deck(int d) {
             }
         }
     }
-    g.elevX = std::max(2, sternLen - 1); g.elevY = center;
-    g.deck[static_cast<std::size_t>(center)][static_cast<std::size_t>(g.elevX)] = '.';
-    g.deck[static_cast<std::size_t>(center)][static_cast<std::size_t>(g.elevX + 1)] = '.';
+    // a line of elevators along the spine so you can change decks without trekking back
+    g.elevs.clear();
+    const int firstE = std::max(2, sternLen - 1), lastE = W - bowLen / 2, stepE = 38;
+    for (int ex = firstE; ex <= lastE && ex < W - 2; ex += stepE) {
+        g.elevs.push_back({ex, center});
+        g.deck[static_cast<std::size_t>(center)][static_cast<std::size_t>(ex)] = '.';
+        g.deck[static_cast<std::size_t>(center)][static_cast<std::size_t>(ex + 1)] = '.';
+    }
+    g.elevX = firstE; g.elevY = center;
     g.pcx = static_cast<float>(g.elevX) + 1.6f; g.pcy = static_cast<float>(center) + 0.5f;
     g.camInit = false; g.deckFade = 1.0f;                    // snap camera + fade the new deck in
     place_npcs();
@@ -902,7 +909,8 @@ int station_at_player() {
 }
 bool near_elevator() {
     const int tx = static_cast<int>(std::floor(g.pcx)), ty = static_cast<int>(std::floor(g.pcy));
-    return std::abs(tx - g.elevX) <= 1 && std::abs(ty - g.elevY) <= 1;
+    for (const auto& e : g.elevs) { if (std::abs(tx - e.first) <= 1 && std::abs(ty - e.second) <= 1) { return true; } }
+    return false;
 }
 void open_panel(int p) {
     switch (p) {
@@ -1298,9 +1306,10 @@ void draw_world() {
         dl->AddText(ImVec2(sx(static_cast<float>(r.x0) + 0.6f), sy(static_cast<float>(r.y0) + 0.3f)), r.labelCol, r.name.c_str());
         if (r.isVoid && g.voidDiscovered) { dl->AddText(ImVec2(sx((r.x0 + r.x1) * 0.5f - 2.0f), sy((r.y0 + r.y1) * 0.5f)), IM_COL32(205, 130, 235, 255), "* void seed *"); }
     }
-    // elevator (2-tone lift)
-    {
-        const ImVec2 ea(sx(static_cast<float>(g.elevX)), sy(static_cast<float>(g.elevY))), eb(sx(static_cast<float>(g.elevX) + 1), sy(static_cast<float>(g.elevY) + 2));
+    // elevators (2-tone lifts) — one every ~38 tiles along the spine
+    for (const auto& e : g.elevs) {
+        if (e.first < x0 - 1 || e.first > x1 + 1 || e.second < y0 - 2 || e.second > y1 + 1) { continue; }   // cull
+        const ImVec2 ea(sx(static_cast<float>(e.first)), sy(static_cast<float>(e.second))), eb(sx(static_cast<float>(e.first) + 1), sy(static_cast<float>(e.second) + 2));
         const float emid = (ea.y + eb.y) * 0.5f;
         glow(dl, ImVec2((ea.x + eb.x) * 0.5f, emid), kTile * 1.3f, IM_COL32(240, 214, 120, 255), 40);
         dl->AddRectFilled(ea, ImVec2(eb.x, emid), IM_COL32(90, 80, 42, 255));
