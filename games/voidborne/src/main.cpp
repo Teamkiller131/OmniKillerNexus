@@ -64,9 +64,10 @@ struct EventOption {
     std::vector<EventEffect> effects;
 };
 struct EventDef {
-    std::string id, title, body, deptGate, triggerRes;
+    std::string id, title, body, deptGate, triggerRes, triggerFlag;
     int weight = 10, cooldown = 10, minDay = 0, lastFired = -999;
     float triggerBelow = -1;                  // fire only when triggerRes < this (optional)
+    bool milestone = false, fired = false;    // milestones force-fire once their gate is met (act beats)
     std::vector<EventOption> options;
 };
 // ── M4 crew (crew.json) ──
@@ -212,6 +213,7 @@ struct Game {
     bool inStarmap = false, inCaptain = false;
 
     bool autodemo = false;
+    int lang = 0;               // 0 = en, 1 = zh (extensible; see langCode/tr/jloc)
 };
 
 Game g;
@@ -269,6 +271,25 @@ float to_num(const rapidjson::Value& v) {
     return 0.0f;
 }
 
+// ── i18n ─────────────────────────────────────────────────────────────────────
+// Player-facing text is bilingual today (en/zh) and extensible to more languages.
+// Code strings go through tr(); data strings go through jloc(), which accepts
+// either a plain string (single-language) or a locale object {"en":...,"zh":...}.
+const char* langCode() { return g.lang == 1 ? "zh" : "en"; }
+const char* tr(const char* en, const char* zh) { return g.lang == 1 ? zh : en; }
+std::string jloc(const rapidjson::Value& v, const char* k, const char* def = "") {
+    if (!v.HasMember(k)) { return def; }
+    const rapidjson::Value& f = v[k];
+    if (f.IsString()) { return f.GetString(); }                              // single-language
+    if (f.IsObject()) {                                                      // {"en":"...","zh":"..."}
+        const char* lc = langCode();
+        if (f.HasMember(lc) && f[lc].IsString()) { return f[lc].GetString(); }
+        if (f.HasMember("en") && f["en"].IsString()) { return f["en"].GetString(); }   // fallback to en
+        for (auto& m : f.GetObject()) { if (m.value.IsString()) { return m.value.GetString(); } }
+    }
+    return def;
+}
+
 // ── M4: events + crew loaders ──
 void load_events_file(const std::string& path) {
     const std::string txt = read_file(path);
@@ -277,19 +298,26 @@ void load_events_file(const std::string& path) {
     if (d.HasParseError() || !d.HasMember("events") || !d["events"].IsArray()) { return; }
     for (auto& e : d["events"].GetArray()) {
         EventDef ev;
-        ev.id = jstr(e, "id"); ev.title = jstr(e, "title"); ev.body = jstr(e, "body");
+        ev.id = jstr(e, "id"); ev.title = jloc(e, "title"); ev.body = jloc(e, "body");
         ev.deptGate = jstr(e, "deptGate");
+        ev.milestone = (jstr(e, "type") == "milestone");
         ev.weight = static_cast<int>(jnum(e, "weight", 10));
         ev.cooldown = static_cast<int>(jnum(e, "cooldown", 10));
-        if (e.HasMember("trigger") && e["trigger"].IsObject() && e["trigger"].HasMember("any") && e["trigger"]["any"].IsArray()) {
-            for (auto& t : e["trigger"]["any"].GetArray()) {
+        auto parse_conds = [&](const rapidjson::Value& arr) {
+            for (auto& t : arr.GetArray()) {
                 if (t.HasMember("minDay")) { ev.minDay = static_cast<int>(to_num(t["minDay"])); }
                 if (t.HasMember("resource") && t.HasMember("below")) { ev.triggerRes = t["resource"].GetString(); ev.triggerBelow = to_num(t["below"]); }
+                if (t.HasMember("flag") && t["flag"].IsString()) { ev.triggerFlag = t["flag"].GetString(); }
             }
+        };
+        if (e.HasMember("trigger") && e["trigger"].IsObject()) {
+            const auto& trg = e["trigger"];
+            if (trg.HasMember("any") && trg["any"].IsArray()) { parse_conds(trg["any"]); }
+            if (trg.HasMember("all") && trg["all"].IsArray()) { parse_conds(trg["all"]); }
         }
         if (e.HasMember("options") && e["options"].IsArray()) {
             for (auto& o : e["options"].GetArray()) {
-                EventOption op; op.label = jstr(o, "label"); op.deptGate = jstr(o, "deptGate");
+                EventOption op; op.label = jloc(o, "label"); op.deptGate = jstr(o, "deptGate");
                 if (o.HasMember("require") && o["require"].IsObject()) {
                     for (auto& m : o["require"].GetObject()) { op.requireRes = m.name.GetString(); op.requireAmt = static_cast<int>(to_num(m.value)); break; }
                 }
@@ -362,10 +390,17 @@ void load_trade() {
         g.offers.push_back(t);
     }
 }
+void load_events_all() {
+    load_events_file(g_dataDir + "/events.json");
+    load_events_file(g_dataDir + "/events_personal.json");
+    load_events_file(g_dataDir + "/events_memory.json");   // The Long Memory darkline (Act I+)
+}
 void load_all_data() {
-    load_crops(); load_events_file(g_dataDir + "/events.json"); load_events_file(g_dataDir + "/events_personal.json");
+    load_crops(); load_events_all();
     load_crew(); load_recipes(); load_research(); load_routes(); load_trade();
 }
+// Re-resolve event text after a language switch (does not touch crew/resource state).
+void reload_events() { g.events.clear(); g.curEvent = -1; load_events_all(); }
 
 // ── effects + the event engine ──
 float* res_ptr(const std::string& k) {
@@ -388,12 +423,21 @@ std::uint32_t next_rand() { g.rng = g.rng * 1664525u + 1013904223u; return g.rng
 bool resource_below(const std::string& res, float below) { float* p = res_ptr(res); return p && *p < below; }
 void maybe_trigger_event() {
     if (g.curEvent >= 0 || g.events.empty()) { return; }
+    // milestones force-fire once their gate (minDay + optional flag) is met — the act beats
+    for (int i = 0; i < static_cast<int>(g.events.size()); ++i) {
+        EventDef& e = g.events[static_cast<std::size_t>(i)];
+        if (!e.milestone || e.fired || g.day < e.minDay) { continue; }
+        if (!e.triggerFlag.empty() && g.flags[e.triggerFlag] <= 0) { continue; }
+        e.fired = true; e.lastFired = g.day; g.curEvent = i; g.lastEventTitle = e.title; return;
+    }
     std::vector<int> pool; int total = 0;
     for (int i = 0; i < static_cast<int>(g.events.size()); ++i) {
         const EventDef& e = g.events[static_cast<std::size_t>(i)];
+        if (e.milestone || e.weight <= 0) { continue; }
         if (g.day - e.lastFired < e.cooldown) { continue; }
         if (g.day < e.minDay) { continue; }
         if (e.triggerBelow >= 0 && !resource_below(e.triggerRes, e.triggerBelow)) { continue; }
+        if (!e.triggerFlag.empty() && g.flags[e.triggerFlag] <= 0) { continue; }   // flag-gated consequence events
         if (!e.deptGate.empty() && e.deptGate != g.playerDept) { continue; }
         pool.push_back(i); total += e.weight;
     }
@@ -468,10 +512,17 @@ void run_for_captain() {
     g.electionWon = election_yes_share() >= 0.5f;
     if (g.electionWon) { g.isCaptain = true; g.playerRole = "Captain"; }
 }
-const char* kEndingName[7] = {
-    "COLLAPSE", "SUFFOCATION", "VERDANT COMMUNION", "CONSUMED BY THE VOID",
-    "LANDFALL UNDER YOUR COMMAND", "A CHANGED PEOPLE ARRIVE", "QUIET ARRIVAL",
+const char* kEndingName[7] = {     // 0 collapse, 1 suffocation, 2 wake-communion, 3 wake-overrun, 4 captain, 5 understood, 6 quiet
+    "THE COLD QUIET", "THE LAST GARDEN", "THE SHIP REMEMBERS", "A SONG WITH NO SINGER",
+    "NEW SHORE, NEW DAWN", "WE CARRY THEM WITH US", "A QUIET LANDFALL",
 };
+const char* kEndingNameZh[7] = {
+    "\xE5\x86\xB7\xE5\xAF\x82", "\xE6\x9C\x80\xE5\x90\x8E\xE7\x9A\x84\xE8\x8A\xB1\xE5\x9B\xAD",
+    "\xE5\xBD\x92\xE8\x88\x9F\xE6\x9C\x89\xE5\xBF\x86", "\xE6\x97\xA0\xE4\xB8\xBB\xE4\xB9\x8B\xE6\xAD\x8C",
+    "\xE6\x96\xB0\xE5\xB2\xB8\xC2\xB7\xE6\x96\xB0\xE7\x94\x9F", "\xE6\x88\x91\xE4\xBB\xAC\xE5\xB8\xA6\xE7\x9D\x80\xE4\xBB\x96\xE4\xBB\xAC",
+    "\xE9\x9D\x99\xE9\xBB\x98\xE9\x9D\xA0\xE5\xB2\xB8",
+};
+const char* ending_name(int i) { return (i >= 0 && i < 7) ? tr(kEndingName[i], kEndingNameZh[i]) : "\xE2\x80\x94"; }
 void evaluate_endings() {
     if (g.ending >= 0) { return; }
     if (g.res.food <= 0 && g.morale < 12) { g.ending = 0; return; }
@@ -1277,7 +1328,8 @@ void draw_hud() {
     if (g.voidDiscovered) {
         ImGui::SameLine(); ImGui::TextColored(ImVec4(0.72f, 0.5f, 0.92f, 1), "  VOID %.0f%%", g.voidStage);
     }
-    ImGui::TextDisabled("DECK %s   ·   WASD walk · E elevator/console · at lift press 1-6 = deck · panels C/G/L/F/R/N/K · F5/F9 save · Space/TAB time",
+    ImGui::TextDisabled(tr("DECK %s   ·   WASD walk · E lift/console · at lift 1-6 = deck · panels C/G/L/F/R/N/K · F5/F9 save · F2 \xE4\xB8\xAD/EN · Space/TAB time",
+                           "\xE7\x94\xB2\xE6\x9D\xBF %s   ·   WASD \xE8\xA1\x8C\xE8\xB5\xB0 · E \xE7\x94\xB5\xE6\xA2\xAF/\xE7\xBB\x88\xE7\xAB\xAF · \xE7\x94\xB5\xE6\xA2\xAF\xE5\x86\x85 1-6 \xE9\x80\x89\xE5\xB1\x82 · \xE9\x9D\xA2\xE6\x9D\xBF C/G/L/F/R/N/K · F5/F9 \xE5\xAD\x98\xE8\xAF\xBB · F2 \xE4\xB8\xAD/EN · \xE7\xA9\xBA\xE6\xA0\xBC/TAB \xE6\x97\xB6\xE9\x97\xB4"),
                         g.decks.empty() ? "-" : g.decks[static_cast<std::size_t>(g.curDeck)].label.c_str());
     ImGui::End();
 }
@@ -1360,7 +1412,7 @@ void draw_event_modal() {
     ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x * 0.5f, vp->WorkPos.y + vp->WorkSize.y * 0.5f),
                             ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(640, 0), ImGuiCond_Always);
-    ImGui::Begin("SHIP EVENT", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+    ImGui::Begin(tr("SHIP EVENT", "舰内事件"), nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.85f, 0.5f, 1));
     ImGui::TextWrapped("%s", e.title.c_str());
     ImGui::PopStyleColor();
@@ -1373,11 +1425,11 @@ void draw_event_modal() {
         if (!o.requireRes.empty()) { float* p = res_ptr(o.requireRes); if (p && *p < static_cast<float>(o.requireAmt)) { locked = true; } }
         if (locked) { ImGui::BeginDisabled(); }
         std::string lbl = std::to_string(i + 1) + ".  " + o.label;
-        if (!o.requireRes.empty()) { lbl += "   (needs " + std::to_string(o.requireAmt) + " " + o.requireRes + ")"; }
+        if (!o.requireRes.empty()) { lbl += tr("   (needs ", "   （需 ") + std::to_string(o.requireAmt) + " " + o.requireRes + tr(")", "）"); }
         if (ImGui::Button(lbl.c_str(), ImVec2(-1, 0))) { resolve_event(i); }
         if (locked) { ImGui::EndDisabled(); }
     }
-    ImGui::TextDisabled("Press 1-%d to choose.   Time is paused.", static_cast<int>(e.options.size()));
+    ImGui::TextDisabled(tr("Press 1-%d to choose.   Time is paused.", "按 1-%d 选择。   时间已暂停。"), static_cast<int>(e.options.size()));
     ImGui::End();
 }
 void draw_crew_panel() {
@@ -1547,9 +1599,10 @@ void draw_starmap_panel() {
     }
     if (g.voidDiscovered) {
         ImGui::Separator();
-        ImGui::TextColored(ImVec4(0.72f, 0.5f, 0.92f, 1), "VOID-SEED  ::  infection %.0f%%", g.voidStage);
-        ImGui::TextWrapped("A luminous vine pulses in the dark of Bay G, whispering. The ship must take a stance:");
-        const char* st[5] = {"Embrace", "Contain", "Purge", "Study", "Hide"};
+        ImGui::TextColored(ImVec4(0.55f, 0.82f, 0.60f, 1), tr("THE LONG MEMORY  ::  awakening %.0f%%", "漫长记忆  ::  苏醒 %.0f%%"), g.voidStage);
+        ImGui::TextWrapped("%s", tr("In Bay G the oldest vine warms to a soft gold, and the air carries a tune no one is playing. The ship is starting to remember its dead. How will you hold it?",
+                                    "G 区最老的藤蔓泛起柔和的金光，空气里飘着无人弹奏的旋律。飞船开始记起逝去的人。你将如何对待它？"));
+        const char* st[5] = { tr("Wake", "唤醒"), tr("Guide", "引导"), tr("Witness", "见证"), tr("Contain", "守界"), tr("Silence", "静默") };
         for (int i = 0; i < 5; ++i) { if (i) { ImGui::SameLine(); } if (ImGui::RadioButton(st[i], g.voidStance == i)) { g.voidStance = i; } }
     }
     ImGui::End();
@@ -1580,19 +1633,22 @@ void draw_captain_panel() {
 void draw_ending_panel() {
     const ImGuiViewport* vp = ImGui::GetMainViewport();
     ImGui::GetBackgroundDrawList()->AddRectFilled(vp->Pos, ImVec2(vp->Pos.x + vp->Size.x, vp->Pos.y + vp->Size.y), IM_COL32(4, 4, 8, 235));
-    panel_begin("END OF VOYAGE", nullptr, 740, 300);
+    panel_begin(tr("END OF VOYAGE", "航程终点"), nullptr, 740, 300);
     ImGui::Dummy(ImVec2(0, 24));
-    const char* nm = (g.ending >= 0 && g.ending < 7) ? kEndingName[g.ending] : "—";
+    const char* nm = ending_name(g.ending);
     ImGui::SetCursorPosX((740 - ImGui::CalcTextSize(nm).x) * 0.5f);
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.82f, 0.92f, 1.0f, 1));
     ImGui::TextUnformatted(nm);
     ImGui::PopStyleColor();
     ImGui::Dummy(ImVec2(0, 18));
-    ImGui::TextWrapped("Ending %d of 7.   Day %d, generation %d.   Morale %.0f%%, void-seed %.0f%%.   %s",
+    ImGui::TextWrapped(tr("Ending %d of 7.   Day %d, generation %d.   Morale %.0f%%, awakening %.0f%%.   %s",
+                          "结局 %d / 7    第 %d 天 · 第 %d 代    士气 %.0f%%，苏醒 %.0f%%。   %s"),
                        g.ending + 1, g.day, g.generation, g.morale, g.voidStage,
-                       g.isCaptain ? "You died captain of the Qingniao." : "You served, and the ship sailed on.");
+                       g.isCaptain ? tr("You led them to New Shore.", "你带领他们抵达新岸。")
+                                   : tr("You served, and the ship sailed on.", "你尽了本分，飞船继续航行。"));
     ImGui::Dummy(ImVec2(0, 14));
-    ImGui::TextDisabled("All 7 endings are wired. F9 reloads a save; or restart the exe for a new voyage.");
+    ImGui::TextDisabled("%s", tr("All 7 endings are wired. F9 reloads a save; or restart for a new voyage.",
+                                 "七种结局均已实装。F9 读取存档，或重启开始新的航程。"));
     ImGui::End();
 }
 
@@ -1663,6 +1719,7 @@ void handle_input(float dt) {
     if (ImGui::IsKeyPressed(ImGuiKey_Tab, false)) { g.speedIndex = (g.speedIndex + 1) % 3; }
     if (ImGui::IsKeyPressed(ImGuiKey_F5, false)) { save_game(); }
     if (ImGui::IsKeyPressed(ImGuiKey_F9, false)) { load_game(); }
+    if (ImGui::IsKeyPressed(ImGuiKey_F2, false)) { g.lang = (g.lang + 1) % 2; reload_events(); }   // EN <-> 中文
     // one management panel at a time; the key toggles it
     auto toggle = [&](bool& flag) { const bool was = flag; close_all_panels(); flag = !was; };
     if (ImGui::IsKeyPressed(ImGuiKey_C, false)) { toggle(g.inCrew); }
@@ -1817,7 +1874,9 @@ int main(int argc, char* argv[]) {
         else if (!std::strcmp(argv[i], "--selftest")) { selftest = true; }
         else if (!std::strcmp(argv[i], "--autodemo")) { autodemo = true; }
         else if (!std::strcmp(argv[i], "--data") && i + 1 < argc) { g_dataDir = argv[++i]; }
+        else if (!std::strcmp(argv[i], "--lang") && i + 1 < argc) { g.lang = (std::string(argv[++i]) == "zh") ? 1 : 0; }
     }
+    if (const char* lc = std::getenv("OKN_VB_LANG")) { if (std::string(lc) == "zh") { g.lang = 1; } }
 
     load_all_data();
     const bool ok = g.cropDefs.size() == 4;
@@ -1848,6 +1907,7 @@ int main(int argc, char* argv[]) {
             };
             seed(0, 0, 4.0f); seed(1, 1, 3.0f); seed(2, 2, 1.5f); seed(3, 3, 4.0f); seed(4, 0, 1.0f);
         } else if (s == "event" && !g.events.empty()) { g.curEvent = 0; }
+        else if (s == "memory") { for (int i = 0; i < static_cast<int>(g.events.size()); ++i) { if (g.events[static_cast<std::size_t>(i)].id == "memory_milestone_archive") { g.curEvent = i; break; } } }
         else if (s == "mfg") { g.inMfg = true; g.res.rawMaterials = 60; g.mfgQueue[0] = 0; g.mfgProgress[0] = 0.4f; if (g.recipes.size() > 2) { g.mfgQueue[1] = 2; g.mfgProgress[1] = 1.2f; } }
         else if (s == "sci") { g.inSci = true; g.sciActive = 0; g.sciProgress = 1.5f; g.techPoints[0] = 2; g.techPoints[1] = 1; }
         else if (s == "nav") { g.inStarmap = true; g.lyTravelled = 38; g.generation = 3; g.voidDiscovered = true; g.voidStage = 34; g.voidStance = 1; }
@@ -1876,12 +1936,16 @@ int main(int argc, char* argv[]) {
     cfg.height = 800;
     if (!unigui::Init(cfg)) { return 1; }
 
-    // Load the bundled pixel font (Latin glyphs) for the retro/terminal look. If it
-    // can't be loaded we fall back to UniGUI's default font — never fatal.
-    auto& fonts = unigui::fonts::Manager::Instance();
-    if (fonts.Load("pixel", "assets/fonts/pixel_zh.ttf", 18.0f)) {
-        fonts.Build();
-        fonts.SetDefault("pixel");
+    // Load the bundled fusion-pixel font WITH CJK glyph ranges so Chinese renders.
+    // UniGUI's Manager::Load() can't pass glyph ranges, so add it via raw ImGui —
+    // added before the first frame, the backend uploads the full atlas on NewFrame.
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        ImFontConfig fc; fc.OversampleH = 1; fc.OversampleV = 1; fc.PixelSnapH = true;
+        ImFont* zh = io.Fonts->AddFontFromFileTTF("assets/fonts/pixel_zh.ttf", 18.0f, &fc,
+                                                  io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+        if (zh) { io.FontDefault = zh; }
+        io.Fonts->Build();
     }
     apply_pixel_style();
 

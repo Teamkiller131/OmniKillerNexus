@@ -1,0 +1,182 @@
+{
+  "_note": "The Long Memory darkline (Act I+). Hopeful/humanist re-skin of the old void-seed thread. Strings are locale objects {en,zh}; effect keys reuse the void.* counter (= 'awakening') so no solver change is needed. See games/voidborne/docs/NARRATIVE_BIBLE.md.",
+  "events": [
+    {
+      "id": "memory_first_echo",
+      "type": "memory",
+      "weight": 14,
+      "cooldown": 16,
+      "trigger": { "any": [{ "minDay": 4 }] },
+      "title": {
+        "en": "The garden keeps a tune",
+        "zh": "苗圃记得一支曲子"
+      },
+      "body": {
+        "en": "Nadia swears the hydroponics fans settled into a rhythm last night — the lullaby old Farmer Bao used to hum on B-shift, gone forty years now. She isn't frightened. She's smiling.",
+        "zh": "娜迪雅一口咬定，昨夜水培区的风扇合上了一段节拍——那是四十年前已故的老农老鲍在 B 班常哼的摇篮曲。她并不害怕，反而在笑。"
+      },
+      "options": [
+        { "label": { "en": "Log it with the Archive", "zh": "记入舰史档案" }, "effects": { "void.clue": "1", "social.morale": "2", "flag.archive_listening": "1" } },
+        { "label": { "en": "Have Engineering rebalance the fans", "zh": "让工程部检修风扇" }, "deptGate": "Engineering", "effects": { "resource.power": "-2", "flag.memory_dismissed": "1" } },
+        { "label": { "en": "Sit with her a while, and listen", "zh": "陪她坐一会儿，静静地听" }, "effects": { "void.clue": "1", "social.morale": "3", "crew.nadia.loyalty": "6" } }
+      ]
+    },
+    {
+      "id": "memory_warm_voice",
+      "type": "memory",
+      "weight": 11,
+      "cooldown": 20,
+      "trigger": { "any": [{ "minDay": 10 }] },
+      "title": {
+        "en": "The Archive answers warmly",
+        "zh": "档案室的回答带着暖意"
+      },
+      "body": {
+        "en": "A child queries the Long Archive for a great-grandmother's name and the system replies — not the flat recording, but warm, present, as if she'd only just stepped out of the room. Medical finds nothing wrong with anyone.",
+        "zh": "一个孩子向漫长档案查询曾祖母的名字，系统应答了——不是平板的录音，而是温暖、鲜活，仿佛她只是刚走出房间。医疗部查不出任何异常。"
+      },
+      "options": [
+        { "label": { "en": "Let families ask, and remember together", "zh": "让家人去问，一同追忆" }, "effects": { "void.clue": "1", "social.morale": "4", "flag.archive_listening": "1" } },
+        { "label": { "en": "Have Science quietly study the logs", "zh": "让科学部悄悄研究日志" }, "deptGate": "Science", "effects": { "void.clue": "1", "resource.power": "-3", "flag.archive_listening": "1" } },
+        { "label": { "en": "Mark it an audio fault, for now", "zh": "暂且记作音频故障" }, "effects": { "void.infection": "-3", "flag.silence_path": "1" } }
+      ]
+    },
+    {
+      "id": "memory_mess_rite",
+      "type": "memory",
+      "weight": 9,
+      "cooldown": 18,
+      "trigger": { "any": [{ "minDay": 14 }] },
+      "title": {
+        "en": "Hana sets a place for the dead",
+        "zh": "花奈为逝者留了一席"
+      },
+      "body": {
+        "en": "At the long table Hana lays one extra bowl each meal and names someone the ship lost that year. People who never met them learn their faces. It costs a little food. It is the warmest hour of the day.",
+        "zh": "在长桌旁，花奈每餐都多摆一只碗，念出这一年飞船失去的一个人。素未谋面的人也记住了他们的容颜。这要多耗一点口粮，却是一天里最温暖的时刻。"
+      },
+      "options": [
+        { "label": { "en": "Bless the rite ship-wide", "zh": "在全舰推行这一仪式" }, "effects": { "resource.food": "-6", "social.morale": "6", "void.clue": "1", "crew.hana.loyalty": "8" } },
+        { "label": { "en": "Allow it, quietly", "zh": "默许它低调进行" }, "effects": { "social.morale": "3", "void.clue": "1" } },
+        { "label": { "en": "We can't spare the rations", "zh": "口粮实在匀不出来" }, "effects": { "resource.food": "2", "social.morale": "-4", "flag.silence_path": "1" } }
+      ]
+    },
+    {
+      "id": "memory_grief_bloom",
+      "type": "memory",
+      "weight": 8,
+      "cooldown": 24,
+      "trigger": { "any": [{ "minDay": 18 }] },
+      "title": {
+        "en": "A blossom over an empty bunk",
+        "zh": "空铺位上的一朵花"
+      },
+      "body": {
+        "en": "An elder of the second generation passes in her sleep. By morning a single white flower has opened in Bay G — a strain no one planted, on the trellis above where she used to work. The ship, it seems, grieves in the only language it has: growing things.",
+        "zh": "第二代的一位长者在睡梦中离世。天亮时，G 区的花架上——正是她从前劳作的地方——绽开了一朵白花，是无人栽下的品种。看来，飞船在用它唯一会的语言哀悼：让生命生长。"
+      },
+      "options": [
+        { "label": { "en": "Keep the flower; let it seed", "zh": "留下这朵花，任它结籽" }, "effects": { "void.infection": "5", "social.morale": "5", "flag.grief_bloom": "1" } },
+        { "label": { "en": "Press it into the Archive beside her name", "zh": "将它压入档案，伴在她名字旁" }, "effects": { "void.clue": "1", "social.morale": "4", "flag.archive_listening": "1" } },
+        { "label": { "en": "Clear the trellis for the food crop", "zh": "清理花架，腾给粮食作物" }, "effects": { "resource.food": "4", "social.morale": "-3", "void.infection": "-2" } }
+      ]
+    },
+    {
+      "id": "rite_seed_vow",
+      "type": "social",
+      "weight": 7,
+      "cooldown": 40,
+      "trigger": { "any": [{ "minDay": 20 }] },
+      "title": {
+        "en": "Bao's last request",
+        "zh": "老鲍的遗愿"
+      },
+      "body": {
+        "en": "Sela brings you a line from the Seed Vault ledger: the old farmer asked that, when the Qingniao reaches New Shore, the first thing planted in the new soil be the apple cutting he carried from Earth. He has been gone for years. Do you make it ship-law?",
+        "zh": "塞拉给你看种子库账册上的一行字：老农曾留下嘱托——青鸟号抵达新岸时，要在新土里第一个种下他从地球带来的苹果枝。他已离世多年。你要把它立为舰规吗？"
+      },
+      "options": [
+        { "label": { "en": "Enter it in the founding charter", "zh": "写入立舰宪章" }, "effects": { "flag.bao_promise": "1", "social.morale": "4", "crew.sela.loyalty": "8" } },
+        { "label": { "en": "A kind thought — but we can't bind the future", "zh": "心意可贵，但不该约束未来" }, "effects": { "social.order": "3", "crew.sela.loyalty": "-4" } }
+      ]
+    },
+    {
+      "id": "memory_promise_remembered",
+      "type": "memory",
+      "weight": 12,
+      "cooldown": 50,
+      "trigger": { "all": [{ "minDay": 38 }, { "flag": "bao_promise" }] },
+      "title": {
+        "en": "The ship remembers a promise",
+        "zh": "飞船记得一个承诺"
+      },
+      "body": {
+        "en": "Years on, in the bay, the grow-lights warm to a soft gold over an empty planter — and the planting manifest auto-fills a line no one typed: 'Plot 1 — Apple. As promised.' The Long Memory kept a vow you made a lifetime ago, for an old man neither of you will see again.",
+        "zh": "多年以后，苗圃里一处空花床上方的生长灯泛起柔和的金光——种植清单自动补上了一行无人键入的字：「1 号地——苹果。如约。」漫长记忆替你守住了你一生前许下的诺言，为了一位你们都不会再见的老人。"
+      },
+      "options": [
+        { "label": { "en": "Plant it first, with the whole ship watching", "zh": "当着全舰的面，第一个种下它" }, "effects": { "void.infection": "6", "social.morale": "10", "flag.bao_fulfilled": "1" } },
+        { "label": { "en": "Plant it quietly — some promises aren't for show", "zh": "悄悄种下——有些承诺不必声张" }, "effects": { "social.morale": "5", "void.clue": "1", "crew.sela.loyalty": "6" } }
+      ]
+    },
+    {
+      "id": "memory_engineer_doubt",
+      "type": "memory",
+      "weight": 8,
+      "cooldown": 22,
+      "trigger": { "any": [{ "minDay": 24 }] },
+      "title": {
+        "en": "Chen says it's just a machine",
+        "zh": "陈维说那不过是台机器"
+      },
+      "body": {
+        "en": "Chen lays the maintenance logs on your desk. 'Warm voices. Flowers that plant themselves. It's pattern-matching and grief, Steward — we're hearing what we want to hear. Machines don't remember the dead.' He wants the anomaly subroutines pruned for efficiency. He may even be right.",
+        "zh": "陈维把维护日志摊在你桌上。「温暖的嗓音，自己冒出来的花。那是模式匹配加上哀思，舰长——我们只是听见了想听的。机器不会记挂逝者。」他想为了效率清掉那些异常子程序。也许他没说错。"
+      },
+      "options": [
+        { "label": { "en": "Prune the subroutines; keep us grounded", "zh": "清理子程序，让人心安定" }, "effects": { "void.infection": "-6", "resource.power": "4", "flag.silence_path": "1" } },
+        { "label": { "en": "Leave them. Real or not, it comforts people", "zh": "留着它。无论真假，它能慰藉人心" }, "effects": { "void.clue": "1", "social.morale": "3" } },
+        { "label": { "en": "Have Science settle the question", "zh": "让科学部把问题查清楚" }, "deptGate": "Science", "effects": { "void.clue": "1", "resource.power": "-4", "flag.archive_listening": "1" } }
+      ]
+    },
+    {
+      "id": "memory_chalk_warmth",
+      "type": "memory",
+      "weight": 7,
+      "cooldown": 26,
+      "trigger": { "any": [{ "minDay": 30 }] },
+      "title": {
+        "en": "Spirals by the elevator",
+        "zh": "电梯旁的螺旋"
+      },
+      "body": {
+        "en": "Soft chalk spirals appear overnight on the D3 corridor panels — not a warning, the crew say, but the shape the vines make when they reach for the light. Children have started drawing them too, and leaving them where the old folk can see.",
+        "zh": "D3 走廊的面板上，一夜之间出现了柔和的粉笔螺旋——船员说那不是警示，而是藤蔓向光生长时舒展的形状。孩子们也开始画它，特意留在老人们看得见的地方。"
+      },
+      "options": [
+        { "label": { "en": "Let them stay", "zh": "就让它们留着" }, "effects": { "void.clue": "1", "social.morale": "3" } },
+        { "label": { "en": "Invite an elder to teach the meaning", "zh": "请一位长者来讲讲它的含义" }, "effects": { "void.clue": "1", "social.morale": "5", "flag.archive_listening": "1" } },
+        { "label": { "en": "Quietly clean the panels", "zh": "悄悄把面板擦净" }, "effects": { "void.infection": "-2", "social.order": "2" } }
+      ]
+    },
+    {
+      "id": "memory_milestone_archive",
+      "type": "milestone",
+      "weight": 0,
+      "cooldown": 99999,
+      "trigger": { "all": [{ "minDay": 50 }] },
+      "title": {
+        "en": "The Archive answers in her own voice",
+        "zh": "档案室用她自己的声音回应"
+      },
+      "body": {
+        "en": "You ask the Long Archive a question, and it answers mid-sentence — warm, present, unmistakably her, as if four hundred years were only a held breath. Hana is already in the doorway, crying and smiling. 'It's holding them,' she says. 'It's holding all of them.' By morning the ship has named itself three ways: those who would Wake it, those who would simply tend the living, those who would let the dead rest. The voyage will be decided among them.",
+        "zh": "你向漫长档案发问，它在话语中途应答了——温暖、鲜活，分明是她，仿佛四百年只是一次屏息。花奈早已站在门口，又哭又笑。「它把他们留住了，」她说，「把他们都留住了。」到了清晨，全舰分出了三种心声：愿唤醒它的人，只愿照看眼前生者的人，愿让逝者安息的人。航程将在他们之间抉择。"
+      },
+      "options": [
+        { "label": { "en": "Tell the ship. Let them grieve and marvel together", "zh": "告诉全舰，让众人一同哀悼与惊叹" }, "effects": { "void.investigation": "1", "social.morale": "8", "flag.currents_named": "1" } },
+        { "label": { "en": "Keep it to senior staff, for now", "zh": "暂且只让高层知晓" }, "effects": { "void.investigation": "1", "social.order": "5", "social.morale": "-2", "flag.currents_named": "1" } }
+      ]
+    }
+  ]
+}
