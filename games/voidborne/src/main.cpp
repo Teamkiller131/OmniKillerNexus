@@ -574,9 +574,12 @@ void daily_settlement() {
         p.watered = false;
     }
 
-    // (order 50) LIFE SUPPORT consume: people eat, drink, breathe; recyclers churn.
-    g.res.food = std::max(0.0f, g.res.food - kPop * 0.045f);          // ~13.5/day
-    g.res.water = std::max(0.0f, g.res.water - kPop * 0.03f);         // ~9/day
+    // (order 50) LIFE SUPPORT consume: 300 mouths eat, drink, breathe. Feeding them is a
+    // STANDING STRAIN — the big hydroponics bays cover most of it, but never quite all, so
+    // food trends down unless the player actively farms, powers ecology, and keeps morale up.
+    const float hydroFeed = 14.0f * (0.40f + g.powerAlloc[0]) * std::clamp(0.55f + g.morale / 250.0f, 0.35f, 1.05f);
+    g.res.food = std::max(0.0f, g.res.food + hydroFeed - kPop * 0.05f);   // ~ -15 eaten, ~ +7 grown → a real gap to close
+    g.res.water = std::max(0.0f, g.res.water - kPop * 0.032f);            // ~9.6/day
     g.res.oxygen = std::clamp(g.res.oxygen - 0.25f + 0.30f, 0.0f, 30.0f);  // breathe vs recycle
     g.res.co2 = std::clamp(g.res.co2 + 0.04f - 0.045f, 0.0f, 5.0f);
     g.res.power = std::clamp(g.res.power - 4.0f + 8.0f, 0.0f, 300.0f);     // reactor net +
@@ -593,8 +596,11 @@ void daily_settlement() {
     tick_voidseed();
     update_player_tier();
 
-    // morale drifts on scarcity / surplus + ration policy (the original S10 flavour)
-    const float scarcity = (g.res.food < kPop * 0.5f ? -1.5f : 0.6f) + (g.ration - 1) * 0.4f;
+    // morale drifts on scarcity / surplus + ration policy (the original S10 flavour). With
+    // 300 mouths, low stores bite — and true starvation tips the ship toward collapse.
+    const float scarcity = (g.res.food < kPop * 0.5f ? -1.5f : 0.6f)
+                         + (g.res.food < kPop * 0.15f ? -2.5f : 0.0f)   // <45 food: people are going hungry
+                         + (g.ration - 1) * 0.4f;
     g.morale = std::clamp(g.morale + scarcity + (g.voidStage > 40 ? -0.5f : 0.0f), 0.0f, 100.0f);
 
     evaluate_endings();
@@ -717,12 +723,12 @@ void build_decks_data() {
     add("D1 OPERATIONS", "Power, water, logistics, manufacturing", IM_COL32(255, 193, 94, 255), 58, 18,
         {{"ENGINEERING", 12, 1, K::Engineering}, {"POWER CORE", 10, -1, K::Power}, {"WATER RECLAIM", 10, -1, K::Water}, {"LOGISTICS", 14, 2, K::Logistics}},
         {{"MANUFACTURING", 14, 3, K::Manufacturing}, {"MACHINE SHOP", 10, -1, K::Storage}, {"PARTS STORE", 9, -1, K::Storage}, {"RECYCLING", 9, -1, K::Recycle}});
-    add("D2 ECOLOGY", "7 hydroponics bays, seed bank, algae O2", IM_COL32(123, 216, 138, 255), 64, 20,
-        {{"HYDRO BAY A", 11, 0, K::Hydro}, {"HYDRO BAY B", 11, 0, K::Hydro}, {"HYDRO BAY C", 11, 0, K::Hydro}, {"HYDRO BAY D", 11, 0, K::Hydro}},
-        {{"HYDRO BAY E", 11, 0, K::Hydro}, {"HYDRO BAY F", 11, 0, K::Hydro}, {"HYDRO BAY G", 11, 0, K::Hydro}, {"SEED BANK", 9, -1, K::SeedBank}, {"ALGAE O2", 8, -1, K::Algae}});
-    add("D3 HABITATION", "Quarters, mess, medbay, school -- home to 300", IM_COL32(159, 180, 216, 255), 62, 20,
-        {{"QUARTERS A", 11, 5, K::Quarters}, {"QUARTERS B", 11, 5, K::Quarters}, {"QUARTERS C", 11, 5, K::Quarters}, {"MESS HALL", 16, -1, K::Mess}},
-        {{"MEDBAY", 10, -1, K::Medical}, {"LOUNGE", 9, -1, K::Lounge}, {"SCHOOL", 10, -1, K::School}, {"GYM", 8, -1, K::Gym}, {"QUARTERS D", 11, 5, K::Quarters}});
+    add("D2 ECOLOGY", "Hydroponics -- feeding 300 is a daily battle", IM_COL32(123, 216, 138, 255), 80, 20,
+        {{"HYDRO BAY A", 14, 0, K::Hydro}, {"HYDRO BAY B", 14, 0, K::Hydro}, {"HYDRO BAY C", 14, 0, K::Hydro}, {"HYDRO BAY D", 14, 0, K::Hydro}},
+        {{"HYDRO BAY E", 14, 0, K::Hydro}, {"HYDRO BAY F", 14, 0, K::Hydro}, {"HYDRO BAY G", 14, 0, K::Hydro}, {"SEED BANK", 10, -1, K::SeedBank}, {"ALGAE O2", 9, -1, K::Algae}});
+    add("D3 HABITATION", "Quarters for 300 souls, mess, medbay, school, nursery", IM_COL32(159, 180, 216, 255), 94, 20,
+        {{"QUARTERS A", 14, 5, K::Quarters}, {"QUARTERS B", 14, 5, K::Quarters}, {"QUARTERS C", 14, 5, K::Quarters}, {"MESS HALL", 18, -1, K::Mess}, {"QUARTERS D", 14, 5, K::Quarters}, {"QUARTERS E", 14, 5, K::Quarters}},
+        {{"MEDBAY", 12, -1, K::Medical}, {"LOUNGE", 11, -1, K::Lounge}, {"SCHOOL", 11, -1, K::School}, {"NURSERY", 10, -1, K::School}, {"GYM", 9, -1, K::Gym}, {"QUARTERS F", 14, 5, K::Quarters}, {"QUARTERS G", 14, 5, K::Quarters}});
     add("D4 SCIENCE", "Labs, alien samples, quarantine, archive", IM_COL32(143, 214, 255, 255), 54, 18,
         {{"SCIENCE LAB", 14, 4, K::Lab}, {"ALIEN LAB", 12, -1, K::Lab}, {"ARCHIVE", 10, -1, K::Generic}},
         {{"QUARANTINE", 12, -1, K::Generic}, {"OBSERVATORY", 12, -1, K::Generic}, {"MED RESEARCH", 10, -1, K::Lab}});
@@ -795,12 +801,12 @@ static inline unsigned vbhash(unsigned x) {
 void build_deck(int d) {
     g.curDeck = std::clamp(d, 0, static_cast<int>(g.decks.size()) - 1);
     const DeckDef& def = g.decks[static_cast<std::size_t>(g.curDeck)];
-    const int W = std::max(64, static_cast<int>(std::lround(def.width * kMapScale * 1.4f)));   // long fuselage
-    const int H = 21;                          // fixed — the whole cross-section + space fits the view
+    const int W = std::max(72, static_cast<int>(std::lround(def.width * kMapScale * 1.5f)));   // long fuselage
+    const int H = 27;                          // a big tube: deep enough to house 300 (scrolls a little)
     g.deckW = W; g.deckH = H;
     g.deck.assign(static_cast<std::size_t>(H), std::string(static_cast<std::size_t>(W), 'S'));   // start as open vacuum
-    const int center = H / 2;                  // 10
-    const int maxHH = center - 2;              // walkable half-height 8: floor rows 3..17, hull 2/18, space 0-1/19-20
+    const int center = H / 2;                  // 13
+    const int maxHH = center - 2;              // walkable half-height 11: tall rooms hold many bunks
     const int sternLen = std::max(6, W / 16), bowLen = std::max(14, W / 6);
     g.hullCenter = center; g.hullMaxHH = maxHH; g.hullStern = sternLen; g.hullBow = bowLen;
     auto hullHalfF = [&](float x) -> float {   // smooth fuselage half-height profile
@@ -1187,13 +1193,13 @@ void draw_world() {
         const float ch = static_cast<float>(r.chamfer);
         const float fx0 = static_cast<float>(r.x0) + ch + 1.2f, fy0 = static_cast<float>(r.y0) + ch + 1.2f;
         const float fx1 = static_cast<float>(r.x1) - ch - 1.2f, fy1 = static_cast<float>(r.y1) - ch - 1.2f;
-        if (r.kind == RoomKind::Quarters) {                 // bunk beds
-            for (float by = fy0; by < fy1 - 1.6f; by += 2.1f) {
-                for (float bx = fx0; bx < fx1 - 1.4f; bx += 1.9f) {
-                    box(bx, by, 1.5f, 1.7f, IM_COL32(52, 58, 72, 255));
-                    box(bx + 0.12f, by + 0.12f, 1.26f, 1.0f, IM_COL32(188, 194, 208, 255));
-                    box(bx + 0.18f, by + 0.16f, 0.5f, 0.42f, IM_COL32(246, 246, 250, 255));
-                    box(bx + 0.12f, by + 0.66f, 1.26f, 0.5f, IM_COL32(88, 120, 172, 255));
+        if (r.kind == RoomKind::Quarters) {                 // dense bunk grid — racked housing for the 300
+            for (float by = fy0; by < fy1 - 1.2f; by += 1.62f) {
+                for (float bx = fx0; bx < fx1 - 1.1f; bx += 1.66f) {
+                    box(bx, by, 1.40f, 1.30f, IM_COL32(52, 58, 72, 255));
+                    box(bx + 0.10f, by + 0.10f, 1.18f, 0.76f, IM_COL32(188, 194, 208, 255));
+                    box(bx + 0.15f, by + 0.13f, 0.42f, 0.34f, IM_COL32(246, 246, 250, 255));
+                    box(bx + 0.10f, by + 0.54f, 1.18f, 0.40f, IM_COL32(88, 120, 172, 255));
                 }
             }
         } else if (r.kind == RoomKind::Hydro) {             // blocky plant beds
