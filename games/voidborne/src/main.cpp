@@ -140,6 +140,7 @@ struct Game {
     float secondsPerHour = 1.2f;
     int speedIndex = 1;                 // -> {1,2,4}×
     bool paused = false;
+    float simTime = 0.0f;               // speed-scaled animation/sim clock (drives walk/doors/crew/fx)
 
     // ── ecology bay ──
     std::array<Plot, kPlots> plots{};
@@ -154,6 +155,7 @@ struct Game {
     std::vector<std::string> deck;      // the CURRENT deck's tilemap ('#' wall, '.' floor)
     std::vector<Room> rooms;            // the current deck's rooms
     int deckW = 0, deckH = 0;           // current deck size
+    int hullCenter = 10, hullMaxHH = 8, hullStern = 6, hullBow = 16;   // fuselage profile (for the smooth hull skin)
     int elevX = 2, elevY = 8;           // elevator tile on the current deck
     bool elevatorOpen = false;          // deck-select overlay up?
     std::vector<WorldNpc> npcsHere;     // crew standing on the current deck
@@ -609,13 +611,18 @@ void advance_time(float dt) {
         if (++g.hour >= 24) { g.hour = 0; ++g.day; daily_settlement(); }
     }
 }
+// The 1x/2x/4x setting fast-forwards every real-time system, not just the clock.
+float speed_mul() { return g.speedIndex == 0 ? 1.0f : g.speedIndex == 1 ? 2.0f : 4.0f;
+}
 
 // ── ship-world helpers ──
 char deck_at(int x, int y) {
     if (x < 0 || y < 0 || y >= static_cast<int>(g.deck.size()) || x >= static_cast<int>(g.deck[static_cast<std::size_t>(y)].size())) { return '#'; }
     return g.deck[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)];
 }
-bool walkable_tile(int x, int y) { const char c = deck_at(x, y); return c != '#'; }
+// tile chars: '.' floor, '#' wall, 'D' door, 'S' space (outside the hull), '1'..'4' diagonal bulkhead
+bool is_diag(char c) { return c >= '1' && c <= '4'; }
+bool walkable_tile(int x, int y) { const char c = deck_at(x, y); return c == '.' || c == 'D'; }
 // A 'D' door tile blocks like a wall until its owning room's door has slid open.
 bool door_tile_solid(int x, int y) {
     for (const Room& r : g.rooms) {
@@ -625,7 +632,7 @@ bool door_tile_solid(int x, int y) {
 }
 bool tile_solid(int x, int y) {
     const char c = deck_at(x, y);
-    if (c == '#') { return true; }
+    if (c == '#' || c == 'S' || is_diag(c)) { return true; }   // hull, vacuum, and diagonal bulkheads all block
     if (c == 'D') { return door_tile_solid(x, y); }
     return false;
 }
@@ -681,7 +688,7 @@ void update_doors(float dt) {
 // stepping onto walkable floor, facing its motion and advancing its walk cycle.
 void update_crew(float dt) {
     (void)dt;
-    const float t = static_cast<float>(ImGui::GetTime());
+    const float t = g.simTime;
     for (WorldNpc& n : g.npcsHere) {
         const float r = 1.1f;
         const float cx = n.homeX + std::sin(t * 0.45f + n.phase) * r;
@@ -781,83 +788,94 @@ void place_npcs() {
 static inline unsigned vbhash(unsigned x) {
     x ^= x >> 16; x *= 0x7feb352dU; x ^= x >> 15; x *= 0x846ca68bU; x ^= x >> 16; return x;
 }
-// Generate the CURRENT deck's tilemap + room list: rooms of VARIED depth flush to the
-// hull and staggered along a central concourse (organic, non-square), with chamfered
-// (octagonal) room corners, a chamfered hull silhouette, and a signature reactor octagon.
+// Generate the CURRENT deck as a SHIP FUSELAGE floating in space: a long hull with a
+// rounded stern + tapered bow, vacuum ('S') outside, rooms in the midship around a
+// central spine, and every convex corner turned into a 45° bulkhead — so it reads as
+// a spaceship section, not a square floor plan.
 void build_deck(int d) {
     g.curDeck = std::clamp(d, 0, static_cast<int>(g.decks.size()) - 1);
     const DeckDef& def = g.decks[static_cast<std::size_t>(g.curDeck)];
-    const int W = static_cast<int>(std::lround(def.width * kMapScale));
-    const int H = static_cast<int>(std::lround(def.height * kMapScale));
+    const int W = std::max(64, static_cast<int>(std::lround(def.width * kMapScale * 1.4f)));   // long fuselage
+    const int H = 21;                          // fixed — the whole cross-section + space fits the view
     g.deckW = W; g.deckH = H;
-    g.deck.assign(static_cast<std::size_t>(H), std::string(static_cast<std::size_t>(W), '.'));
-    for (int x = 0; x < W; ++x) { g.deck[0][static_cast<std::size_t>(x)] = '#'; g.deck[static_cast<std::size_t>(H - 1)][static_cast<std::size_t>(x)] = '#'; }
-    for (int y = 0; y < H; ++y) { g.deck[static_cast<std::size_t>(y)][0] = '#'; g.deck[static_cast<std::size_t>(y)][static_cast<std::size_t>(W - 1)] = '#'; }
-    const int corr = H / 2 - 1;     // central concourse: rows corr, corr+1
+    g.deck.assign(static_cast<std::size_t>(H), std::string(static_cast<std::size_t>(W), 'S'));   // start as open vacuum
+    const int center = H / 2;                  // 10
+    const int maxHH = center - 2;              // walkable half-height 8: floor rows 3..17, hull 2/18, space 0-1/19-20
+    const int sternLen = std::max(6, W / 16), bowLen = std::max(14, W / 6);
+    g.hullCenter = center; g.hullMaxHH = maxHH; g.hullStern = sternLen; g.hullBow = bowLen;
+    auto hullHalfF = [&](float x) -> float {   // smooth fuselage half-height profile
+        if (x < static_cast<float>(sternLen)) { return maxHH * std::sqrt(std::max(0.0f, (x + 0.5f) / (sternLen + 0.5f))); }
+        if (x >= static_cast<float>(W - bowLen)) { const float t = (W - 1 - x) / bowLen; return maxHH * std::pow(std::max(0.0f, t), 0.7f); }
+        return static_cast<float>(maxHH);
+    };
+    // carve the fuselage: interior floor + a 1-tile hull rim, vacuum outside
+    for (int x = 0; x < W; ++x) {
+        const int h = std::clamp(static_cast<int>(std::lround(hullHalfF(static_cast<float>(x)))), 0, maxHH);
+        const int top = center - h, bot = center + h;
+        for (int y = top + 1; y < bot; ++y) { g.deck[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)] = '.'; }
+        if (top >= 0 && top < H) { g.deck[static_cast<std::size_t>(top)][static_cast<std::size_t>(x)] = '#'; }
+        if (bot >= 0 && bot < H && bot != top) { g.deck[static_cast<std::size_t>(bot)][static_cast<std::size_t>(x)] = '#'; }
+    }
+    const int corr = center;
     g.rooms.clear();
     int hydro = 0;
-    auto setW = [&](int xx, int yy) { if (xx > 0 && yy > 0 && xx < W - 1 && yy < H - 1) { g.deck[static_cast<std::size_t>(yy)][static_cast<std::size_t>(xx)] = '#'; } };
     auto h01 = [&](int a, int b) { return static_cast<float>(vbhash(static_cast<unsigned>((g.curDeck * 2654435761U) ^ (a * 40503U) ^ (b * 12345U))) & 1023U) / 1023.0f; };
-    // octagonalize a walled rectangle: fill small '#' triangles into its 4 interior corners
-    auto chamfer = [&](int x0, int y0, int x1, int y1, int c) {
-        for (int a = 1; a <= c; ++a) {
-            for (int b = 1; b <= c; ++b) {
-                if (a + b > c + 1) { continue; }
-                setW(x0 + a, y0 + b); setW(x1 - a, y0 + b); setW(x0 + a, y1 - b); setW(x1 - a, y1 - b);
-            }
-        }
-    };
+    auto wallRC = [&](int x, int y) { if (x >= 0 && y >= 0 && x < W && y < H && g.deck[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)] == '.') { g.deck[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)] = '#'; } };
+    const int tTop = center - maxHH + 1, tBot = center + maxHH - 1;
+    const int xStart = sternLen + 4, xEnd = W - bowLen - 4;
     auto pack = [&](const std::vector<RoomSpec>& specs, bool topBand) {
-        int x = 6, idx = 0;
+        int x = xStart, idx = 0;
         for (const RoomSpec& s : specs) {
             const int rw = std::max(6, static_cast<int>(std::lround(s.width * kMapScale)));
             const int x0 = x, x1 = x + rw - 1;
-            if (x1 >= W - 2) { break; }
-            // stagger the concourse-facing (inner) edge; deep service rooms stay full depth
+            if (x1 >= xEnd) { break; }
             const bool deep = (s.kind == RoomKind::Hydro || s.kind == RoomKind::Mess || s.kind == RoomKind::Engine || s.kind == RoomKind::Cargo || s.kind == RoomKind::Bridge);
-            const int setback = deep ? 0 : static_cast<int>(h01(idx, topBand ? 1 : 2) * 2.99f);
+            const int setback = deep ? 0 : static_cast<int>(h01(idx, topBand ? 1 : 2) * 1.99f);
             int y0, y1, dy;
-            if (topBand) { y0 = 1; y1 = (corr - 1) - setback; dy = y1; }       // flush to top hull
-            else { y1 = H - 2; y0 = (corr + 2) + setback; dy = y0; }            // flush to bottom hull
-            if (y1 - y0 < 4) { if (topBand) { y1 = corr - 1; dy = y1; } else { y0 = corr + 2; dy = y0; } }
-            for (int xx = x0; xx <= x1; ++xx) { g.deck[static_cast<std::size_t>(y0)][static_cast<std::size_t>(xx)] = '#'; g.deck[static_cast<std::size_t>(y1)][static_cast<std::size_t>(xx)] = '#'; }
-            for (int yy = y0; yy <= y1; ++yy) { g.deck[static_cast<std::size_t>(yy)][static_cast<std::size_t>(x0)] = '#'; g.deck[static_cast<std::size_t>(yy)][static_cast<std::size_t>(x1)] = '#'; }
-            int cc = (rw >= 14 && (y1 - y0) >= 9) ? 2 : 1;
-            if (s.kind == RoomKind::Reactor) { cc = std::min({4, rw / 3, (y1 - y0) / 3}); }   // signature octagon
-            chamfer(x0, y0, x1, y1, cc);
+            if (topBand) { y0 = tTop; y1 = (corr - 2) - setback; dy = y1; }
+            else { y1 = tBot; y0 = (corr + 2) + setback; dy = y0; }
+            if (y1 - y0 < 3) { if (topBand) { y1 = corr - 2; dy = y1; } else { y0 = corr + 2; dy = y0; } }
+            for (int xx = x0; xx <= x1; ++xx) { wallRC(xx, y0); wallRC(xx, y1); }
+            for (int yy = y0; yy <= y1; ++yy) { wallRC(x0, yy); wallRC(x1, yy); }
             const int dx = (x0 + x1) / 2;
-            Room R; R.x0 = x0; R.y0 = y0; R.x1 = x1; R.y1 = y1; R.doorx = dx; R.doory = dy; R.doorNorth = !topBand; R.chamfer = cc;
+            Room R; R.x0 = x0; R.y0 = y0; R.x1 = x1; R.y1 = y1; R.doorx = dx; R.doory = dy; R.doorNorth = !topBand; R.chamfer = 1;
             R.name = s.label; R.panel = s.panel; R.kind = s.kind;
             R.floorCol = deck_floor(def.accent, s.kind); R.labelCol = def.accent;
             if (s.kind == RoomKind::Hydro) { R.isVoid = (++hydro == 7); }   // Bay G
             g.rooms.push_back(R);
-            x = x1 + 2 + (h01(idx * 7 + 3, topBand ? 5 : 9) < 0.4f ? 1 : 0);   // varied gap
+            x = x1 + 2 + (h01(idx * 7 + 3, topBand ? 5 : 9) < 0.4f ? 1 : 0);
             ++idx;
         }
     };
     pack(def.top, true);
     pack(def.bottom, false);
-    // chamfer the four hull corners → the deck silhouette reads as a ship section, not a box
-    {
-        const int cw = std::min(9, W / 7), ch = std::max(3, std::min(6, H / 5));
-        auto hullCut = [&](bool right, bool bottom) {
-            for (int a = 0; a <= cw; ++a) {
-                for (int b = 0; b <= ch; ++b) {
-                    if (static_cast<float>(a) / cw + static_cast<float>(b) / ch < 0.98f) {
-                        g.deck[static_cast<std::size_t>(bottom ? H - 1 - b : b)][static_cast<std::size_t>(right ? W - 1 - a : a)] = '#';
-                    }
-                }
-            }
-        };
-        hullCut(false, false); hullCut(true, false); hullCut(false, true); hullCut(true, true);
-    }
-    // re-assert every door LAST so no chamfer/hull carve can wall it shut
+    // re-assert every door (a 2-wide opening on the spine-facing wall)
     for (const Room& r : g.rooms) {
         g.deck[static_cast<std::size_t>(r.doory)][static_cast<std::size_t>(r.doorx)] = 'D';
         g.deck[static_cast<std::size_t>(r.doory)][static_cast<std::size_t>(std::min(W - 2, r.doorx + 1))] = 'D';
     }
-    g.elevX = 2; g.elevY = corr;
-    g.pcx = 3.5f; g.pcy = static_cast<float>(corr) + 0.5f;   // spawn beside the elevator
+    // ── diagonalize every convex exterior corner → 45° bulkheads (the "not square" pass) ──
+    {
+        const std::vector<std::string> src = g.deck;   // snapshot so conversions don't cascade
+        auto op = [&](int x, int y) { if (x < 0 || y < 0 || x >= W || y >= H) { return false; } const char c = src[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)]; return c == '.' || c == 'D' || c == 'S'; };
+        auto so = [&](int x, int y) { if (x < 0 || y < 0 || x >= W || y >= H) { return true; } return src[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)] == '#'; };
+        for (int y = 0; y < H; ++y) {
+            for (int x = 0; x < W; ++x) {
+                if (src[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)] != '#') { continue; }
+                const bool n = op(x, y - 1), s = op(x, y + 1), w = op(x - 1, y), e = op(x + 1, y);
+                char dc = 0;                                                    // wall-triangle quadrant
+                if (n && w && so(x, y + 1) && so(x + 1, y)) { dc = '3'; }       // open NW → wall fills SE
+                else if (n && e && so(x, y + 1) && so(x - 1, y)) { dc = '4'; }  // open NE → wall fills SW
+                else if (s && w && so(x, y - 1) && so(x + 1, y)) { dc = '2'; }  // open SW → wall fills NE
+                else if (s && e && so(x, y - 1) && so(x - 1, y)) { dc = '1'; }  // open SE → wall fills NW
+                if (dc) { g.deck[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)] = dc; }
+            }
+        }
+    }
+    g.elevX = std::max(2, sternLen - 1); g.elevY = center;
+    g.deck[static_cast<std::size_t>(center)][static_cast<std::size_t>(g.elevX)] = '.';
+    g.deck[static_cast<std::size_t>(center)][static_cast<std::size_t>(g.elevX + 1)] = '.';
+    g.pcx = static_cast<float>(g.elevX) + 1.6f; g.pcy = static_cast<float>(center) + 0.5f;
     g.camInit = false; g.deckFade = 1.0f;                    // snap camera + fade the new deck in
     place_npcs();
 }
@@ -1022,7 +1040,20 @@ void draw_world() {
     const ImDrawListFlags saved = dl->Flags;                 // pixel-art: kill anti-aliasing
     dl->Flags &= ~(ImDrawListFlags_AntiAliasedLines | ImDrawListFlags_AntiAliasedLinesUseTex | ImDrawListFlags_AntiAliasedFill);
     const ImVec2 p0 = vp->Pos, sz = vp->Size;
-    dl->AddRectFilled(p0, ImVec2(p0.x + sz.x, p0.y + sz.y), IM_COL32(8, 10, 16, 255));
+    dl->AddRectFilled(p0, ImVec2(p0.x + sz.x, p0.y + sz.y), IM_COL32(6, 7, 14, 255));   // deep space
+    {   // a starfield drifting slowly across the void — the ship sails through it
+        const float st = g.simTime * 1.4f;
+        for (int i = 0; i < 95; ++i) {
+            unsigned h = vbhash(static_cast<unsigned>(i) * 0x9e3779b9u);
+            const float bx = static_cast<float>(h % 1000) / 1000.0f; h = vbhash(h);
+            const float by = static_cast<float>(h % 1000) / 1000.0f; h = vbhash(h);
+            const float spd = 3.0f + static_cast<float>(h % 100) * 0.22f;
+            const float mx = p0.x + std::fmod(bx * sz.x + st * spd, sz.x), my = p0.y + by * sz.y;
+            const int br = 80 + static_cast<int>(h % 140);
+            const float sp = (h % 9 == 0) ? 2.0f : 1.0f;
+            dl->AddRectFilled(ImVec2(mx, my), ImVec2(mx + sp, my + sp), IM_COL32(br, br, std::min(255, br + 24), 255));
+        }
+    }
 
     const float hud = 96.0f, viewW = sz.x, viewH = sz.y - hud;
     auto camAxis = [](float playerPx, float full, float view) {
@@ -1068,8 +1099,10 @@ void draw_world() {
         for (int tx = x0; tx <= x1; ++tx) {
             const ImVec2 a(sx(static_cast<float>(tx)), sy(static_cast<float>(ty)));
             const ImVec2 b(a.x + kTile, a.y + kTile);
-            if (isWall(tx, ty)) { dl->AddRectFilled(a, b, subfl); continue; }
-            dl->AddRectFilled(a, b, floorColAt(tx, ty));
+            const char tc = deck_at(tx, ty);
+            if (tc == 'S') { continue; }                          // open vacuum → let the starfield show
+            if (tc == '#') { dl->AddRectFilled(a, b, subfl); continue; }
+            dl->AddRectFilled(a, b, floorColAt(tx, ty));          // floor / door / diagonal-bulkhead floor half
             dl->AddRectFilled(ImVec2(b.x - 1, a.y), b, IM_COL32(0, 0, 0, 30));   // deck-plating seams
             dl->AddRectFilled(ImVec2(a.x, b.y - 1), b, IM_COL32(0, 0, 0, 30));
             { const int pri = room_of(tx, ty); if (pri >= 0) { floor_pattern(dl, a, b, tx, ty, g.rooms[static_cast<std::size_t>(pri)].kind); } }
@@ -1082,7 +1115,7 @@ void draw_world() {
 
     // ── PASS B: walls — lit top cap + dark front face (height) + autotiled corners ──
     const float faceH = kTile * 0.52f, riv = kTile * 0.16f, half = kTile * 0.5f;
-    const float winDrift = std::fmod(static_cast<float>(ImGui::GetTime()) * 0.015f, 1.0f);   // slow star drift
+    const float winDrift = std::fmod(g.simTime * 0.015f, 1.0f);   // slow star drift
     auto cutCorner = [&](float cx, float cy, float dx, float dy) {       // exterior corner → 2-step bevel
         const float n = kTile * 0.34f, h = n * 0.5f;
         auto rect = [&](float ax, float ay, float bx, float by) {
@@ -1124,6 +1157,26 @@ void draw_world() {
             if (sF && eF) { cutCorner(b.x, b.y, -1, -1); } else if (!sF && !eF && !isWall(tx + 1, ty + 1)) { aoCorner(b.x, b.y, -1, -1); }
         }
     }
+
+    // ── diagonal bulkheads (45° walls) — the "not square" corners + the hull taper ──
+    for (int ty = y0; ty <= y1; ++ty) {
+        for (int tx = x0; tx <= x1; ++tx) {
+            const char dc = deck_at(tx, ty);
+            if (!is_diag(dc)) { continue; }
+            const float ax = sx(static_cast<float>(tx)), ay = sy(static_cast<float>(ty)), bx = ax + kTile, by = ay + kTile;
+            const ImVec2 TL(ax, ay), TR(bx, ay), BL(ax, by), BR(bx, by);
+            ImVec2 p1, p2, p3, hA, hB, mid;        // wall triangle + lit hypotenuse + the solid (right-angle) corner
+            if (dc == '1') { p1 = TL; p2 = TR; p3 = BL; hA = TR; hB = BL; mid = TL; }       // wall fills NW
+            else if (dc == '3') { p1 = TR; p2 = BR; p3 = BL; hA = TR; hB = BL; mid = BR; }  // wall fills SE
+            else if (dc == '2') { p1 = TL; p2 = TR; p3 = BR; hA = TL; hB = BR; mid = TR; }  // wall fills NE
+            else { p1 = TL; p2 = BR; p3 = BL; hA = TL; hB = BR; mid = BL; }                 // '4' wall fills SW
+            dl->AddTriangleFilled(p1, p2, p3, capCol);                                      // bulkhead face (lit)
+            dl->AddTriangleFilled(ImVec2((hA.x + mid.x) * 0.5f, (hA.y + mid.y) * 0.5f),
+                                  ImVec2((hB.x + mid.x) * 0.5f, (hB.y + mid.y) * 0.5f), mid, capLo);   // shaded inner half
+            dl->AddLine(hA, hB, capHi, 2.0f);                                              // lit leading edge
+            dl->AddLine(hA, hB, IM_COL32(0, 0, 0, 70), 1.0f);                              // thin seam
+        }
+    }
     // rooms: accent trim + blocky furniture + door + console + label
     for (const Room& r : g.rooms) {
         if (r.x1 < x0 || r.x0 > x1 || r.y1 < y0 || r.y0 > y1) { continue; }
@@ -1156,7 +1209,7 @@ void draw_world() {
                 for (float gx = fx0 + 1.5f; gx < fx1 - 0.8f; gx += 5.0f) { glow(dl, ImVec2(sx(gx), sy(gy)), kTile * 1.7f, IM_COL32(150, 240, 170, 255), 26); }
             }
         } else if (r.kind == RoomKind::Reactor) {                                 // pulsing reactor core
-            const float pt = 0.5f + 0.5f * std::sin(static_cast<float>(ImGui::GetTime()) * 2.4f);
+            const float pt = 0.5f + 0.5f * std::sin(g.simTime * 2.4f);
             const float cxT = static_cast<float>(r.x0 + r.x1) * 0.5f, cyT = static_cast<float>(r.y0 + r.y1) * 0.5f;
             glow(dl, ImVec2(sx(cxT), sy(cyT)), kTile * (2.4f + pt), IM_COL32(255, 138, 56, 255), 64);
             box(cxT - 1.9f, cyT - 1.9f, 3.8f, 3.8f, IM_COL32(34, 28, 30, 255));
@@ -1251,7 +1304,7 @@ void draw_world() {
         dl->AddText(ImVec2(ea.x - 4, ea.y - kTile * 0.9f), IM_COL32(240, 220, 120, 255), "LIFT");
     }
     // crew (NPCs) with idle bob + name tag when near
-    const float tnow = static_cast<float>(ImGui::GetTime());
+    const float tnow = g.simTime;
     for (const WorldNpc& n : g.npcsHere) {
         if (n.x < x0 - 1 || n.x > x1 + 1 || n.y < y0 - 1 || n.y > y1 + 1) { continue; }
         const float bob = std::sin(tnow * 2.2f + n.phase) * 0.05f;
@@ -1271,7 +1324,7 @@ void draw_world() {
     else if (s >= 0) { const std::string t = "[E] " + g.rooms[static_cast<std::size_t>(s)].name; dl->AddText(ImVec2(pc.x - 34, pc.y - kTile * 1.35f), IM_COL32(255, 240, 160, 255), t.c_str()); }
 
     // ── Phase 6: atmosphere — drifting dust motes, vignette, deck-change fade ──
-    const float vw = sz.x, vh = sz.y, wt = p0.y + hud, tt = static_cast<float>(ImGui::GetTime());
+    const float vw = sz.x, vh = sz.y, wt = p0.y + hud, tt = g.simTime;
     for (int i = 0; i < 48; ++i) {                                   // floating dust motes (screen-space)
         unsigned hh = vbhash(static_cast<unsigned>(i) * 2654435761U);
         const float bx = static_cast<float>(hh % 1000) / 1000.0f; hh = vbhash(hh);
@@ -1740,7 +1793,7 @@ void handle_input(float dt) {
     if (ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_DownArrow)) { drow += 1; }
     if (ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_LeftArrow)) { dcol -= 1; }
     if (ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_RightArrow)) { dcol += 1; }
-    move_player(dcol, drow, dt);
+    move_player(dcol, drow, dt * speed_mul());
     if (ImGui::IsKeyPressed(ImGuiKey_E, false)) {
         if (near_elevator()) { g.elevatorOpen = true; }
         else { const int s = station_at_player(); if (s >= 0) { open_panel(g.rooms[static_cast<std::size_t>(s)].panel); } }
@@ -1791,9 +1844,10 @@ void draw_elevator_overlay() {
 
 void draw_frame() {
     const float dt = std::clamp(ImGui::GetIO().DeltaTime, 0.0f, 1.0f / 20.0f);
+    g.simTime += dt * speed_mul();   // walk / doors / crew / fx fast-forward with the speed setting
     advance_time(dt);
     handle_input(dt);
-    update_doors(dt);
+    update_doors(dt * speed_mul());
     update_crew(dt);
     g.deckFade = std::max(0.0f, g.deckFade - dt * 2.2f);
     draw_world();
