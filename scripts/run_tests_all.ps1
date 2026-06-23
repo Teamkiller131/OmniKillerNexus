@@ -6,7 +6,9 @@
 # UNDERSCORE ("okn-<m>_tests"). Naive scripts that assume "okn-core_tests" fail.
 # This gate special-cases that mapping so the whole suite stays green in one shot.
 #
-# Render/network/ui/editor are intentionally excluded (need GPU backends / Qt).
+# okn-ui/okn-editor and the native render backend are intentionally excluded
+# (need GPU backends / windowing). okn-network runs headless over loopback ASIO,
+# so it IS in the gate.
 #
 # Usage:
 #   .\scripts\run_tests_all.ps1                 # configure (if needed) + build + run
@@ -32,6 +34,7 @@ $targets = [ordered]@{
     "okn-audio"    = "okn-audio_tests"
     "okn-script"   = "okn-script_tests"
     "okn-physics"  = "okn-physics_tests"
+    "okn-network"  = "okn-network_tests"        # headless transport over loopback ASIO
     "okn-render2d" = "okn-render2d_tests"       # 2D sprite path (software backend)
     "okn-render2d-gpu" = "okn-render2d_gpu_tests" # sokol_gfx GPU backend (dummy, headless)
     "okn-slice" = "okn-slice_tests"               # ECS+physics+sprite+UI+audio integration

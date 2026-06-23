@@ -98,9 +98,33 @@ stress, drain-on-destroy regression → **113 cases green, 5/5 repeated runs**.
 The rest of okn-platform (time/thread/fs/input/crash/etc.) was already
 implemented in commit `4bbd20c`; this closed the one scaffolding stub.
 
-**Next — okn-network** (Phase A): the `UdpSocket` null-`impl_` bugfix and the
-TCP/UDP-over-ASIO transport (Phase B). *(Note: the `UdpSocket` fix belongs to
-okn-network, not okn-platform, which has no socket code.)*
+## Third module — okn-network: UdpSocket/TcpStream null-`impl_` ✅ DONE (2026-06-23)
+
+In the `OKN_NET_HAS_ASIO` build, `UdpSocket(AsioAdapter&)` and `TcpStream(AsioAdapter&)`
+left `impl_` null — the first method call (`is_bound`/`bind`/`send`/…) dereferenced
+a null `unique_ptr` and crashed (the non-ASIO branch built its `Impl`, masking the
+bug in asio-less builds). Root cause: the ctors ignored the adapter, and their
+`Impl` needs the adapter's `asio::io_context`, which `AsioAdapter` hid behind its
+pImpl. Fix: an internal `AsioAdapter::native_context()` exposing the context as an
+opaque `void*` (no `<asio.hpp>` in the header); both ctors build `Impl` from it;
+`close()` now actually closes the socket; `UdpSocket::bind()` records the real
+local port so `bind(0)` is usable. New `test_transport.cpp` regresses the null
+deref on both sockets and proves a **real UDP loopback datagram roundtrip**.
+**okn-network wired into the gate** (`run_tests_all.ps1`) — it runs headless over
+loopback ASIO, no GPU/Qt. Full gate now **14/14 suites green** (102 cases / 774
+assertions in okn-network). *(submodule `525544d`)*
+
+> Latent fix along the way: the root pinned okn-network at a commit that had never
+> been pushed to its remote `main` (a fresh `git submodule update` couldn't fetch
+> it). Publishing the fix fast-forwarded `main` to include the dev history, so the
+> pinned SHA is now actually fetchable.
+
+`TcpAcceptor::listen`/`accept` remain non-crashing stubs — building a real TCP
+server (and TCP loopback test) is **Phase B** transport work, tracked separately.
+
+**Next — okn-ecs** (Phase A): the `ScriptingBridge`. *(okn-network's remaining
+Phase B item is real `TcpAcceptor` accept/listen + the reliability layer over live
+sockets.)*
 
 ## Where this meets [ROADMAP.md](ROADMAP.md)
 
