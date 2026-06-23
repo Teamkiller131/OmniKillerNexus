@@ -186,9 +186,26 @@ All Phase-A finish-it module work is done and verified: **okn-memory**,
 **okn-platform** (Chase-Lev deque), **okn-network** (UdpSocket + gate),
 **okn-ecs** (ScriptingBridge), **okn-asset** (audio/font importers), **okn-ui**
 (keyboard/text). The gate grew from 13 → **15 suites** (okn-network + okn-ui
-wired in). **Deferred:** okn-audio mp3/flac/ogg decoders + asset streaming
-(Phase B); okn-network real `TcpAcceptor`/`accept` + reliability over live sockets
-(Phase B); the three buy-vs-build forks (Phase C); the north-star game (Phase D).
+wired in). **Deferred:** asset streaming + hot-reload (Phase B); okn-network real
+`TcpAcceptor`/`accept` + reliability over live sockets (Phase B); the three
+buy-vs-build forks (Phase C); the north-star game (Phase D).
+
+## Phase B — in progress
+
+**okn-audio mp3/flac/ogg decoders ✅ DONE (2026-06-23).** `Mp3Decoder`/
+`FlacDecoder`/`VorbisDecoder` were empty-buffer stubs. mp3+flac now decode via a
+shared `ma_decode_memory()` helper over miniaudio's `ma_decoder` (dr_mp3/dr_flac,
+s16, read-until-exhausted); ogg/vorbis via `stb_vorbis` (not a miniaudio built-in)
+behind `OKN_AUDIO_HAS_STB`. Verified against **real ffmpeg-generated fixtures**
+(mono 8 kHz tone.mp3/.flac/.ogg) decoding to frames>0 + malformed-input rejection.
+okn-audio_tests 46 cases / 457 asserts; 15-suite gate green. *(submodule `171c955`)*
+
+Also fixed a **pre-existing flaky** okn-ecs test (`ChunkAllocator - reset`) that
+compared freed pointers — deterministic now (8/8 runs). *(okn-ecs `2e3e67f`)*
+
+**Remaining Phase B:** okn-asset streaming (mip/chunk/upload) + real mtime
+hot-reload; okn-network real `TcpAcceptor::accept`/`listen` + reliability over
+live sockets.
 
 ## Where this meets [ROADMAP.md](ROADMAP.md)
 
