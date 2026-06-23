@@ -13,6 +13,109 @@
 
 ---
 
+# Re-evaluation — 2026-06-23 (post Phase A–D)
+
+> A second multi-agent audit after the Phase A–D build-out. Assessors **re-ran
+> every test binary**, ran the suites with `--no-skip`, read the CMakeLists/CI
+> config, and inspected the save file; claims went through an adversarial
+> verification pass (**8 confirmed, 1 tempered, 0 refuted**). This section
+> supersedes the snapshot below where they differ. Part A/B are retained as the
+> pre-build-out baseline.
+
+**Headline:** the build-out is *real but inward-facing*. The leaf modules got
+genuinely more real and the code got more honest; the two highest-leverage
+*structural* risks — a no-op CI and a north-star game that doesn't touch the
+engine — are unchanged. OKN remains a single-author learning/portfolio/reference
+artifact whose real product is engineering discipline, **not** a shipping tool.
+
+## Verified strengths (re-checked against code + live runs)
+
+- **The 15-suite gate is genuinely green** — independently re-run: **800 cases /
+  6109 assertions, all `rc=0`**, per-suite counts matching the docs to within
+  rounding. The docs are not inflating the gate.
+- **The Chase-Lev deque is correct**, not a label — faithful fence-based
+  Lê/Pop/Cohen/Nardelli (PPoPP 2013) ordering, `atomic<Task*>` payloads, owner-only
+  push honoured by the pool (injector + owner-side refill + drain-on-destroy),
+  backed by a 50k-op adversarial stress.
+- **Audio decoders verified on real fixtures** (committed ffmpeg-generated
+  mp3/flac/ogg), correct memory ownership; **live UDP/TCP + reliability over real
+  sockets**; **QUIC honestly reports unavailable** (tested, not faked).
+- **VOIDBORNE ships a complete game shell** end-to-end (verified live — the save
+  JSON literally contains the rebound keys), and **autodemo passes** (`M0–M7 OK`).
+- **Buy-vs-build choices are the right industry picks** — Jolt, sokol, miniaudio,
+  sol2/Lua are exactly what a knowledgeable dev reaches for at this scope, and the
+  code now backs the docs.
+
+## Verified weaknesses (sharpest first)
+
+1. **CI is still effectively a no-op (critical).** `.github/full-build.yml` has
+   `if: false` on every compiling job; the only push gate is a self-skipping
+   clang-format lint; the gitea gate runs **module suites only** (no games, no
+   editor) and its step still says "13 module suites" though the gate is 15. A
+   commit that breaks a game/editor compile or regresses an autodemo marker passes
+   every automated check. "All 15 green" is a **manual/local** claim.
+2. **The north-star game bypasses the engine (critical).** `games/voidborne`
+   links **only `unigui::unigui`** — zero okn-* modules. Phase D added a real
+   *shell*, but the showcase still showcases a bought ImGui toolkit, not OKN's
+   core. **No game (of 7) links okn-ecs / okn-script / okn-ui / okn-network**, so
+   the freshly-finished features have **zero game consumers**.
+3. **"All green" has an asterisk — `doctest::skip()` hides real failures.** Run
+   with `--no-skip`, okn-memory shows **1 failed case / 2 failed assertions**
+   (`StackArena - overflow`: an 8-byte per-push header means 64 bytes never fit a
+   64-byte arena; `LinearArena - basic` also skipped). The skips were introduced
+   by a commit titled *"resolve … doctest test failures"* — i.e. **skipped, not
+   fixed** — and noted nowhere. For an honesty-branded project this is the most
+   pointed finding.
+4. **Dead code carried *and tested*.** The unused archetype/chunk ECS still
+   compiles into `okn-ecs.lib` and its tests run in the gate (part of okn-ecs's
+   2447 assertions exercise code no game/slice uses); the native render lib is
+   ~82/120 near-empty placeholder `.cpp`. "Defer, don't delete" relabeled dead
+   surface rather than removing it.
+5. **Single-author bus factor + private-NAS hosting** — all 13 submodules resolve
+   only from one personal host; **Windows-only in practice** (hard-coded
+   `D:/vcpkg` in several CMakeLists; the Linux CI job is the disabled stub).
+6. **Manifest/doc drift** — `vcpkg.json` still pulls `msquic`/`quickjs-ng`/`basisu`
+   (unwired); `ARCHITECTURE.md §2` still says "13 suites / ~620 cases"; the
+   "Jolt is not cross-platform deterministic" claim **overstates** the constraint
+   (Jolt is per-platform deterministic and offers `JPH_CROSS_PLATFORM_DETERMINISTIC`).
+7. **Thin where it counts** — okn-physics (the one "Verified" module) is 16 cases
+   / 59 asserts and gained nothing this cycle (still single-threaded, no character
+   controller, no trigger events, `collision_mask` ignored); okn-script core
+   round-trips are skipped; the GPU sprite batcher silently drops a frame on
+   overflow (8192-sprite fixed cap).
+
+## Comparison (refreshed, web-grounded)
+
+OKN's thesis — *buy undifferentiated infra, build only game glue* — is sound and
+matches the industry. Where it **drifts off its own line**: it hand-rolls the one
+core it should buy (ECS) and carries a dead second ECS + a placeholder native GPU
+stack + a hand-written reliability layer that duplicate EnTT/flecs, Diligent/bgfx,
+and GameNetworkingSockets/ENet.
+
+| Peer | Verdict | Why |
+|---|---|---|
+| **Godot 4.4** (free, MIT) | **behind — the decisive comparison** | The engine a dev in OKN's niche actually picks. Mature editor, 2D+3D, UI/text/save, cross-platform export — and **4.4 (Mar 2025) shipped native Jolt**, eroding OKN's signature physics edge (though Godot's Jolt is still *experimental/opt-in*, so the erosion is directional, not complete). OKN's only honest edge: you can read its whole 2D slice in an afternoon — a *learning* edge, not a shipping one. |
+| **Bevy 0.16** | behind | Purpose-built parallel archetypal ECS, used to ship. OKN built a real scheduler over its *live* World (good call, avoided two cores) but it's a 125-line sparse-set store with a bolt-on scheduler — and **no OKN game links it**. |
+| **Cocos2d-x** | behind (closest fair peer) | Open-source 2D C++ + Lua, multi-platform, thousands of shipped titles. OKN's real edge is first-class Jolt contact-events-as-triggers — but Cocos *ships and exports*; OKN is the one to *read*. |
+| **Unity 6.5 / Unreal 5.6** | different-niche | Category mismatch; OKN isn't competing and says so. OKN's 3D is unlit Lambert cubes; the native D3D12/Vulkan backend is an admitted placeholder. |
+| **Hazel / raylib / bgfx-hobby engines** | comparable→ahead of the median | OKN matches the shipped-slice + self-honesty of solo engines and is ahead of the median hobby engine (test gate, real physics, 7 games), but trails on portability/maturity (raylib: cross-platform, zero dead code). |
+| **Library picks** (Jolt/sokol/miniaudio/sol2) | comparable / well-chosen | The defensible heart of the project; all the libraries a knowledgeable dev would reach for at this scope. |
+
+**Bottom line (unchanged from the prior eval, now with more evidence):** OKN is
+**not** a credible alternative to any mainstream engine for shipping a game.
+It is **for**: learning how a clean buy-vs-build slice is wired, and a portfolio
+piece demonstrating disciplined C++26 + a headless-test culture + unusually honest
+self-auditing docs. To become credible even for its narrow niche it needs, in
+priority order: **(1)** one real game composing okn-ecs + okn-script + okn-render +
+okn-physics (not a UniGUI bypass); **(2)** a CI gate that builds games+editor and
+asserts the autodemo markers; **(3)** a cross-platform path (sokol GL + a Linux
+build); **(4)** fix the skipped tests and bring the render/module docs down to what
+ships. Fittingly, the project's own docs already reach this conclusion — its single
+most durable strength is that **it tells the truth about itself** (which this audit
+extends: even the green gate, it turns out, has an honest asterisk).
+
+---
+
 # Part A — Assessment
 
 ## 1. What it is
