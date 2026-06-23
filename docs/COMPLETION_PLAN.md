@@ -138,12 +138,11 @@ the bridge decoupled from okn-script. New `test_scripting.cpp` (4 cases) →
 okn-ecs_tests **70 cases / 443 assertions green**; full 14-suite gate green.
 *(submodule `ef217ea`)*
 
-> ⚠️ **Repo hygiene flag:** the root repo does **not** track `okn-ecs` (or
-> `okn-render`) as a committed submodule gitlink — both show as *untracked* even
-> though `.gitmodules` lists them and the root `add_subdirectory()`s them. So this
-> commit lives on okn-ecs's own remote but the root pins no version of it; a fresh
-> `git submodule update` wouldn't fetch it. Registering both as gitlinks is a
-> one-line root change but pins a version, so it's left as an explicit decision.
+> **Note:** `okn-ecs` and `okn-render` *are* tracked submodule gitlinks in the
+> root (verified via `git ls-tree`); the `?` in `git status` was the
+> "submodule has untracked content" marker for regenerable test artifacts
+> (`*.bmp`/`*.dmp`) inside their working trees, not an untracked submodule. The
+> root pointer for okn-ecs is bumped to `ef217ea` here.
 
 **Next — okn-asset** (Phase A): the audio + font importers. *(Remaining deferred
 items: okn-network Phase B = real `TcpAcceptor` accept/listen + reliability over
