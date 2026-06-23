@@ -79,7 +79,7 @@ The primitives every 2D game needs, none of which exist yet.
 ### P9 — Cross-platform, CI, and the great prune
 - **sokol GL/Metal backends** so the engine isn't effectively Windows/D3D11-only; stand up a Linux and/or macOS build.
 - Wire the existing `scripts/run_tests_all.ps1` gate to **gitea CI** (runner setup already documented in `docs/gitea_runner_setup.md`).
-- Write a **determinism ADR before any netcode** (Jolt is _not_ cross-platform deterministic — this gates lockstep multiplayer forever).
+- Write a **determinism ADR before any netcode** (Jolt is per-platform deterministic and *can* be cross-platform deterministic via `JPH_CROSS_PLATFORM_DETERMINISTIC` at a perf cost; OKN doesn't enable it, so lockstep multiplayer needs that flag turned on — input-replay netcode works without it).
 - **Prune/finish the dead code** from §1: delete the archetype `Storage`, the dup-symbol D3D12/Vulkan lib, and the fake network transports; either delete or finish (dr_wav/dr_mp3) the empty audio decoders.
 - **Acceptance:** green CI on ≥2 platforms; a fresh repo audit finds no "complete-looking" comment-only stubs.
 
@@ -117,7 +117,7 @@ The primitives every 2D game needs, none of which exist yet.
 ---
 
 ## 8. Risks & watch-items
-- **Jolt is not cross-platform deterministic** → blocks lockstep netcode; design around it (state sync, not lockstep) or accept single-player.
+- **Jolt cross-platform determinism is opt-in** (`JPH_CROSS_PLATFORM_DETERMINISTIC`, perf cost) and OKN leaves it off → lockstep netcode needs that flag enabled, or design around it (state sync / input-replay) — single-player is unaffected.
 - **sokol pinned to the pre-2024 API**; **UniGUI** submodule coupling (`PROJECT_SOURCE_DIR` font-embed fix, implot 0.17 pin); **vcpkg baseline pinned** — upgrades are deliberate, not incidental.
 - **HiDPI**: sokol windowed apps need the PerMonitorV2 manifest + `high_dpi` (already applied to the games/samples; bake this into any new windowed target).
 

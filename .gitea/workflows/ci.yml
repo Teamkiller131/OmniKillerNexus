@@ -1,8 +1,10 @@
-# OmniKillerNexus CI — runs the engine test gate (all module suites) on push/PR.
+# OmniKillerNexus CI — the live engine test gate on push/PR. This is the real
+# CI for this repo (hosted on gitea); the .github/ workflows are inactive.
 #
 # Requires a SELF-HOSTED Windows runner with MSVC (Visual Studio Build Tools),
 # vcpkg, Ninja and CMake on PATH — see docs/gitea_runner_setup.md. The gate script
-# locates vcvars itself and drives a manifest-mode vcpkg build.
+# locates vcvars itself and drives a manifest-mode vcpkg build, runs the 15 module
+# suites, compiles all 7 games, and asserts VOIDBORNE's headless autodemo/selftest.
 name: ci
 
 on:
@@ -19,6 +21,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Engine test gate (13 module suites)
+      - name: Engine test gate (15 module suites + 7 games + VOIDBORNE autodemo)
         shell: pwsh
         run: ./scripts/run_tests_all.ps1 -BuildDir build-ci

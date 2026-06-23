@@ -53,7 +53,12 @@ artifact whose real product is engineering discipline, **not** a shipping tool.
    clang-format lint; the gitea gate runs **module suites only** (no games, no
    editor) and its step still says "13 module suites" though the gate is 15. A
    commit that breaks a game/editor compile or regresses an autodemo marker passes
-   every automated check. "All 15 green" is a **manual/local** claim.
+   every automated check. "All 15 green" is a **manual/local** claim. **◑ Partially
+   addressed (2026-06-23):** the gate (`run_tests_all.ps1`) now **compile-gates all
+   7 games** and asserts **VOIDBORNE's `--selftest`/`--autodemo` markers**, and the
+   gitea CI label was corrected (15 suites + games). The `.github/` workflows are
+   vestigial (the repo is gitea-hosted) and are now banner-marked inactive. Residual
+   gap is infra-only: whether the self-hosted gitea runner actually fires per push.
 2. **The north-star game bypasses the engine (critical).** `games/voidborne`
    links **only `unigui::unigui`** — zero okn-* modules. Phase D added a real
    *shell*, but the showcase still showcases a bought ImGui toolkit, not OKN's
@@ -82,6 +87,9 @@ artifact whose real product is engineering discipline, **not** a shipping tool.
    (unwired); `ARCHITECTURE.md §2` still says "13 suites / ~620 cases"; the
    "Jolt is not cross-platform deterministic" claim **overstates** the constraint
    (Jolt is per-platform deterministic and offers `JPH_CROSS_PLATFORM_DETERMINISTIC`).
+   **✅ Resolved (2026-06-23):** removed the 3 unwired deps from `vcpkg.json`
+   (configure re-verified); updated `ARCHITECTURE.md` to 15 suites + games; and
+   corrected the Jolt-determinism claim in `ARCHITECTURE.md` + `ROADMAP.md`.
 7. **Thin where it counts** — okn-physics (the one "Verified" module) is 16 cases
    / 59 asserts and gained nothing this cycle (still single-threaded, no character
    controller, no trigger events, `collision_mask` ignored); okn-script core

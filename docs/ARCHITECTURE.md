@@ -47,8 +47,11 @@ Each module is rated by **what the test gate and a live build actually prove**:
 | **Partial** | A real spine exists; a meaningful fraction is stub/fake. |
 | **Stub/Dead** | Present in the tree but non-functional or unreferenced. |
 
-The build-phys gate has **13 test suites, all green** (~620 cases), building to
-`build-phys/bin/*_tests.exe` and **run directly** (they are not registered with
+The build-phys gate has **15 module test suites, all green** (~800 cases /
+~6,100 assertions) and additionally **compiles all 7 games** and asserts
+**VOIDBORNE's headless `--selftest`/`--autodemo` markers** (the 6 sokol games need
+a GPU/window, so they are compile-gated only). Suites build to
+`build-phys/bin/*_tests.exe` and are **run directly** (they are not registered with
 ctest — `ctest -N` reports 0). The suites don't map 1:1 to modules: `okn-render`
 contributes **four** (`render2d`, `render2d_gpu`, `slice`, `lua_slice`), while
 `okn-ui` and `okn-network` have **no** suite in this gate (their tests, where
@@ -169,8 +172,12 @@ gameplay-trigger primitive), **joints** (ball/distance/hinge), **kinematic
 bodies** (moving platforms). **Gaps:** no built-in character controller (games
 roll their own from raycasts), single-threaded, no trigger/sensor events
 (contact-*added* only), `collision_mask` ignored. **Tests:** `okn-physics_tests`,
-16 behavioral cases. **Not cross-platform deterministic** — this gates lockstep
-netcode forever (see [ROADMAP §8](ROADMAP.md)).
+16 behavioral cases. **Determinism:** Jolt is deterministic run-to-run on a
+fixed platform/build (enough for input-replay netcode) and offers
+`JPH_CROSS_PLATFORM_DETERMINISTIC` to make ARM/x86 match (at a perf cost — it
+disables FMA). OKN does **not** enable that flag, so OKN's build isn't
+cross-platform deterministic as configured — which gates *lockstep* netcode
+unless the flag is turned on (see [ROADMAP §8](ROADMAP.md)).
 
 ### okn-audio — **Partial**
 **Real:** miniaudio engine + playback, DSP (RBJ biquad EQ, Freeverb,

@@ -1,8 +1,14 @@
+# ⚠️ INACTIVE TEMPLATE — this repository is hosted on gitea, not GitHub, so this
+# workflow never runs. The live CI is .gitea/workflows/ci.yml (self-hosted Windows
+# runner; 15 module suites + 7 game compiles + VOIDBORNE autodemo). Both jobs below
+# are additionally gated `if: false`. Kept only as a reference for a future GitHub
+# mirror; do NOT read it as a description of the active gate.
+#
 # CI Full Build — 手动触发或 main 分支
 # 目标在 Windows Threadripper runner 上运行
 # fnos 上仅做力所能及的 Linux clang 编译（后期启用）
 
-name: Full Build
+name: Full Build (inactive — see .gitea/workflows/ci.yml)
 
 on:
   push:

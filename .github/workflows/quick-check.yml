@@ -1,8 +1,12 @@
+# ⚠️ INACTIVE TEMPLATE — this repository is hosted on gitea, not GitHub, so this
+# workflow never runs (and it is a clang-format lint only — it never compiles).
+# The live CI is .gitea/workflows/ci.yml. Kept only as a reference.
+#
 # CI Quick Check — 每次 push 触发
 # 运行在 fnos (N200/12G) shell runner 上
 # 仅做格式检查 + 轻量静态分析，不跑编译
 
-name: Quick Check
+name: Quick Check (inactive — see .gitea/workflows/ci.yml)
 
 on:
   push:
