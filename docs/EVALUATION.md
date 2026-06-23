@@ -65,7 +65,11 @@ artifact whose real product is engineering discipline, **not** a shipping tool.
    64-byte arena; `LinearArena - basic` also skipped). The skips were introduced
    by a commit titled *"resolve … doctest test failures"* — i.e. **skipped, not
    fixed** — and noted nowhere. For an honesty-branded project this is the most
-   pointed finding.
+   pointed finding. **✅ Resolved (2026-06-23):** all four stale skips (2 in
+   okn-memory `f140f0f`, 2 in okn-script `efa3f82`) un-skipped — the StackArena
+   overflow test was corrected to respect the per-push header (the arena was
+   right, the test was wrong); the other three passed as-is. `--no-skip` is now
+   **0 skipped / 0 failed** across the gate.
 4. **Dead code carried *and tested*.** The unused archetype/chunk ECS still
    compiles into `okn-ecs.lib` and its tests run in the gate (part of okn-ecs's
    2447 assertions exercise code no game/slice uses); the native render lib is
