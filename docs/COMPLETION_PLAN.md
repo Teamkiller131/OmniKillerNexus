@@ -236,8 +236,35 @@ infrastructure). Nothing was faked or half-built; the code now matches reality.
 
 **Net:** the one fork worth building (a parallel scheduler on the live World) is
 built and tested; the two that duplicate bought infra (a hand-written GPU backend,
-QUIC) are deferred with the code made truthful about it. **Remaining: the
-north-star game (Phase D).**
+QUIC) are deferred with the code made truthful about it.
+
+## Phase D — ✅ COMPLETE (2026-06-23): the north-star game
+
+**VOIDBORNE now has the full game shell** around its sim — the forcing function
+([ROADMAP P7](ROADMAP.md)). It already had the gameplay, the 7 win/lose endings,
+and JSON save/load; Phase D wrapped it in a real shell:
+
+- **Title → Playing → Settings state machine** (`Screen` enum) with a starfield
+  title menu: **New Voyage / Continue (load save) / Settings / Quit**, and a
+  Resume entry when a voyage is in progress.
+- **Win/lose loop closed:** an ending now offers **Return to title** (the voyage
+  ends, the menu offers New/Continue); the 7 endings were already wired.
+- **Settings screen with live key rebinding** — language (EN/中文), default speed,
+  and rebindable Pause / Cycle-speed / Save / Load / Language keys (click → press
+  a key; Esc cancels). All hotkeys flow through the rebindable bindings.
+- **Save/load** persists the new settings (language + bindings) alongside the run;
+  **Esc** in-game pauses back to the title.
+
+Verified: `--autodemo` still reports **VOIDBORNE M0–M7 OK** (save/load round-trips),
+data selftest OK, and the title screen renders (starfield + menu, EN/中文). The
+game builds clean as the `voidborne` target.
+
+## All phases complete
+
+A (finish the stubs), B (decoders / streaming / transport), C (forks resolved),
+and D (the north-star game shell) are done. The test gate stands at **15 suites,
+all green**, and the project now ships **one complete game** end-to-end (title →
+play → win/lose → save → settings/rebind).
 
 ## Where this meets [ROADMAP.md](ROADMAP.md)
 

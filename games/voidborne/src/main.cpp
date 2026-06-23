@@ -130,6 +130,9 @@ struct WorldNpc {
 };
 constexpr int kStartDeck = 3;   // habitation, like the original
 
+// The game shell: the top-level screen the frame loop is showing.
+enum class Screen { Title, Playing, Settings };
+
 struct Game {
     std::vector<CropDef> cropDefs;
     GameResources res;
@@ -217,6 +220,17 @@ struct Game {
 
     bool autodemo = false;
     int lang = 0;               // 0 = en, 1 = zh (extensible; see langCode/tr/jloc)
+
+    // ── shell (title / settings / the loop) ──
+    Screen screen = Screen::Title;   // start at the title; OKN_VB_SHOW jumps straight to Playing
+    bool started = false;            // a voyage is in progress (enables Continue/Resume)
+    int rebinding = -1;              // which action is capturing a key (-1 none), index into the table
+    // Rebindable hotkeys (persisted in the save). Defaults match the classic layout.
+    ImGuiKey keyPause = ImGuiKey_Space;
+    ImGuiKey keySpeed = ImGuiKey_Tab;
+    ImGuiKey keySave  = ImGuiKey_F5;
+    ImGuiKey keyLoad  = ImGuiKey_F9;
+    ImGuiKey keyLang  = ImGuiKey_F2;
 };
 
 Game g;
@@ -1715,8 +1729,12 @@ void draw_ending_panel() {
                        g.isCaptain ? tr("You led them to New Shore.", "你带领他们抵达新岸。")
                                    : tr("You served, and the ship sailed on.", "你尽了本分，飞船继续航行。"));
     ImGui::Dummy(ImVec2(0, 14));
-    ImGui::TextDisabled("%s", tr("All 7 endings are wired. F9 reloads a save; or restart for a new voyage.",
-                                 "七种结局均已实装。F9 读取存档，或重启开始新的航程。"));
+    ImGui::TextDisabled("%s", tr("All 7 endings are wired.", "七种结局均已实装。"));
+    ImGui::Dummy(ImVec2(0, 12));
+    if (ImGui::Button(tr("Return to title", "返回标题"), ImVec2(-1, 34))) {
+        g.screen = Screen::Title;
+        g.started = false;   // the voyage is over — offer New / Continue, not Resume
+    }
     ImGui::End();
 }
 
@@ -1737,6 +1755,13 @@ void save_game() {
     w.Key("ly"); w.Double(g.lyTravelled); w.Key("route"); w.Int(g.routeChosen);
     w.Key("events"); w.Int(g.eventsResolved); w.Key("harvested"); w.Int(g.totalHarvested);
     w.Key("tp"); w.StartArray(); for (int t : g.techPoints) { w.Int(t); } w.EndArray();
+    // settings: language + rebindable hotkeys travel with the save
+    w.Key("lang"); w.Int(g.lang);
+    w.Key("kPause"); w.Int(static_cast<int>(g.keyPause));
+    w.Key("kSpeed"); w.Int(static_cast<int>(g.keySpeed));
+    w.Key("kSave"); w.Int(static_cast<int>(g.keySave));
+    w.Key("kLoad"); w.Int(static_cast<int>(g.keyLoad));
+    w.Key("kLang"); w.Int(static_cast<int>(g.keyLang));
     w.EndObject();
     std::ofstream f("voidborne_save.json"); f << sb.GetString();
 }
@@ -1759,6 +1784,13 @@ bool load_game() {
     g.eventsResolved = gi("events", 0); g.totalHarvested = gi("harvested", 0);
     if (d.HasMember("tp") && d["tp"].IsArray()) { int i = 0; for (auto& t : d["tp"].GetArray()) { if (i < 5 && t.IsNumber()) { g.techPoints[i++] = t.GetInt(); } } }
     if (g.isCaptain) { g.playerRole = "Captain"; }
+    // settings (default to current values so pre-settings saves still load)
+    g.lang = gi("lang", g.lang);
+    g.keyPause = static_cast<ImGuiKey>(gi("kPause", static_cast<int>(g.keyPause)));
+    g.keySpeed = static_cast<ImGuiKey>(gi("kSpeed", static_cast<int>(g.keySpeed)));
+    g.keySave = static_cast<ImGuiKey>(gi("kSave", static_cast<int>(g.keySave)));
+    g.keyLoad = static_cast<ImGuiKey>(gi("kLoad", static_cast<int>(g.keyLoad)));
+    g.keyLang = static_cast<ImGuiKey>(gi("kLang", static_cast<int>(g.keyLang)));
     return true;
 }
 
@@ -1783,11 +1815,11 @@ void handle_input(float dt) {
         if (ImGui::IsKeyPressed(ImGuiKey_E, false) || ImGui::IsKeyPressed(ImGuiKey_Escape, false)) { g.elevatorOpen = false; }
         return;
     }
-    if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) { g.paused = !g.paused; }
-    if (ImGui::IsKeyPressed(ImGuiKey_Tab, false)) { g.speedIndex = (g.speedIndex + 1) % 3; }
-    if (ImGui::IsKeyPressed(ImGuiKey_F5, false)) { save_game(); }
-    if (ImGui::IsKeyPressed(ImGuiKey_F9, false)) { load_game(); }
-    if (ImGui::IsKeyPressed(ImGuiKey_F2, false)) { g.lang = (g.lang + 1) % 2; reload_events(); }   // EN <-> 中文
+    if (ImGui::IsKeyPressed(g.keyPause, false)) { g.paused = !g.paused; }
+    if (ImGui::IsKeyPressed(g.keySpeed, false)) { g.speedIndex = (g.speedIndex + 1) % 3; }
+    if (ImGui::IsKeyPressed(g.keySave, false)) { save_game(); }
+    if (ImGui::IsKeyPressed(g.keyLoad, false)) { load_game(); }
+    if (ImGui::IsKeyPressed(g.keyLang, false)) { g.lang = (g.lang + 1) % 2; reload_events(); }   // EN <-> 中文
     // one management panel at a time; the key toggles it
     auto toggle = [&](bool& flag) { const bool was = flag; close_all_panels(); flag = !was; };
     if (ImGui::IsKeyPressed(ImGuiKey_C, false)) { toggle(g.inCrew); }
@@ -1797,7 +1829,10 @@ void handle_input(float dt) {
     if (ImGui::IsKeyPressed(ImGuiKey_R, false)) { toggle(g.inSci); }
     if (ImGui::IsKeyPressed(ImGuiKey_N, false)) { toggle(g.inStarmap); }
     if (ImGui::IsKeyPressed(ImGuiKey_K, false)) { toggle(g.inCaptain); }
-    if (ImGui::IsKeyPressed(ImGuiKey_Escape, false)) { close_all_panels(); }
+    if (ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
+        if (any_panel_open()) { close_all_panels(); }
+        else { g.screen = Screen::Title; }   // Esc with nothing open -> pause to the title menu
+    }
 
     if (any_panel_open()) {
         if (ImGui::IsKeyPressed(ImGuiKey_E, false)) { close_all_panels(); }
@@ -1857,7 +1892,151 @@ void draw_elevator_overlay() {
     ImGui::End();
 }
 
+// Start a fresh voyage. Player settings (language + key bindings) survive the
+// reset; everything else returns to a clean first-day state.
+void new_game() {
+    const int lang = g.lang;
+    const ImGuiKey kp = g.keyPause, ks = g.keySpeed, ksv = g.keySave, kl = g.keyLoad, klg = g.keyLang;
+    g = Game{};
+    g.lang = lang;
+    g.keyPause = kp; g.keySpeed = ks; g.keySave = ksv; g.keyLoad = kl; g.keyLang = klg;
+    load_all_data();
+    build_decks_data();
+    build_deck(kStartDeck);
+    g.screen = Screen::Playing;
+    g.started = true;
+}
+
+void shell_backdrop() {
+    const ImGuiViewport* vp = ImGui::GetMainViewport();
+    auto* dl = ImGui::GetBackgroundDrawList();
+    dl->AddRectFilled(vp->Pos, ImVec2(vp->Pos.x + vp->Size.x, vp->Pos.y + vp->Size.y), IM_COL32(3, 5, 12, 255));
+    // a sparse, deterministic starfield so the menus don't sit on a flat void
+    std::uint32_t s = 0x9E3779B9u;
+    auto rnd = [&] { s ^= s << 13; s ^= s >> 17; s ^= s << 5; return s; };
+    for (int i = 0; i < 90; ++i) {
+        const float x = vp->Pos.x + static_cast<float>(rnd() % static_cast<unsigned>(vp->Size.x));
+        const float y = vp->Pos.y + static_cast<float>(rnd() % static_cast<unsigned>(vp->Size.y));
+        const int b = 90 + static_cast<int>(rnd() % 130);
+        dl->AddRectFilled(ImVec2(x, y), ImVec2(x + 1, y + 1), IM_COL32(b, b, b + 20, 255));
+    }
+}
+
+void draw_title_screen() {
+    shell_backdrop();
+    const ImGuiViewport* vp = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x * 0.5f, vp->WorkPos.y + vp->WorkSize.y * 0.5f),
+                            ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(460, 0), ImGuiCond_Always);
+    ImGui::Begin("##title", nullptr,
+                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse);
+
+    const char* title = tr("VOIDBORNE", "孤舟·青鸟号");
+    ImGui::SetCursorPosX((460 - ImGui::CalcTextSize(title).x) * 0.5f);
+    ImGui::TextColored(ImVec4(0.82f, 0.92f, 1.0f, 1), "%s", title);
+    const char* sub = tr("A generation-ship voyage", "世代飞船的航程");
+    ImGui::SetCursorPosX((460 - ImGui::CalcTextSize(sub).x) * 0.5f);
+    ImGui::TextDisabled("%s", sub);
+    ImGui::Dummy(ImVec2(0, 18));
+
+    const ImVec2 bsz(-1, 34);
+    if (ImGui::Button(tr("New Voyage", "新的航程"), bsz)) { new_game(); }
+    if (g.started) {
+        if (ImGui::Button(tr("Resume", "继续"), bsz)) { g.screen = Screen::Playing; }
+    } else {
+        const bool hasSave = !read_file("voidborne_save.json").empty();
+        ImGui::BeginDisabled(!hasSave);
+        if (ImGui::Button(tr("Continue (load save)", "读取存档"), bsz)) {
+            if (load_game()) { build_deck(kStartDeck); g.screen = Screen::Playing; g.started = true; }
+        }
+        ImGui::EndDisabled();
+    }
+    if (ImGui::Button(tr("Settings", "设置"), bsz)) { g.screen = Screen::Settings; }
+    if (ImGui::Button(tr("Quit", "退出"), bsz)) { std::exit(0); }
+
+    ImGui::Dummy(ImVec2(0, 6));
+    if (ImGui::SmallButton("EN")) { g.lang = 0; reload_events(); }
+    ImGui::SameLine();
+    if (ImGui::SmallButton("中文")) { g.lang = 1; reload_events(); }
+    ImGui::SameLine();
+    ImGui::TextDisabled("%s", tr("Esc in-game returns here", "游戏中按 Esc 返回此处"));
+    ImGui::End();
+}
+
+void draw_settings_screen() {
+    shell_backdrop();
+    const ImGuiViewport* vp = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x * 0.5f, vp->WorkPos.y + vp->WorkSize.y * 0.5f),
+                            ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(520, 0), ImGuiCond_Always);
+    ImGui::Begin("##settings", nullptr,
+                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse);
+
+    ImGui::TextColored(ImVec4(0.82f, 0.92f, 1.0f, 1), "%s", tr("Settings", "设置"));
+    ImGui::Separator();
+
+    ImGui::TextUnformatted(tr("Language", "语言"));
+    if (ImGui::RadioButton("English", g.lang == 0)) { g.lang = 0; reload_events(); }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("中文", g.lang == 1)) { g.lang = 1; reload_events(); }
+
+    ImGui::TextUnformatted(tr("Default speed", "默认速度"));
+    if (ImGui::RadioButton("1x", g.speedIndex == 0)) { g.speedIndex = 0; }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("2x", g.speedIndex == 1)) { g.speedIndex = 1; }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("4x", g.speedIndex == 2)) { g.speedIndex = 2; }
+
+    ImGui::Separator();
+    ImGui::TextUnformatted(tr("Key bindings  (click, then press a key; Esc cancels)",
+                              "按键绑定（点击后按下新键；Esc 取消）"));
+    struct Bind { const char* en; const char* zh; ImGuiKey* key; };
+    Bind binds[] = {
+        {"Pause", "暂停", &g.keyPause},
+        {"Cycle speed", "切换速度", &g.keySpeed},
+        {"Save", "保存", &g.keySave},
+        {"Load", "读取", &g.keyLoad},
+        {"Language", "语言", &g.keyLang},
+    };
+    for (int i = 0; i < 5; ++i) {
+        ImGui::TextUnformatted(tr(binds[i].en, binds[i].zh));
+        ImGui::SameLine(190);
+        const bool capturing = (g.rebinding == i);
+        const char* label = capturing ? tr("press a key...", "请按键…") : ImGui::GetKeyName(*binds[i].key);
+        ImGui::PushID(i);
+        if (ImGui::Button(label, ImVec2(170, 0))) { g.rebinding = capturing ? -1 : i; }
+        ImGui::PopID();
+    }
+    // capture the next keyboard key for the action being rebound (mouse excluded)
+    if (g.rebinding >= 0 && g.rebinding < 5) {
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
+            g.rebinding = -1;
+        } else {
+            for (int k = ImGuiKey_NamedKey_BEGIN; k < ImGuiKey_MouseLeft; ++k) {
+                const ImGuiKey key = static_cast<ImGuiKey>(k);
+                if (key == ImGuiKey_Escape) { continue; }
+                if (ImGui::IsKeyPressed(key, false)) {
+                    *binds[g.rebinding].key = key;
+                    g.rebinding = -1;
+                    break;
+                }
+            }
+        }
+    }
+
+    ImGui::Separator();
+    if (ImGui::Button(tr("Back", "返回"), ImVec2(120, 30))) {
+        g.rebinding = -1;
+        save_game();  // persist language + bindings
+        g.screen = g.started ? Screen::Playing : Screen::Title;
+    }
+    ImGui::End();
+}
+
 void draw_frame() {
+    if (g.screen == Screen::Title) { draw_title_screen(); return; }
+    if (g.screen == Screen::Settings) { draw_settings_screen(); return; }
+
     const float dt = std::clamp(ImGui::GetIO().DeltaTime, 0.0f, 1.0f / 20.0f);
     g.simTime += dt * speed_mul();   // walk / doors / crew / fx fast-forward with the speed setting
     advance_time(dt);
@@ -1967,6 +2146,8 @@ int main(int argc, char* argv[]) {
     // show each milestone alive.
     if (const char* show = std::getenv("OKN_VB_SHOW")) {
         const std::string s = show;
+        g.screen = Screen::Playing;   // screenshot/demo hooks show the game, not the title menu
+        g.started = true;
         if (s == "bay" && g.cropDefs.size() >= 4) {
             g.inBay = true;
             auto seed = [&](int i, int crop, float grow) {
