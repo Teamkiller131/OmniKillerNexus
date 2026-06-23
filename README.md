@@ -112,6 +112,7 @@ the **vertical slice** (ECS+physics+audio+Lua glue). See ARCHITECTURE.md §6.
 | **[docs/BUILD.md](docs/BUILD.md)** | Build, the 13-suite test gate, running games, the screenshot harness, CI. |
 | **[docs/GAMES.md](docs/GAMES.md)** | The 7 demo games + the reusable game patterns. |
 | **[docs/ROADMAP.md](docs/ROADMAP.md)** | The authoritative forward plan (P5–P9) + the buy-vs-build ledger. |
+| **[docs/EVALUATION.md](docs/EVALUATION.md)** | Audited strengths/weaknesses + peer comparison + a prioritized remediation plan (R0–R4). |
 | **[docs/DECISIONS.md](docs/DECISIONS.md)** | ADR log — language standard, naming, the Jolt/sokol/sol2/ImGui pivots. |
 | **[docs/patterns/service_registry.md](docs/patterns/service_registry.md)** | The interface/implementation-separation pattern (okn-core). |
 | **[docs/gitea_runner_setup.md](docs/gitea_runner_setup.md)** | CI runner setup. |
