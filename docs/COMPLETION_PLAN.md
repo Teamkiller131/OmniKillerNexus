@@ -49,27 +49,38 @@ and leaves the engine with *two render paths and two ECS cores*.
 > default is to finish; the table just makes the cost explicit before you spend
 > weeks on a duplicate. We can revisit each when Phase C is reached.
 
-## First module — okn-memory (in progress)
+## First module — okn-memory ✅ DONE (2026-06-23)
 
-A Layer-0 leaf everything depends on, already ~80% real with ~99 passing tests,
-**no buy-vs-build conflict**, fully testable today. Three gaps, all stubs-behind-
-flags:
+A Layer-0 leaf everything depends on, already ~80% real, **no buy-vs-build
+conflict**, fully testable today. The three stubs-behind-flags are now finished
+and verified **both ways** — default gate (flags off): **107 cases / 1009
+assertions** green; flag-on build (mimalloc + override_new + guard_page):
+**108 / 1014** green with `mimalloc.dll` linking and loading:
 
-1. **Wire mimalloc** (`OKN_MEMORY_USE_MIMALLOC`): enable the vcpkg `mimalloc` link
-   (already declared; CMake wiring sits commented) and populate `mi_backend.{hpp,cpp}`
-   so `MiBackend` forwards to `mi_malloc_aligned`/`mi_realloc_aligned`/`mi_usable_size`.
-   *Test:* `okn-memory_tests` pass with the flag on (large-block `usable_size`,
-   realloc preserves data, alignment honored).
-2. **guard_page** (`OKN_MEMORY_ENABLE_GUARD_PAGE`): replace the no-op `protect_page`/
-   `unprotect_page` with `VirtualProtect`(`PAGE_NOACCESS`↔`PAGE_READWRITE`) on Win32 /
-   `mprotect`(`PROT_NONE`↔`RW`) on Unix; return false on failure. *Test:* protect →
-   access faults (`__try/__except`) → unprotect → readable again.
-3. **override_new** (`OKN_MEMORY_OVERRIDE_NEW`): global `operator new/delete/new[]/
-   delete[]` routed through the default allocator with a libc-malloc fallback.
-   *Test:* new/new[] hit the backend, delete decrements counters, no double-free.
-4. **Audit** the rest of backend/pool/arena/tracking for any remaining
-   return-true/comment-only stubs; confirm the full suite stays green with all
-   feature flags on.
+1. ✅ **mimalloc** (`OKN_MEMORY_USE_MIMALLOC`): `MiBackend` already forwarded to
+   `mi_malloc_aligned`/`mi_realloc_aligned`/`mi_usable_size` — the gap was CMake
+   *defining the macro without linking* (would fail to build). Now
+   `find_package(mimalloc)` + link `mimalloc(-static)`, macro defined only once
+   linked, graceful system-backend fallback otherwise. New `test_backend.cpp`
+   covers the Sys/Mi backend contract (alignment, `usable_size`, realloc
+   preserves data) in both builds.
+2. ✅ **guard_page** (`OKN_MEMORY_ENABLE_GUARD_PAGE`): real
+   `VirtualProtect`(`PAGE_NOACCESS`↔`PAGE_READWRITE`) / `mprotect`(`PROT_NONE`↔`RW`),
+   false on null/failure. Test: protect → write faults (`__try/__except`) →
+   unprotect → writable again. *(submodule `6455fc3`)*
+3. ✅ **override_new** (`OKN_MEMORY_OVERRIDE_NEW`): an always-compiled routing
+   core (`global_alloc`/`global_free`/`new_delete_stats`) backs the full set of
+   throwing/nothrow/aligned/sized `operator new[]/delete[]` replacements. The core
+   is testable in the gate; the flag-on build also exercises the real operators.
+   *(submodule `5612452`)*
+4. ✅ **Audit**: `sys_backend.cpp`/`mi_backend.cpp` were empty placeholders — the
+   real implementations live in `backend.cpp`; confirmed no remaining
+   return-true/comment-only stubs in backend, and the full suite stays green with
+   all feature flags on.
+
+**Next module — okn-platform** (Phase A): the Chase-Lev work-stealing deque +
+the `UdpSocket` null-`impl_` bugfix. *(Note: okn-platform carries unrelated local
+edits; that work lands separately.)*
 
 ## Where this meets [ROADMAP.md](ROADMAP.md)
 

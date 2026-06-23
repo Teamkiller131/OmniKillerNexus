@@ -133,8 +133,9 @@ The largest debts are the *volume of misleading dead/empty surface area* and a
 > The build-out program that supersedes this prune-first plan is
 > **[COMPLETION_PLAN.md](COMPLETION_PLAN.md)** (phases A–D + the three buy-vs-build
 > forks). The deletion-oriented plan below is kept for reference / the alternative
-> path. *(Progress: `okn-memory` guard pages finished — real `VirtualProtect`/
-> `mprotect` + a fault-trap test, suite green.)*
+> path. *(Progress: **`okn-memory` finished** — real guard pages, the global
+> `operator new` override, and the mimalloc backend link; verified both flags-off
+> (107 cases / 1009 asserts) and flags-on (108 / 1014).)*
 
 ## Guiding principles
 
