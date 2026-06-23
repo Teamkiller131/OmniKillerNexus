@@ -129,6 +129,13 @@ The largest debts are the *volume of misleading dead/empty surface area* and a
 
 # Part B — Remediation Plan
 
+> **Update:** the owner chose to **finish the scaffolding rather than delete it.**
+> The build-out program that supersedes this prune-first plan is
+> **[COMPLETION_PLAN.md](COMPLETION_PLAN.md)** (phases A–D + the three buy-vs-build
+> forks). The deletion-oriented plan below is kept for reference / the alternative
+> path. *(Progress: `okn-memory` guard pages finished — real `VirtualProtect`/
+> `mprotect` + a fault-trap test, suite green.)*
+
 ## Guiding principles
 
 1. **Subtract before you add.** The biggest debts (W1, W2, W8) are *dead/empty
