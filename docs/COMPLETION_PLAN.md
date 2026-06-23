@@ -78,9 +78,29 @@ assertions** green; flag-on build (mimalloc + override_new + guard_page):
    return-true/comment-only stubs in backend, and the full suite stays green with
    all feature flags on.
 
-**Next module — okn-platform** (Phase A): the Chase-Lev work-stealing deque +
-the `UdpSocket` null-`impl_` bugfix. *(Note: okn-platform carries unrelated local
-edits; that work lands separately.)*
+## Second module — okn-platform: work-stealing deque ✅ DONE (2026-06-23)
+
+`TaskQueue` was a placeholder — a single mutex over a `std::vector` whose
+`steal()` took from the *same* end as `pop()` (not a work-stealing deque at all).
+Now a **bounded lock-free Chase-Lev deque**: owner push/pop the bottom (LIFO),
+thieves steal the top (FIFO); tasks held by `std::atomic<Task*>` so only a
+trivially-copyable pointer is read speculatively; fence-based memory ordering per
+Lê et al. 2013 (correct on ARM/POWER, not just x86-TSO). `WorkStealingThreadPool`
+was fed *illegally* (external-thread `push`, which Chase-Lev forbids) — `submit()`
+now routes through a mutex injector and each worker refills its **own** deque
+owner-side before stealing. A 4-lens adversarial verification workflow cleared the
+deque and caught one real defect — the destructor silently dropped pending work —
+now fixed with a graceful `wait_all()` drain. Tests: bounded-full, a 50k-op
+concurrent owner+4-thieves "each task exactly once" stress, multi-producer pool
+stress, drain-on-destroy regression → **113 cases green, 5/5 repeated runs**.
+*(submodule `c01d55c`)*
+
+The rest of okn-platform (time/thread/fs/input/crash/etc.) was already
+implemented in commit `4bbd20c`; this closed the one scaffolding stub.
+
+**Next — okn-network** (Phase A): the `UdpSocket` null-`impl_` bugfix and the
+TCP/UDP-over-ASIO transport (Phase B). *(Note: the `UdpSocket` fix belongs to
+okn-network, not okn-platform, which has no socket code.)*
 
 ## Where this meets [ROADMAP.md](ROADMAP.md)
 
