@@ -144,9 +144,39 @@ okn-ecs_tests **70 cases / 443 assertions green**; full 14-suite gate green.
 > (`*.bmp`/`*.dmp`) inside their working trees, not an untracked submodule. The
 > root pointer for okn-ecs is bumped to `ef217ea` here.
 
-**Next — okn-asset** (Phase A): the audio + font importers. *(Remaining deferred
-items: okn-network Phase B = real `TcpAcceptor` accept/listen + reliability over
-live sockets; the three forks in Phase C.)*
+## Fifth module — okn-asset: audio + font importers ✅ DONE (2026-06-23)
+
+`audio_importer` and `font_importer` were empty (header-guard-only) scaffolding.
+Implemented both on the texture-importer pattern (real impl + graceful fallback,
+`import(path)`/`import(buffer)`):
+
+- **AudioImporter** — a self-contained RIFF/WAVE **PCM + IEEE-float** decoder, no
+  third-party dependency. Walks the chunk list with full bounds checks (clamps
+  short chunks, word-aligns, tolerates trailing chunks); returns interleaved
+  sample bytes + format, with `frame_count()`/`valid()`. WAV is the universal
+  baseline; compressed formats (mp3/flac/ogg) stay in okn-audio (miniaudio,
+  Phase B).
+- **FontImporter** — real **stb_truetype** behind `OKN_ASSET_HAS_STB` (graceful
+  no-op fallback otherwise). Loads TTF/OTF → glyph count + vertical metrics,
+  retains the bytes, and `rasterize(codepoint, px)` returns an 8-bit coverage
+  bitmap via `stbtt_GetCodepointBitmap`.
+
+Tests synthesize WAVs in-memory (16-bit stereo decode, byte-exact payload,
+trailing-chunk tolerance, invalid inputs) and, under stb, load a present system
+font and rasterize 'A' (verified live: 4503 glyphs, 21×21 bitmap). okn-asset_tests
+**112 cases / 363 assertions green**; full 14-suite gate green. *(submodule `a7b324e`)*
+
+---
+
+## Phase A status
+
+The Phase-A finish-it module work is **largely complete**: okn-memory, okn-platform
+(deque), okn-network (UdpSocket + gate), okn-ecs (ScriptingBridge), and okn-asset
+(audio/font importers) are all done and verified. **Remaining Phase A:** okn-ui
+keyboard/text input (note: okn-ui carries unrelated local edits, so that lands
+carefully). **Deferred:** okn-audio mp3/flac/ogg decoders + asset streaming
+(Phase B); okn-network real `TcpAcceptor` + reliability over live sockets
+(Phase B); the three forks (Phase C); the north-star game (Phase D).
 
 ## Where this meets [ROADMAP.md](ROADMAP.md)
 
