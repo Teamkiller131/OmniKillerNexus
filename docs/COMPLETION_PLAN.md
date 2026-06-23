@@ -168,15 +168,27 @@ font and rasterize 'A' (verified live: 4503 glyphs, 21×21 bitmap). okn-asset_te
 
 ---
 
-## Phase A status
+## Sixth module — okn-ui: keyboard + editable text input ✅ DONE (2026-06-23)
 
-The Phase-A finish-it module work is **largely complete**: okn-memory, okn-platform
-(deque), okn-network (UdpSocket + gate), okn-ecs (ScriptingBridge), and okn-asset
-(audio/font importers) are all done and verified. **Remaining Phase A:** okn-ui
-keyboard/text input (note: okn-ui carries unrelated local edits, so that lands
-carefully). **Deferred:** okn-audio mp3/flac/ogg decoders + asset streaming
-(Phase B); okn-network real `TcpAcceptor` + reliability over live sockets
-(Phase B); the three forks (Phase C); the north-star game (Phase D).
+`TextInput` reused the base `text_` field for display but had no editing; the
+`InputRouter` was mouse-only; there was no keyboard path. Added a `Key` enum,
+`Widget::on_char`/`on_key` virtuals routed to the focused widget, router
+`push_char`/`push_key`, and a real **UTF-8-correct** editable `TextInput`:
+byte-offset caret kept on codepoint boundaries, insert (max_length-bounded),
+backspace/delete + left/right moving whole codepoints, home/end, focus-gating, a
+focused caret (nominal advance pending text_layout metrics). `test_input.cpp` (was
+empty) now covers all of it. okn-ui_tests **29 cases / 124 assertions green**, and
+**okn-ui is wired into the gate (15 suites)**. *(submodule `638be39`)*
+
+## Phase A status — ✅ COMPLETE
+
+All Phase-A finish-it module work is done and verified: **okn-memory**,
+**okn-platform** (Chase-Lev deque), **okn-network** (UdpSocket + gate),
+**okn-ecs** (ScriptingBridge), **okn-asset** (audio/font importers), **okn-ui**
+(keyboard/text). The gate grew from 13 → **15 suites** (okn-network + okn-ui
+wired in). **Deferred:** okn-audio mp3/flac/ogg decoders + asset streaming
+(Phase B); okn-network real `TcpAcceptor`/`accept` + reliability over live sockets
+(Phase B); the three buy-vs-build forks (Phase C); the north-star game (Phase D).
 
 ## Where this meets [ROADMAP.md](ROADMAP.md)
 
