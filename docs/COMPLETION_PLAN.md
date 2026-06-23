@@ -122,9 +122,32 @@ assertions in okn-network). *(submodule `525544d`)*
 `TcpAcceptor::listen`/`accept` remain non-crashing stubs — building a real TCP
 server (and TCP loopback test) is **Phase B** transport work, tracked separately.
 
-**Next — okn-ecs** (Phase A): the `ScriptingBridge`. *(okn-network's remaining
-Phase B item is real `TcpAcceptor` accept/listen + the reliability layer over live
-sockets.)*
+## Fourth module — okn-ecs: ScriptingBridge ✅ DONE (2026-06-23)
+
+The `ScriptingBridge` was scaffolding: `script_has_component()` always returned
+`false` and `register_all_to_script()` was a no-op loop. It also tried to resolve
+names through the global `ComponentRegistry`, whose ids hash `__FUNCSIG__` and so
+**never match** the `World`'s stores (keyed by `hash(typeid(T).name())`) — the
+lookups could not have worked even if implemented. Reworked into a real runtime
+ECS surface: `World::has_component_by_id(Entity, ComponentTypeId)` (type-erased,
+keyed by the same id `has_component<T>` uses); the bridge keeps its own
+name→{World id, size} map via a typed `register_component<T>(name)`, so
+`has_component(entity, name)` / `component_id(name)` resolve to live storage; and
+`register_all_to_script(ctx, fn)` forwards components through a C callback, keeping
+the bridge decoupled from okn-script. New `test_scripting.cpp` (4 cases) →
+okn-ecs_tests **70 cases / 443 assertions green**; full 14-suite gate green.
+*(submodule `ef217ea`)*
+
+> ⚠️ **Repo hygiene flag:** the root repo does **not** track `okn-ecs` (or
+> `okn-render`) as a committed submodule gitlink — both show as *untracked* even
+> though `.gitmodules` lists them and the root `add_subdirectory()`s them. So this
+> commit lives on okn-ecs's own remote but the root pins no version of it; a fresh
+> `git submodule update` wouldn't fetch it. Registering both as gitlinks is a
+> one-line root change but pins a version, so it's left as an explicit decision.
+
+**Next — okn-asset** (Phase A): the audio + font importers. *(Remaining deferred
+items: okn-network Phase B = real `TcpAcceptor` accept/listen + reliability over
+live sockets; the three forks in Phase C.)*
 
 ## Where this meets [ROADMAP.md](ROADMAP.md)
 
