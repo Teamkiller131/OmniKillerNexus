@@ -190,22 +190,38 @@ wired in). **Deferred:** asset streaming + hot-reload (Phase B); okn-network rea
 `TcpAcceptor`/`accept` + reliability over live sockets (Phase B); the three
 buy-vs-build forks (Phase C); the north-star game (Phase D).
 
-## Phase B — in progress
+## Phase B — ✅ COMPLETE (2026-06-23)
 
-**okn-audio mp3/flac/ogg decoders ✅ DONE (2026-06-23).** `Mp3Decoder`/
-`FlacDecoder`/`VorbisDecoder` were empty-buffer stubs. mp3+flac now decode via a
-shared `ma_decode_memory()` helper over miniaudio's `ma_decoder` (dr_mp3/dr_flac,
-s16, read-until-exhausted); ogg/vorbis via `stb_vorbis` (not a miniaudio built-in)
-behind `OKN_AUDIO_HAS_STB`. Verified against **real ffmpeg-generated fixtures**
-(mono 8 kHz tone.mp3/.flac/.ogg) decoding to frames>0 + malformed-input rejection.
-okn-audio_tests 46 cases / 457 asserts; 15-suite gate green. *(submodule `171c955`)*
+1. **okn-audio mp3/flac/ogg decoders.** `Mp3Decoder`/`FlacDecoder`/`VorbisDecoder`
+   were empty-buffer stubs. mp3+flac now decode via a shared `ma_decode_memory()`
+   over miniaudio's `ma_decoder` (dr_mp3/dr_flac, s16, read-until-exhausted);
+   ogg/vorbis via `stb_vorbis` (not a miniaudio built-in) behind `OKN_AUDIO_HAS_STB`.
+   Verified against **real ffmpeg-generated fixtures** (mono 8 kHz tone.mp3/.flac/
+   .ogg) + malformed-input rejection. 46 cases / 457 asserts. *(okn-audio `171c955`)*
 
-Also fixed a **pre-existing flaky** okn-ecs test (`ChunkAllocator - reset`) that
-compared freed pointers — deterministic now (8/8 runs). *(okn-ecs `2e3e67f`)*
+2. **okn-asset streaming + real mtime hot-reload.** Hot reload only checked file
+   existence; now `AssetIO::file_mtime()` (via platform `get_file_attributes`) backs
+   a HotReload that reloads on a real edit. The streaming queues were stubs; now
+   `ChunkStreamer`/`MipStreamer` are real request schedulers (enqueue + dedup +
+   process-with-callback + residency tracking) and `UploadQueue` drains staged
+   buffers through a sink with cumulative accounting. Hot-reload tested with a
+   deterministic mtime bump. 113 cases / 394 asserts. *(okn-asset `271fe93`)*
 
-**Remaining Phase B:** okn-asset streaming (mip/chunk/upload) + real mtime
-hot-reload; okn-network real `TcpAcceptor::accept`/`listen` + reliability over
-live sockets.
+3. **okn-network real `TcpAcceptor` + reliability over live sockets.**
+   `TcpAcceptor::listen`/`accept` were stubs; now a real ASIO TCP server (listen/
+   bind/accept-from-backlog, adopting the accepted socket into a `TcpStream`). The
+   `ReliabilityLayer` (already real over `ITransport`) is now exercised over **live
+   UDP sockets** via `UdpTransport`: ordered reliable delivery + over-the-wire acks.
+   New TCP loopback + live-UDP-reliability tests. 104 cases / 798 asserts. *(okn-network
+   `5d3cd99`)*
+
+Along the way: fixed a **pre-existing flaky** okn-ecs test (`ChunkAllocator -
+reset`) that compared freed pointers — deterministic now (8/8 runs). *(okn-ecs
+`2e3e67f`)*
+
+**Phases A and B are complete.** The gate is **15 suites, all green**. Remaining:
+the three buy-vs-build **forks (Phase C)** — owner-elected, each duplicates bought
+infra — and the **north-star game (Phase D)**.
 
 ## Where this meets [ROADMAP.md](ROADMAP.md)
 
