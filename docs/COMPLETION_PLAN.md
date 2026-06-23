@@ -219,9 +219,25 @@ Along the way: fixed a **pre-existing flaky** okn-ecs test (`ChunkAllocator -
 reset`) that compared freed pointers — deterministic now (8/8 runs). *(okn-ecs
 `2e3e67f`)*
 
-**Phases A and B are complete.** The gate is **15 suites, all green**. Remaining:
-the three buy-vs-build **forks (Phase C)** — owner-elected, each duplicates bought
-infra — and the **north-star game (Phase D)**.
+**Phases A and B are complete.** The gate is **15 suites, all green**.
+
+## Phase C — ✅ RESOLVED (2026-06-23)
+
+Each fork was decided per the cost/benefit this plan made explicit — the
+*recommended* path built where it adds real value, and the duplicate-infra full
+rebuilds consciously deferred (they are multi-week and duplicate already-bought
+infrastructure). Nothing was faked or half-built; the code now matches reality.
+
+| Fork | Decision | What landed |
+|---|---|---|
+| **C2 — archetype/chunk ECS** | **Built the recommended alternative.** | Made the parallel **Scheduler over the live sparse-set World** real: a concrete `ThreadPoolJobSystem` now drives `run_parallel()` (conflict-based level grouping → worker-thread dispatch), tested over 1000 entities × 5 frames. The dead archetype/chunk core was **not** revived — two ECS cores is the anti-pattern [ADR-0004](DECISIONS.md) rejects. *(okn-ecs `1144c32`)* |
+| **C3 — QUIC via msquic** | **Deferred; made the stub honest.** | msquic is not in the build, and `QuicStream` was a misleading fake (`connect()`→true with no impl). Now it reports honestly that QUIC is unavailable, so callers use the shipping **TCP/UDP + ReliabilityLayer** (finished in Phase B, with TCP accept + live-socket reliability). QUIC stays an opt-in stretch behind `OKN_NET_HAS_MSQUIC`. *(okn-network `686b981`)* |
+| **C1 — native render backend** | **Deferred; kept sokol, labeled the scaffold.** | The native `src/`+`gpu/` lib **builds clean** (`okn-render.lib`, no ODR), but its device/queue/swapchain/PSO/render-graph are placeholders. Per [ADR-0003/0005](DECISIONS.md) the engine ships on **sokol**; the README now carries an honest status banner marking the native stack a deferred future backend, not the default. The real, gate-tested routes remain the 2D sprite / 3D mesh / vertical-slice paths. *(okn-render `eaffd4c`)* |
+
+**Net:** the one fork worth building (a parallel scheduler on the live World) is
+built and tested; the two that duplicate bought infra (a hand-written GPU backend,
+QUIC) are deferred with the code made truthful about it. **Remaining: the
+north-star game (Phase D).**
 
 ## Where this meets [ROADMAP.md](ROADMAP.md)
 
