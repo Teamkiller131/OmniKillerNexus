@@ -171,7 +171,7 @@ physics/audio for the slice). These are the engine's real graphics — see §6.
 priority (~80% of the over-asio design; tested in-submodule, not in the
 build-phys gate). **Fake:** the QUIC/TCP/UDP transports (`connect()` → `true`
 no-ops; `UdpSocket` has a null-`impl_` construction bug; msquic never wired).
-Deferred until single-player ships ([ROADMAP §6](ROADMAP.md)).
+Deferred until single-player ships ([ROADMAP P17](ROADMAP.md)).
 
 ### okn-physics — **Verified** *(the one fully-real Layer-3 module)*
 **Jolt-backed**, the proven foundation that gameplay is built on. **Real:**
@@ -187,7 +187,7 @@ fixed platform/build (enough for input-replay netcode) and offers
 `JPH_CROSS_PLATFORM_DETERMINISTIC` to make ARM/x86 match (at a perf cost — it
 disables FMA). OKN does **not** enable that flag, so OKN's build isn't
 cross-platform deterministic as configured — which gates *lockstep* netcode
-unless the flag is turned on (see [ROADMAP §8](ROADMAP.md)).
+unless the flag is turned on (see [ROADMAP §10](ROADMAP.md)).
 
 ### okn-audio — **Partial**
 **Real:** miniaudio engine + playback, DSP (RBJ biquad EQ, Freeverb,
@@ -223,7 +223,7 @@ Jolt body), color edit, hot-reload of `slice_scene.lua`, save back to Lua, asset
 panel, Ctrl+Z undo. `--selftest` verifies a save/serialize round-trip headlessly.
 **Workaround:** the viewport rasterizes the SpriteBatch with `ImDrawList` rather
 than the engine's `GpuSpriteRenderer` (UniGUI doesn't expose its D3D11 device —
-[ROADMAP §P8](ROADMAP.md)). Needs `unigui::unigui`; otherwise a stub lib.
+[ROADMAP P16](ROADMAP.md)). Needs `unigui::unigui`; otherwise a stub lib.
 
 ### tools/ — CLI
 A mono `okn-cli` or split sub-tools (asset/shader/script/net/audio/ui), gated by
@@ -340,7 +340,7 @@ or D3D12 backend.
 - **[README.md](../README.md)** — project front door + quick start.
 - **[BUILD.md](BUILD.md)** — build, test gate, run a game, screenshots.
 - **[GAMES.md](GAMES.md)** — the 7 demo games and the reusable game pattern.
-- **[ROADMAP.md](ROADMAP.md)** — the authoritative forward plan (P5–P9).
+- **[ROADMAP.md](ROADMAP.md)** — the authoritative forward plan (v3, phases P10+).
 - **[DECISIONS.md](DECISIONS.md)** — ADR log (standard, naming, buy-vs-build, the pivots).
 - **[gitea_runner_setup.md](gitea_runner_setup.md)** — CI runner setup.
 - `AGENTS.md` — contributor constitution (conventions/workflow). *Note: its

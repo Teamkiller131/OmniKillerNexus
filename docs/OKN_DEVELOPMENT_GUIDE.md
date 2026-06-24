@@ -30,7 +30,7 @@ reality.
 | What each module really is, the render routes, deps | **[ARCHITECTURE.md](ARCHITECTURE.md)** |
 | Build, run the test gate, run a game, screenshots | **[BUILD.md](BUILD.md)** |
 | The demo games + the reusable game patterns | **[GAMES.md](GAMES.md)** |
-| The forward plan (P5–P9) + buy-vs-build ledger | **[ROADMAP.md](ROADMAP.md)** |
+| The forward plan (v3, phases P10+) + buy-vs-build ledger | **[ROADMAP.md](ROADMAP.md)** |
 | Cross-cutting decisions (standard, naming, pivots) | **[DECISIONS.md](DECISIONS.md)** |
 | The interface/implementation pattern | [patterns/service_registry.md](patterns/service_registry.md) |
 | Contributor constitution (conventions + workflow) | `AGENTS.md` (root) |

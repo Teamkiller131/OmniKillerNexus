@@ -117,7 +117,7 @@ for a screenshot. See the "build a game on UniGUI" recipe below.
   (`STB_IMAGE_IMPLEMENTATION` + `_WRITE_`); they do not link okn-asset.
 - Work in **+Y-up** world units with a `Camera2D`; `WIN32` target; embed a
   **PerMonitorV2 `.manifest`** + `high_dpi = true` (sokol windowed apps render
-  into a fraction of the client without it — [DPI gotcha](ROADMAP.md#8-risks--watch-items)).
+  into a fraction of the client without it — [DPI gotcha](ROADMAP.md#10-risks--watch-items)).
 
 **UniGUI app** (voidborne, okn-editor): link `unigui::unigui`, build only inside
 the root build (needs the submodule), use `unigui::AppConfig` + `Init`/`Run`, draw
