@@ -302,12 +302,16 @@ or D3D12 backend.
 
 ## 8. Known dead / fake code (current — most of the old list was fixed in Phases A–D)
 
-**Still dead / placeholder:**
-- `okn-render` native D3D12/Vulkan/Metal/GL lib — device/queue/swapchain/PSO/
-  render-graph are placeholders (device/swapchain have *some* real D3D12 calls but
-  are unwired). Builds to `okn-render.lib` but is **not** the default render path;
-  the engine ships on sokol (the 2D sprite / 3D mesh / slice routes). A deliberate
-  deferred fork — see [COMPLETION_PLAN §C1](COMPLETION_PLAN.md).
+**Partial / placeholder:**
+- `okn-render` native D3D12/Vulkan/Metal/GL lib — **D3D12 now renders a verified
+  minimal frame**: `render_clear_readback()` records a real GPU command list (RTV,
+  clear, barrier, copy) and reads the exact pixels back, gated by the
+  `okn-render-native` suite (WARP fallback → runs headless). Still **not a full
+  backend** (no PSO/shader/draw pipeline; the render graph isn't wired to GPU
+  recording; ~82 src files are empty placeholders; Vulkan/Metal are bring-up
+  skeletons) and **not** the default path — the engine ships on sokol (the 2D
+  sprite / 3D mesh / slice routes). A deliberate deferred fork —
+  see [COMPLETION_PLAN §C1](COMPLETION_PLAN.md).
 - `okn-audio` platform backends (`backend_wasapi/xaudio2/coreaudio/alsa/...`) —
   near-empty; miniaudio already provides these internally (slated for pruning).
 - `okn-editor` — ~1–2 real files behind ~86 placeholders (Dear ImGui editor).

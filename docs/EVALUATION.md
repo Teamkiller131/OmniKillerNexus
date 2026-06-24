@@ -82,7 +82,10 @@ artifact whose real product is engineering discipline, **not** a shipping tool.
    surface rather than removing it. **◑ Partly resolved (2026-06-23):** the dead
    **archetype/chunk ECS core was deleted** (15 files / 1090 lines; okn-ecs
    2447→2325 assertions — the removed ~122 all tested dead code). The native
-   render placeholder stays for now (a deferred fork; under separate review).
+   render backend was **partly finished, not deleted**: D3D12 now does a
+   gate-verified minimal render (`render_clear_readback` — real command list →
+   exact-pixel readback, WARP fallback, suite `okn-render-native`). It's still not
+   a full backend (no PSO/draw, ~82 placeholder files) and not the default path.
 5. **Single-author bus factor + private-NAS hosting** — all 13 submodules resolve
    only from one personal host; **Windows-only in practice** (hard-coded
    `D:/vcpkg` in several CMakeLists; the Linux CI job is the disabled stub).
