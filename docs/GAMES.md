@@ -17,7 +17,7 @@ render / input / audio stack is genre-agnostic and that physics is opt-in.
 | **mario** | side-scroller | **multi-texture** batching, contact-event gameplay (stomp/hurt) | Jolt |
 | **mario3d** | 3D platformer | the **3D mesh path**, joints, kinematic platforms, orbit camera | Jolt (3D) |
 | **harvest** | grid farming / RPG-sim | 2D sprite path **with no physics**, free-move + AABB tiles, deep sim systems | none (pure AABB) |
-| **voidborne** | management sim | **UniGUI / Dear ImGui** draw-list world + panels, rapidjson data | none |
+| **voidborne** | management sim | **UniGUI / Dear ImGui** UI + world, but the sim runs on the core: crew on **okn-ecs**, data + hot-reload on **okn-asset**, camera on **okn-math** | none |
 
 ---
 
@@ -84,10 +84,16 @@ force-feeds counters to exercise all 12 achievement predicates.
 
 ## voidborne — "孤舟 · 青鸟号"
 `games/voidborne/` — a generation-ship management sim **ported from a Godot 4.6/
-C# original** onto the engine. Unlike the others, it runs on **TeamkillerUniGUI
-/ Dear ImGui**: *both* the management panels **and** the 2D ship world render
-through ImGui draw lists (a pixel-art renderer over `GetBackgroundDrawList`),
-with the original JSON content loaded via **rapidjson**. Content: a 6-deck
+C# original** onto the engine. Its UI + 2D ship world render on **TeamkillerUniGUI
+/ Dear ImGui** (a pixel-art renderer over `GetBackgroundDrawList`), but the
+**simulation runs on the OKN engine core** where it genuinely fits: the **crew are
+real `okn-ecs` entities** (a `CrewStats` component; the captain election queries
+the crew `World`), **`okn-asset` `AssetIO`** loads every data file and
+**hot-reloads `events.json`** live, and the smoothed camera is an **`okn-math`
+`Vec2`** (okn-core/okn-platform come along transitively). Render/physics/ui/network
+are deliberately *not* forced — a management sim has no sprite batches or rigid
+bodies, and ImGui already is the UI. The original JSON content loads via
+**rapidjson**. Content: a 6-deck
 explorable spaceship + elevator, an ecology bay, a 61-event modal system, crew,
 four departments, a star-map / elections / captain track, a hidden "Void Seed"
 darkline, 7 endings, and save/load. The renderer received a **6-phase visual
@@ -117,7 +123,10 @@ for a screenshot. See the "build a game on UniGUI" recipe below.
 the root build (needs the submodule), use `unigui::AppConfig` + `Init`/`Run`, draw
 the world on `ImGui::GetBackgroundDrawList()`, and load the pixel font *after*
 `Init`. Include `<unigui/app/app.h>` + `<imgui.h>` (not the `<unigui/unigui.h>`
-umbrella — it pulls windows.h + GLFW).
+umbrella — it pulls windows.h + GLFW). A UniGUI front-end can still run on the
+engine core: voidborne also links `okn-ecs` (entities/components for its crew),
+`okn-asset` (data loading + hot-reload) and `okn-math` (vectors) — wire the
+modules that genuinely fit the simulation, not every module for show.
 
 **Headless verification (the rule that makes all of the above testable):**
 factor **every player verb as a standalone callable function** (not inline in the

@@ -144,13 +144,19 @@ resolution against the live store + a registration callback (no longer a stub).
 **deleted** — the live sparse-set `World` is the one ECS core ([ADR-0004](DECISIONS.md)).
 **Tests:** `okn-ecs_tests`, 55 cases / 2325 assertions (incl. serialization
 round-trip + the parallel-scheduler-over-real-pool test).
+**Consumed by a game:** **VOIDBORNE** models its 20 crew as ECS entities with a
+`CrewStats` component and runs the captain election as a `query<CrewStats>()` over
+the live `World`.
 
 ### okn-asset — **Partial**
 **Real spine:** assimp mesh import, stb texture import (both **guarded** —
-compile no-op when the optional ports are absent), mesh pipeline (vertex-cache
-opt / normals / tangents / LOD), pack-file read/write, LRU cache, registry,
-dependency graph. **Missing:** streaming, hot-reload, basisu compression.
-**Tests:** `okn-asset_tests`, ~62 cases.
+compile no-op when the optional ports are absent), **WAV + TrueType importers**,
+mesh pipeline (vertex-cache opt / normals / tangents / LOD), pack-file read/write,
+LRU cache, registry, dependency graph, **real mtime hot-reload** (`AssetIO::
+file_mtime` + `HotReload`), and **streaming queues** (mip/chunk/upload with
+dedup + callbacks). **Missing:** basisu compression. **Tests:** `okn-asset_tests`,
+113 cases / 394 assertions. **Consumed by a game:** **VOIDBORNE** loads all data
+through `AssetIO` and live-hot-reloads `events.json`.
 
 ### okn-render — **Partial** *(the GPU-backend lib is Stub/Dead; the 2D/3D/slice paths are Real)*
 The most nuanced module. The native **D3D12/Vulkan static lib is dead** —

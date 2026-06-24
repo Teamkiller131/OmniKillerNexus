@@ -41,7 +41,7 @@ genre-agnostic and physics is opt-in. Full details + how to run: **[docs/GAMES.m
 | **mario** | side-scroller | **multi-texture** batching + stomp/hurt via contacts | Jolt |
 | **mario3d** | 3D platformer | the **3D mesh path** + joints + kinematic platforms | Jolt (3D) |
 | **harvest** | grid farming / RPG-sim | a whole game with **no physics** (free-move + AABB) + deep sim systems | none |
-| **voidborne** | management sim | a **Dear ImGui / UniGUI** draw-list world + panels, JSON data | none |
+| **voidborne** | management sim | a **Dear ImGui / UniGUI** world that runs on the engine core: crew on **okn-ecs**, data + live hot-reload via **okn-asset**, camera on **okn-math** | none |
 
 ---
 

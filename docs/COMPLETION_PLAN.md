@@ -259,12 +259,24 @@ Verified: `--autodemo` still reports **VOIDBORNE M0–M7 OK** (save/load round-t
 data selftest OK, and the title screen renders (starfield + menu, EN/中文). The
 game builds clean as the `voidborne` target.
 
+**VOIDBORNE now runs on the engine core (2026-06-23).** Beyond the shell, the
+flagship was wired onto okn-* where it genuinely fits — closing the evaluation's
+"the north-star game bypasses the engine" finding: the crew are real **okn-ecs**
+entities + `CrewStats` components (the captain election queries the crew `World`),
+**okn-asset** `AssetIO` loads all data + live-hot-reloads `events.json`, and the
+camera is an **okn-math** `Vec2` (okn-core/okn-platform transitively). Render /
+physics / ui / network were deliberately *not* forced (an ImGui management sim has
+no sprite renderer or rigid bodies). The gate compiles voidborne and asserts its
+autodemo, so the engine's own modules finally have a real game consumer in CI.
+
 ## All phases complete
 
-A (finish the stubs), B (decoders / streaming / transport), C (forks resolved),
-and D (the north-star game shell) are done. The test gate stands at **15 suites,
-all green**, and the project now ships **one complete game** end-to-end (title →
-play → win/lose → save → settings/rebind).
+A (finish the stubs), B (decoders / streaming / transport), C (forks resolved —
+incl. the native D3D12 backend now rasterizing a verified triangle), and D (the
+north-star game shell, now also running on the engine core) are done. The test
+gate stands at **16 module suites + 7 game compiles + VOIDBORNE's autodemo, all
+green**, and the project ships **one complete game** end-to-end (title → play →
+win/lose → save → settings/rebind) that consumes the engine core.
 
 ## Where this meets [ROADMAP.md](ROADMAP.md)
 
