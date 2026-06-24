@@ -63,7 +63,17 @@ artifact whose real product is engineering discipline, **not** a shipping tool.
    links **only `unigui::unigui`** — zero okn-* modules. Phase D added a real
    *shell*, but the showcase still showcases a bought ImGui toolkit, not OKN's
    core. **No game (of 7) links okn-ecs / okn-script / okn-ui / okn-network**, so
-   the freshly-finished features have **zero game consumers**.
+   the freshly-finished features have **zero game consumers**. **◑ Addressed where
+   it genuinely fits (2026-06-23):** VOIDBORNE now links and *uses* **okn-ecs** (the
+   20 crew are real ECS entities + `CrewStats` components; the captain election
+   queries the crew `World`), **okn-asset** (all data files load through `AssetIO`;
+   `events.json` is live-hot-reloaded via the mtime watcher), and **okn-math** (the
+   smoothed camera is an engine `Vec2`) — plus okn-core/okn-platform transitively.
+   The gate builds it + asserts its autodemo (which drives the ECS election), so
+   the flagship runs on the engine core in CI. Deliberately **not** forced:
+   okn-render (ImGui *is* its renderer), okn-physics (tile-grid, not rigid bodies),
+   okn-ui (ImGui *is* the UI), okn-network (single-player) — wiring those would be
+   the cosmetic theater this finding warns against.
 3. **"All green" has an asterisk — `doctest::skip()` hides real failures.** Run
    with `--no-skip`, okn-memory shows **1 failed case / 2 failed assertions**
    (`StackArena - overflow`: an 8-byte per-push header means 64 bytes never fit a

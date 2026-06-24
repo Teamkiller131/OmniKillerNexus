@@ -26,6 +26,13 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
 
+// VOIDBORNE runs on the OKN engine core where it genuinely fits.
+#include <okn/ecs/world.hpp>                    // crew = real ECS entities + components
+#include <okn/math/algebra/vec2.hpp>            // world vectors
+#include <okn/asset/io/asset_io.hpp>            // data loading
+#include <okn/asset/registry/asset_registry.hpp>
+#include <okn/asset/hotreload/hot_reload.hpp>   // live data hot-reload
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -71,11 +78,11 @@ struct EventDef {
     std::vector<EventOption> options;
 };
 // ── M4 crew (crew.json) ──
-struct CrewMember {
-    std::string id, name, role, department, shift;
-    int tier = 1, skill = 50, loyalty = 50;
-    float voteLean = 0.5f;
-};
+// Crew are modeled as okn-ecs entities. The numeric stats are a trivially-copyable
+// ECS component (stored in g.crewWorld); the strings live in a parallel side-table
+// (std::string isn't an ECS-friendly component — a string table is the idiom).
+struct CrewText { std::string id, name, role, department, shift; };
+struct CrewStats { int tier = 1; int skill = 50; int loyalty = 50; float voteLean = 0.5f; };
 // ── M5 departments ──
 struct RecipeDef { std::string id, name, requiresTech; int rawCost = 0, powerCost = 0, partsOut = 0, days = 1; };
 struct ResearchDef { std::string id, name, line, unlockTech; int days = 1, powerPerDay = 0; float failRate = 0.1f; };
@@ -166,7 +173,7 @@ struct Game {
     float pcx = 3.5f, pcy = 8.5f;       // continuous tile position
     int fx = 0, fy = -1;                // facing
     float playerWalk = 0;               // walk-cycle phase (advances while moving)
-    float camX = 0, camY = 0;           // smoothed camera (Phase 6)
+    okn::math::Vec2 cam{0, 0};          // smoothed camera (Phase 6) — engine Vec2
     bool camInit = false;               // snap the camera on the first frame of a deck
     float deckFade = 0;                 // 1→0 fade-in when a deck loads
 
@@ -177,7 +184,9 @@ struct Game {
 
     // ── M4: events / crew / morale ──
     std::vector<EventDef> events;
-    std::vector<CrewMember> crew;
+    okn::ecs::World crewWorld;                  // crew run on the engine ECS (entities + CrewStats)
+    std::vector<okn::ecs::Entity> crewEnts;     // one entity per crew member, in load order
+    std::vector<CrewText> crewText;             // strings parallel to crewEnts
     float morale = 70;
     int playerSkill = 20, playerPerf = 0;
     std::unordered_map<std::string, int> flags;
@@ -236,6 +245,13 @@ struct Game {
 Game g;
 std::string g_dataDir = "data";
 
+// Data files load through the engine asset IO, and events.json is watched for
+// live hot-reload (declared registry-then-io-then-reload so construction order
+// is valid). HotReload uses okn-platform's file mtime.
+okn::asset::AssetIO g_assetIO;
+okn::asset::AssetRegistry g_assetRegistry;
+okn::asset::HotReload g_hotReload{g_assetRegistry, g_assetIO};
+
 // ── data loading ──────────────────────────────────────────────────────────────
 ImU32 hex_color(const std::string& h) {
     if (h.size() < 6) { return IM_COL32(200, 200, 200, 255); }
@@ -249,9 +265,9 @@ ImU32 hex_color(const std::string& h) {
     return IM_COL32(hx(0) * 16 + hx(1), hx(2) * 16 + hx(3), hx(4) * 16 + hx(5), 255);
 }
 std::string read_file(const std::string& path) {
-    std::ifstream f(path, std::ios::binary);
-    if (!f) { return {}; }
-    std::ostringstream ss; ss << f.rdbuf(); return ss.str();
+    // Load through the engine asset IO (okn-asset -> okn-platform file layer).
+    const std::vector<okn::asset::u8> bytes = g_assetIO.read_file(path);
+    return std::string(bytes.begin(), bytes.end());
 }
 float jnum(const rapidjson::Value& v, const char* k, float def = 0.0f) {
     return (v.HasMember(k) && v[k].IsNumber()) ? v[k].GetFloat() : def;
@@ -353,14 +369,19 @@ void load_crew() {
     rapidjson::Document d; d.Parse(txt.c_str());
     if (d.HasParseError() || !d.HasMember("npcs") || !d["npcs"].IsArray()) { return; }
     for (auto& n : d["npcs"].GetArray()) {
-        CrewMember c;
-        c.id = jstr(n, "id"); c.name = jstr(n, "name"); c.role = jstr(n, "role");
-        c.department = jstr(n, "department"); c.shift = jstr(n, "shift");
-        c.tier = static_cast<int>(jnum(n, "tier", 1));
-        c.skill = static_cast<int>(jnum(n, "skill", 50));
-        c.loyalty = static_cast<int>(jnum(n, "loyalty", 50));
-        c.voteLean = jnum(n, "voteLean", 0.5f);
-        g.crew.push_back(c);
+        CrewText t;
+        t.id = jstr(n, "id"); t.name = jstr(n, "name"); t.role = jstr(n, "role");
+        t.department = jstr(n, "department"); t.shift = jstr(n, "shift");
+        CrewStats s;
+        s.tier = static_cast<int>(jnum(n, "tier", 1));
+        s.skill = static_cast<int>(jnum(n, "skill", 50));
+        s.loyalty = static_cast<int>(jnum(n, "loyalty", 50));
+        s.voteLean = jnum(n, "voteLean", 0.5f);
+
+        const okn::ecs::Entity e = g.crewWorld.create_entity();
+        g.crewWorld.add_component(e, s);   // the crew member is now an ECS entity
+        g.crewEnts.push_back(e);
+        g.crewText.push_back(std::move(t));
     }
 }
 // ── M5: department data ──
@@ -519,8 +540,15 @@ void tick_voidseed() {
 }
 void update_player_tier() { g.playerTier = g.playerSkill >= 70 ? 3 : g.playerSkill >= 40 ? 2 : 1; }
 float election_yes_share() {
+    // Tally the captain vote by querying the crew ECS world: each entity's
+    // CrewStats weights its lean by tier and the ship's morale.
     float yes = 0, tot = 0;
-    for (auto& c : g.crew) { const float w = 1.0f + c.tier * 0.5f; tot += w; yes += w * (c.voteLean * 0.6f + (g.morale / 100.0f) * 0.4f); }
+    for (auto [e, s] : g.crewWorld.query<CrewStats>()) {
+        (void)e;
+        const float w = 1.0f + static_cast<float>(s->tier) * 0.5f;
+        tot += w;
+        yes += w * (s->voteLean * 0.6f + (g.morale / 100.0f) * 0.4f);
+    }
     return tot > 0 ? yes / tot : 0;
 }
 void run_for_captain() {
@@ -785,8 +813,9 @@ void place_npcs() {
     const int corr = g.deckH / 2 - 1;
     for (int x = 8; x < g.deckW - 4; x += 5) { spots.push_back(ImVec2(x + 0.5f, corr + 0.5f)); }
     std::size_t si = 0;
-    for (int i = 0; i < static_cast<int>(g.crew.size()); ++i) {
-        const bool here = dept_deck(g.crew[static_cast<std::size_t>(i)].department) == g.curDeck
+    for (int i = 0; i < static_cast<int>(g.crewEnts.size()); ++i) {
+        const CrewText& ct = g.crewText[static_cast<std::size_t>(i)];
+        const bool here = dept_deck(ct.department) == g.curDeck
                           || g.curDeck == 3                                       // everyone lives on habitation
                           || ((g.curDeck == 0 || g.curDeck == 5) && i < 4);       // a few staff the sparse decks
         if (!here) { continue; }
@@ -799,9 +828,9 @@ void place_npcs() {
                                        IM_COL32(178, 130, 96, 255), IM_COL32(140, 100, 72, 255), IM_COL32(250, 224, 198, 255) };
         WorldNpc n; n.x = spots[si].x; n.y = spots[si].y; n.phase = static_cast<float>(i) * 1.7f;
         n.homeX = n.x; n.homeY = n.y;
-        n.color = dept_color(g.crew[static_cast<std::size_t>(i)].department);
+        n.color = dept_color(ct.department);
         n.hair = kHair[static_cast<std::size_t>(i) % 6]; n.skin = kSkin[static_cast<std::size_t>(i * 3 + 1) % 5];
-        n.name = g.crew[static_cast<std::size_t>(i)].name; n.fy = (i & 1) ? 1 : -1;
+        n.name = ct.name; n.fy = (i & 1) ? 1 : -1;
         g.npcsHere.push_back(n); ++si;
     }
 }
@@ -1090,9 +1119,10 @@ void draw_world() {
     };
     const float fullW = g.deckW * kTile, fullH = g.deckH * kTile;
     const float tcamx = camAxis(g.pcx * kTile, fullW, viewW), tcamy = camAxis(g.pcy * kTile, fullH, viewH);
-    if (!g.camInit) { g.camX = tcamx; g.camY = tcamy; g.camInit = true; }            // snap on a new deck
-    else { const float ck = std::min(1.0f, ImGui::GetIO().DeltaTime * 8.0f); g.camX += (tcamx - g.camX) * ck; g.camY += (tcamy - g.camY) * ck; }
-    const float camx = g.camX, camy = g.camY;
+    const okn::math::Vec2 target{tcamx, tcamy};
+    if (!g.camInit) { g.cam = target; g.camInit = true; }                            // snap on a new deck
+    else { const float ck = std::min(1.0f, ImGui::GetIO().DeltaTime * 8.0f); g.cam += (target - g.cam) * ck; }   // Vec2 smoothing
+    const float camx = g.cam.x, camy = g.cam.y;
     const float ox = std::floor(p0.x - camx), oy = std::floor(p0.y + hud - camy);   // snap to whole pixels
     auto sx = [&](float c) { return ox + c * kTile; };
     auto sy = [&](float r) { return oy + r * kTile; };
@@ -1528,13 +1558,16 @@ void draw_crew_panel() {
         ImGui::TableSetupColumn("Name"); ImGui::TableSetupColumn("Role"); ImGui::TableSetupColumn("Dept");
         ImGui::TableSetupColumn("Tier"); ImGui::TableSetupColumn("Skill / Loyalty");
         ImGui::TableHeadersRow();
-        for (auto& c : g.crew) {
+        for (std::size_t i = 0; i < g.crewEnts.size(); ++i) {
+            const CrewText& ct = g.crewText[i];
+            const CrewStats* s = g.crewWorld.get_component<CrewStats>(g.crewEnts[i]);  // stats from the ECS world
+            if (s == nullptr) { continue; }
             ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted(c.name.c_str());
-            ImGui::TableSetColumnIndex(1); ImGui::TextUnformatted(c.role.c_str());
-            ImGui::TableSetColumnIndex(2); ImGui::TextUnformatted(c.department.c_str());
-            ImGui::TableSetColumnIndex(3); ImGui::Text("T%d", c.tier);
-            ImGui::TableSetColumnIndex(4); ImGui::Text("%d / %d", c.skill, c.loyalty);
+            ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted(ct.name.c_str());
+            ImGui::TableSetColumnIndex(1); ImGui::TextUnformatted(ct.role.c_str());
+            ImGui::TableSetColumnIndex(2); ImGui::TextUnformatted(ct.department.c_str());
+            ImGui::TableSetColumnIndex(3); ImGui::Text("T%d", s->tier);
+            ImGui::TableSetColumnIndex(4); ImGui::Text("%d / %d", s->skill, s->loyalty);
         }
         ImGui::EndTable();
     }
@@ -2037,6 +2070,7 @@ void draw_frame() {
     if (g.screen == Screen::Title) { draw_title_screen(); return; }
     if (g.screen == Screen::Settings) { draw_settings_screen(); return; }
 
+    g_hotReload.update();            // live-reload data/events.json if it changed on disk
     const float dt = std::clamp(ImGui::GetIO().DeltaTime, 0.0f, 1.0f / 20.0f);
     g.simTime += dt * speed_mul();   // walk / doors / crew / fx fast-forward with the speed setting
     advance_time(dt);
@@ -2101,7 +2135,7 @@ void run_autodemo() {
     const bool ok = harvested >= kPlots && eventsOk && mfgOk && electionRan && endingOk && loadOk;
     std::ofstream rf("voidborne_result.txt");
     rf << (ok ? "VOIDBORNE M0-M7 OK" : "VOIDBORNE M0-M7 FAIL")
-       << " crops=" << g.cropDefs.size() << " events=" << g.events.size() << " crew=" << g.crew.size()
+       << " crops=" << g.cropDefs.size() << " events=" << g.events.size() << " crew=" << g.crewWorld.entity_count()
        << " recipes=" << g.recipes.size() << " research=" << g.research.size() << " routes=" << g.routes.size()
        << " offers=" << g.offers.size()
        << " harvested=" << g.totalHarvested << " eventsResolved=" << g.eventsResolved
@@ -2129,11 +2163,11 @@ int main(int argc, char* argv[]) {
     load_all_data();
     const bool ok = g.cropDefs.size() == 4;
     if (selftest) {
-        const bool good = ok && !g.events.empty() && !g.crew.empty() && !g.recipes.empty() &&
+        const bool good = ok && !g.events.empty() && g.crewWorld.entity_count() > 0 && !g.recipes.empty() &&
                           !g.research.empty() && !g.routes.empty();
         std::ofstream rf("voidborne_result.txt");
         rf << (good ? "VOIDBORNE DATA OK" : "VOIDBORNE DATA FAIL")
-           << " crops=" << g.cropDefs.size() << " events=" << g.events.size() << " crew=" << g.crew.size()
+           << " crops=" << g.cropDefs.size() << " events=" << g.events.size() << " crew=" << g.crewWorld.entity_count()
            << " recipes=" << g.recipes.size() << " research=" << g.research.size() << " routes=" << g.routes.size();
         return good ? 0 : 1;
     }
@@ -2141,6 +2175,15 @@ int main(int argc, char* argv[]) {
 
     build_decks_data();        // the 6-deck blueprint
     build_deck(kStartDeck);    // start on the habitation deck (like the original)
+
+    // Live data hot-reload (windowed only): edit data/events.json on disk and the
+    // event deck reloads in-game, via okn-asset's mtime watcher.
+    {
+        okn::asset::AssetId ev{};
+        ev.data0 = 0xE7E7u;
+        g_hotReload.watch(ev, g_dataDir + "/events.json");
+        g_hotReload.set_callback([](const okn::asset::AssetId&) { reload_events(); });
+    }
 
     // screenshot hooks: OKN_VB_SHOW=<panel> opens a panel with demo state so captures
     // show each milestone alive.

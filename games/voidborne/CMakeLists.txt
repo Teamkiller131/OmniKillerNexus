@@ -12,7 +12,18 @@ if(TARGET unigui::unigui)
     add_executable(voidborne ${VOIDBORNE_SRC})
     target_include_directories(voidborne PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/src" "${RAPIDJSON_INCLUDE_DIRS}")
-    target_link_libraries(voidborne PRIVATE unigui::unigui)
+    # VOIDBORNE runs on the engine core where it genuinely fits:
+    #   okn-ecs    — the crew are real ECS entities + CrewStats components; the
+    #                captain election queries the crew World.
+    #   okn-asset  — all data files load through AssetIO; events.json is hot-reloaded.
+    #   okn-math   — the smoothed camera is an engine Vec2.
+    # (okn-core / okn-platform come transitively and are used for real.) The UI
+    # stays on Dear ImGui/UniGUI and the tile world is grid-collision, so
+    # okn-render / okn-ui / okn-physics are intentionally NOT forced — a management
+    # sim doesn't use a sprite renderer or rigid bodies, and bolting them on would
+    # be cosmetic.
+    target_link_libraries(voidborne PRIVATE
+        unigui::unigui okn-ecs okn-asset okn-math)
     target_compile_features(voidborne PRIVATE cxx_std_23)
     if(MSVC)
         target_compile_options(voidborne PRIVATE /WX-)   # imgui/unigui interplay isn't /WX-clean
