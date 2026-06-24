@@ -303,15 +303,16 @@ or D3D12 backend.
 ## 8. Known dead / fake code (current — most of the old list was fixed in Phases A–D)
 
 **Partial / placeholder:**
-- `okn-render` native D3D12/Vulkan/Metal/GL lib — **D3D12 now renders a verified
-  minimal frame**: `render_clear_readback()` records a real GPU command list (RTV,
-  clear, barrier, copy) and reads the exact pixels back, gated by the
-  `okn-render-native` suite (WARP fallback → runs headless). Still **not a full
-  backend** (no PSO/shader/draw pipeline; the render graph isn't wired to GPU
-  recording; ~82 src files are empty placeholders; Vulkan/Metal are bring-up
-  skeletons) and **not** the default path — the engine ships on sokol (the 2D
-  sprite / 3D mesh / slice routes). A deliberate deferred fork —
-  see [COMPLETION_PLAN §C1](COMPLETION_PLAN.md).
+- `okn-render` native D3D12/Vulkan/Metal/GL lib — **the D3D12 backend has a
+  verified working draw pipeline**: `render_clear_readback()` clears + reads back
+  exact pixels, and `render_triangle_readback()` runs the full programmable path
+  (runtime-compiled HLSL → root signature + PSO → vertex buffer → `DrawInstanced`)
+  and **rasterizes a triangle**, both verified pixel-exact (gate suite
+  `okn-render-native`, WARP fallback → runs headless). Still **not a full backend**
+  (no materials/textures/depth; the render graph isn't wired to GPU recording;
+  Vulkan/Metal are bring-up skeletons; ~82 src files are empty placeholders) and
+  **not** the default path — the engine ships on sokol (the 2D sprite / 3D mesh /
+  slice routes). A deliberate deferred fork — see [COMPLETION_PLAN §C1](COMPLETION_PLAN.md).
 - `okn-audio` platform backends (`backend_wasapi/xaudio2/coreaudio/alsa/...`) —
   near-empty; miniaudio already provides these internally (slated for pruning).
 - `okn-editor` — ~1–2 real files behind ~86 placeholders (Dear ImGui editor).
