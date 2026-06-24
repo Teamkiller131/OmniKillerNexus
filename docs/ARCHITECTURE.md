@@ -136,10 +136,14 @@ input, crash handling, dynamic-library loading, system info. **Gap:** the
 components, queries — plus **save/load serialization** (`Serializer`/
 `Deserializer` snapshot live entities + trivially-copyable component bytes,
 keyed by a typeid-hash store id; host-endian, same-build save games).
-**Dead:** the archetype/chunk `Storage` (`storage.cpp`) — a *second, unused* ECS
-core, included by nothing (slated for pruning, [ROADMAP §P9](ROADMAP.md)).
-**Stub:** `ScriptingBridge` (component registration not wired to Lua).
-**Tests:** `okn-ecs_tests`, ~109 cases (incl. serialization round-trip).
+**Scheduling:** a real parallel `Scheduler` runs systems over the live `World`
+(conflict-based level grouping → `ThreadPoolJobSystem` worker threads).
+**ScriptingBridge:** a runtime component-reflection surface — name→`ComponentTypeId`
+resolution against the live store + a registration callback (no longer a stub).
+**Removed (2026-06-23):** the dead archetype/chunk `Storage` second ECS core was
+**deleted** — the live sparse-set `World` is the one ECS core ([ADR-0004](DECISIONS.md)).
+**Tests:** `okn-ecs_tests`, 55 cases / 2325 assertions (incl. serialization
+round-trip + the parallel-scheduler-over-real-pool test).
 
 ### okn-asset — **Partial**
 **Real spine:** assimp mesh import, stb texture import (both **guarded** —
@@ -296,14 +300,27 @@ or D3D12 backend.
 
 ---
 
-## 8. Known dead / fake code (prune or finish — [ROADMAP §P9](ROADMAP.md))
+## 8. Known dead / fake code (current — most of the old list was fixed in Phases A–D)
 
-- `okn-ecs` archetype/chunk `Storage` — unused second ECS core.
-- `okn-render` native D3D12/Vulkan lib — duplicate-symbol stubs, unlinkable.
-- `okn-network` QUIC/TCP/UDP transports — no-ops; `UdpSocket` null-`impl_` bug.
-- `okn-audio` mp3/flac/ogg decoders — return empty; platform backends bool-flip.
-- `okn-asset` — no streaming / hot-reload / basisu.
+**Still dead / placeholder:**
+- `okn-render` native D3D12/Vulkan/Metal/GL lib — device/queue/swapchain/PSO/
+  render-graph are placeholders (device/swapchain have *some* real D3D12 calls but
+  are unwired). Builds to `okn-render.lib` but is **not** the default render path;
+  the engine ships on sokol (the 2D sprite / 3D mesh / slice routes). A deliberate
+  deferred fork — see [COMPLETION_PLAN §C1](COMPLETION_PLAN.md).
+- `okn-audio` platform backends (`backend_wasapi/xaudio2/coreaudio/alsa/...`) —
+  near-empty; miniaudio already provides these internally (slated for pruning).
+- `okn-editor` — ~1–2 real files behind ~86 placeholders (Dear ImGui editor).
 - `tools/` — entry stubs.
+
+**Fixed since the prior audit (no longer dead):**
+- `okn-ecs` archetype/chunk `Storage` — **deleted** (2026-06-23); the live
+  sparse-set `World` is the one ECS core.
+- `okn-network` QUIC/TCP/UDP — real `UdpSocket`/`TcpAcceptor` + reliability over
+  live sockets; QUIC is an honest "unavailable" stub (msquic not wired).
+- `okn-audio` mp3/flac/ogg decoders — real (miniaudio + stb_vorbis, verified on
+  fixtures).
+- `okn-asset` — real mtime hot-reload + streaming queues + WAV/font importers.
 
 ---
 

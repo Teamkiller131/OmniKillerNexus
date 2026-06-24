@@ -79,7 +79,10 @@ artifact whose real product is engineering discipline, **not** a shipping tool.
    compiles into `okn-ecs.lib` and its tests run in the gate (part of okn-ecs's
    2447 assertions exercise code no game/slice uses); the native render lib is
    ~82/120 near-empty placeholder `.cpp`. "Defer, don't delete" relabeled dead
-   surface rather than removing it.
+   surface rather than removing it. **◑ Partly resolved (2026-06-23):** the dead
+   **archetype/chunk ECS core was deleted** (15 files / 1090 lines; okn-ecs
+   2447→2325 assertions — the removed ~122 all tested dead code). The native
+   render placeholder stays for now (a deferred fork; under separate review).
 5. **Single-author bus factor + private-NAS hosting** — all 13 submodules resolve
    only from one personal host; **Windows-only in practice** (hard-coded
    `D:/vcpkg` in several CMakeLists; the Linux CI job is the disabled stub).
