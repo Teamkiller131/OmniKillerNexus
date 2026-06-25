@@ -164,15 +164,16 @@ through `AssetIO` and live-hot-reloads `events.json`.
 The most nuanced module. **The live, tested rendering is three header-first paths
 that bypass the native lib and link only `okn-math`** (plus ECS/physics/audio for
 the slice): the 2D sprite path, the 3D mesh path, and the vertical slice — the
-engine's real graphics (see §6). The native **D3D12 lib now builds clean** (the old
-`queue.cpp`/`command_queue.cpp` ODR conflict is gone) and its backend genuinely
-**renders** — a pixel-exact offscreen clear and a rasterized triangle (runtime HLSL
-→ root signature → PSO → `DrawInstanced` → GPU readback, WARP fallback), gated as
-`okn-render-native`. But it is **not a usable backend**: no textures/materials/
-depth, the render graph records no GPU commands, and ~82 `src/*.cpp` are
-placeholder stubs — a clearly-labeled experiment, not the default path
-([ROADMAP Fork 1](ROADMAP.md): delete the placeholders unless a D3D12-first title
-is committed).
+engine's real graphics (see §6). The native lib now compiles **only** the D3D12
+backend (`src/backend/`, 7 files): it genuinely **renders** — a pixel-exact
+offscreen clear and a rasterized triangle (runtime HLSL → root signature → PSO →
+`DrawInstanced` → GPU readback, WARP fallback), gated as `okn-render-native`
+(16 cases / 81 asserts). It is still **not a usable backend** (no textures/
+materials/depth, no persistent frame loop) — a clearly-labeled D3D12 **experiment**,
+not the default path. **[ROADMAP Fork 1](ROADMAP.md) is resolved:** the ~113
+placeholder subsystem `.cpp` (graph/culling/passes/rt/postfx/lighting/material/…
+that recorded no GPU work) + their dead tests were **pruned** (125 files); sokol
+stays the renderer. (Subsystem *headers* remain pending a follow-up header prune.)
 
 ### okn-network — **Partial**
 **Real:** live **asio TCP and UDP** transports (`TcpAcceptor` listen/accept,

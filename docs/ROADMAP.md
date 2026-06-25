@@ -26,8 +26,9 @@
 decoders, asset I/O + hot-reload, network transports, the ECS scheduler, the
 D3D12 clear+triangle), the dead second ECS is gone, and the code got more honest.
 The two structural frontiers v2 named — **cross-platform** and **a game that
-composes the core** — are still open, and a new debt appeared: **placeholder
-halos** (native render ~82 files, network ~85 files) around small real cores.
+composes the core** — are still open, and a new debt surfaced: **placeholder
+halos** around small real cores. okn-render's (~113 files) is now **pruned**
+(Fork 1); okn-network (~47 `.cpp`) and okn-editor (92) remain.
 
 ---
 
@@ -58,16 +59,18 @@ But the honest framing still holds, sharpened:
   `ScriptingBridge` (Lua↔ECS reflection), the audio bus/spatializer/streamer, and
   the `EKO1` scene serializer are all **real but driven by no game** — they are
   unit tests, not capabilities.
-- **The placeholder halos remain.** ~82 near-empty `.cpp` in the native render
-  lib; ~85 in okn-network; `okn-memory` is real but an island (nothing includes
-  it; mimalloc/override default OFF).
+- **The placeholder halos.** okn-render's native lib is now pruned (89→3 near-empty
+  `.cpp`); ~47 remain in okn-network and 92 in okn-editor. `okn-memory` is real but
+  an island (nothing includes it; mimalloc/override default OFF). The
+  `check_no_stub_tus.ps1` inventory tracks all of this.
 
 ### Known dead / placeholder code (the refreshed prune list — see P11)
-- **`okn-render` native lib** — only the D3D12 `render_clear_readback` +
-  `render_triangle_readback` are real (a labeled experiment, **not the default
-  path**). ~82 `src/*.cpp` are 3-line stubs (materials/lighting/shadows/culling/
-  RT/post-fx/descriptor-heaps/allocators); the render graph records **zero GPU
-  commands**; Vulkan/Metal/GL factories submit no work.
+- **`okn-render` native lib** — **pruned (Fork 1 done):** the ~113 placeholder
+  subsystem `.cpp` (materials/lighting/culling/RT/post-fx/graph/passes/… that did
+  no GPU work) + their dead tests were deleted (125 files). The lib now compiles
+  only the D3D12 backend (`src/backend/`) — a labeled clear+triangle experiment,
+  **not the default path**. Residual: the Vulkan/Metal/GL backend skeletons + the
+  orphaned subsystem *headers* (a follow-up header prune).
 - **`okn-network`** — ~85 placeholder files (mux/qos/flow/session/routing/9
   integration bridges) around a real-but-**naive** reliability core (in-order
   only, `ack_bitfield` never used, no congestion control) + real asio TCP/UDP;
@@ -111,13 +114,14 @@ game-as-forcing-function; honesty as a feature; gate everything you claim.
 Three buy-vs-build decisions are live and the roadmap must resolve them, not
 inherit them silently.
 
-- **Fork 1 — Native render backend.** Hand-written D3D12 buys OKN nothing sokol
-  doesn't already give for 2D/3D/slice, and does **not** buy cross-platform (you
-  still owe GL+Metal). **Recommendation:** *delete* the ~82 placeholders + the
-  Vulkan/Metal/GL skeletons now; keep the verified D3D12 clear+triangle as a
-  clearly-labeled experiment. Only finish a native backend if a specific
-  **D3D12-first title** is committed and needs a capability sokol can't express
-  (bindless / GPU-driven culling via `ExecuteIndirect` / DXR).
+- **Fork 1 — Native render backend. ✅ RESOLVED (pruned).** Hand-written D3D12
+  bought OKN nothing sokol doesn't already give for 2D/3D/slice, and didn't buy
+  cross-platform (you'd still owe GL+Metal). **Done:** the ~113 placeholder
+  subsystem `.cpp` + their dead tests were deleted (125 files; okn-render
+  near-empty `.cpp` 89→3), keeping only the D3D12 clear+triangle as a labeled
+  experiment. Revisit only if a specific **D3D12-first title** is committed and
+  needs a capability sokol can't express (bindless / GPU-driven culling via
+  `ExecuteIndirect` / DXR).
 - **Fork 2 — Netcode transport.** A hand-rolled reliable-UDP layer is textbook
   *undifferentiated infra* (ADR-0003) that ENet/GameNetworkingSockets already
   provide — and OKN's is below their floor (in-order only, no bitfield ACK, no
@@ -316,7 +320,7 @@ okn-audio + okn-script + okn-ui + okn-input`, shipping **cross-platform**
 | Physics | **Buy** Jolt | Real wrapper, the reference module. Gaps: char controller, triggers/sensors, layers, MT, determinism flag. Dead native integrator to prune. |
 | 2D render | **Build** glue over **buy** sokol_gfx | Real (sw ref + GPU). Windows/D3D11-only; batcher silently drops >8192 sprites. Needs GL backend. |
 | 3D render | **Build** glue over **buy** sokol_gfx | Real depth-tested mesh path (mario3d). Single Lambert light, no textures/materials/shadows. |
-| Native GPU backend | **Defer/decide (Fork 1)** | D3D12 clear+triangle real (experiment). ~82 placeholder files + GPU-less render graph → delete unless a D3D12 title is committed. |
+| Native GPU backend | **Decided (Fork 1): pruned** | D3D12 clear+triangle kept as a labeled experiment; the ~113 placeholder subsystem .cpp + GPU-less render graph were deleted. Revisit only for a committed D3D12-first title. |
 | Windowing/input | **Buy** sokol_app | Real, DPI-aware. Input action-mapping should be an `okn-input` module, not per-game. |
 | Audio | **Buy** miniaudio | Decode (WAV/MP3/FLAC/OGG) + playback real (6 games). Bus/spatial/stream classes exist but wired into nothing audible. |
 | Scripting | **Buy** sol2/Lua | Runs chunks. `ScriptingBridge`→ECS reflection real but **no game runs Lua**; no live-World bindings yet. |
@@ -359,6 +363,7 @@ okn-audio + okn-script + okn-ui + okn-input`, shipping **cross-platform**
 2. **P10** — wire a **sokol `GLCORE`** impl TU and stand up a **Linux build of the
    foundation + VOIDBORNE** (`--autodemo`, headless) behind a `linux-clang` preset;
    turn the disabled Linux CI stub green.
-3. **P11** — **resolve Fork 1 by deleting the native-render placeholder halo**
-   (~82 `.cpp` + Vulkan/Metal/GL skeletons), keeping the D3D12 clear+triangle as a
-   labeled experiment — the cheapest, highest-signal honesty win on the board.
+3. **P11 ✅ done** — Fork 1 resolved: the native-render placeholder halo was pruned
+   (125 files; okn-render near-empty `.cpp` 89→3, gate still green). **Next halos:**
+   okn-network's ~47 placeholder files and okn-editor's 92 (its viewport is a stub),
+   then wire `check_no_stub_tus.ps1 -Strict` with a baseline into the gate.
