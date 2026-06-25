@@ -207,10 +207,12 @@ rigid bodies (box/sphere/capsule; cylinder/cone/heightfield silently fall back
 to a 0.5 sphere — warned at creation), raycast, **contact events**
 (`drain_contacts()` returns body pairs that began touching this step — the
 gameplay-trigger primitive), **joints** (ball/distance/hinge), **kinematic
-bodies** (moving platforms). **Gaps:** no built-in character controller (games
-roll their own from raycasts), single-threaded, no trigger/sensor events
-(contact-*added* only), `collision_mask` ignored. **Tests:** `okn-physics_tests`,
-16 behavioral cases. **Determinism:** Jolt is deterministic run-to-run on a
+bodies** (moving platforms), and a **`CharacterController`** (Jolt
+`CharacterVirtual`: `create_character`/`character_move`/`character_is_grounded`/…;
+Capsule + Box shapes, `plane_2d` lock — collide-and-slide + auto-step + slope
+clamp; platformer & mario3d run on it). **Gaps:** single-threaded, no
+trigger/sensor events (contact-*added* only), `collision_mask` ignored.
+**Tests:** `okn-physics_tests`, 19 behavioral cases. **Determinism:** Jolt is deterministic run-to-run on a
 fixed platform/build (enough for input-replay netcode) and offers
 `JPH_CROSS_PLATFORM_DETERMINISTIC` to make ARM/x86 match (at a perf cost — it
 disables FMA). OKN does **not** enable that flag, so OKN's build isn't

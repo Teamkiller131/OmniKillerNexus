@@ -17,7 +17,7 @@
 | v2 phase | Status | Reality |
 |---|---|---|
 | **P5** Content & persistence foundation | ◑ partial | Disk-PNG import is real (stb importers). The `okn-ecs` binary scene serializer (`EKO1`) round-trips entities + POD components — **but it is wired into no pipeline and no game**, the editor still can't save/reload a scene across a restart, and there is **no atlas packing**. `scene_importer/scene_pipeline/serialize/deserialize` in okn-asset are 4-line stubs. |
-| **P6** Gameplay systems | ◑ partial | `okn-ui` keyboard/text input **landed**. But the **character controller is still hand-rolled per game** (platformer + mario3d each reinvent it from raycasts), **collision_mask is ignored**, there are **no trigger/sensor volumes** (contact-*added* only), input action-mapping is **duplicated across games, not a module**, and the audio bus/stream/positional classes are wired into nothing audible. |
+| **P6** Gameplay systems | ◑ partial | `okn-ui` keyboard/text input **landed**. The **character controller is now an engine primitive** (`okn-physics` `CharacterController`, Capsule+Box; platformer + mario3d deleted their per-game raycast controllers — see P12). Still: **collision_mask is ignored**, there are **no trigger/sensor volumes** (contact-*added* only), input action-mapping is **duplicated across games, not a module**, and the audio bus/stream/positional classes are wired into nothing audible. |
 | **P7** Forcing-function game | ◑ partial | The **platformer is a complete sprite game** on the `sprite2d + okn-physics + okn-audio` slice, and **VOIDBORNE has the full shell** (title/settings/key-rebind/save) and now runs on `okn-ecs/asset/math`. But **no single game meets the full north-star** *on the engine stack*: the platformer has no title/settings menu and links no ECS/script; VOIDBORNE's shell is UniGUI, not the sprite/physics slice. |
 | **P8** Editor as real content tool | ✗ not started | The editor viewport renders **nothing** — `viewport_panel.cpp` is a 4-line stub and `render_bridge.cpp` returns `nullptr`. (Earlier docs said "rasterizes via ImDrawList"; that overstates it — there is no working viewport renderer at all.) No tilemap, no play-in-editor. |
 | **P9** Cross-platform, CI, the great prune | ◑ partial | **Prune:** the dead archetype/chunk ECS was **deleted** (15 files) ✓; the fake TCP/UDP transports are now **real over asio** and QUIC honestly reports unavailable ✓; but the **native render lib was partly finished, not deleted** (clear+triangle), leaving ~82 placeholder files. **CI:** the gate now compile-gates all 7 games + asserts VOIDBORNE's autodemo ✓ — but it is **still Windows-only**; **no sokol GL backend**, **no Linux build**, and whether the self-hosted gitea runner actually fires per push is **unverified**. The **determinism ADR is still unwritten.** |
@@ -202,9 +202,14 @@ Cheap, high-signal, do it early. Resolve the halos so the tree stops over-statin
 ### P12 — Gameplay primitives in the engine (not per-game)
 Move the duplicated game-side hacks into the modules, so the north-star game (and
 the next one) compose them instead of reinventing them.
-- **`okn-physics` `CharacterController`** (Jolt `CharacterVirtual`: grounded /
-  slope / step / push-out; a 2D-locked variant + a 3D variant). **Delete** the
-  hand-rolled controllers in platformer + mario3d and re-point them at it.
+- ✅ **`okn-physics` `CharacterController`** (Jolt `CharacterVirtual`: grounded /
+  slope / step / collide-and-slide; **Capsule + Box** shapes, `plane_2d` lock for 2D
+  + full-3D). **Done** — `CharacterDesc` + `create_character`/`character_move`/
+  `character_is_grounded`/… on `IPhysicsWorld`; 19 `okn-physics_tests` cases.
+  platformer (2D Box) and mario3d (3D Box) **deleted their hand-rolled raycast
+  controllers** and re-point at it: platformer now clears L0+L1 (was stuck on L1);
+  mario3d autodemo WINs + swingtest rides the hinge-bridge. mario3d reimplements its
+  stomp as a manual overlap since a `CharacterVirtual` isn't a contact body.
 - **Collision layers/masks honored** (an N-layer table driven by
   `collision_group`/`collision_mask`, currently ignored) + **trigger/sensor
   volumes** with **enter/stay/exit** (wire `OnContactPersisted`/`OnContactRemoved`
