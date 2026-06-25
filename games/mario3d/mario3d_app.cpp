@@ -4,9 +4,11 @@
 //
 // Runs on the NEW okn-render mesh3d renderer (perspective camera + depth buffer +
 // directional lighting on sokol_gfx) and uses Jolt in FULL 3D (no z-flattening):
-// the player moves in the X-Z plane and jumps in Y, climbs box platforms, collects
-// coins, stomps goombas (engine CONTACT-EVENTS API), and reaches the goal pillar.
-// A 3D chase camera follows the player.
+// the player is the engine okn-physics CharacterController (a kinematic 3D Box —
+// collide-and-slide + auto-step + grounded query), moving in X-Z and jumping in Y,
+// climbing box platforms, riding the swinging hinge-bridge, collecting coins,
+// stomping goombas (manual overlap), and reaching the goal pillar. The goombas and
+// bridge stay dynamic bodies (stepped each frame). A 3D chase camera follows.
 
 #include <okn/physics/impl/physics_factory.hpp>
 #include <okn/physics/api/physics_world.hpp>
@@ -112,7 +114,7 @@ struct Game {
     InputMap input;
     bool autodemo = false;
     bool swingtest = false;   // spawn on the bridge + trace (verifies walkability)
-    bool player_jumped = false;
+    float vy = 0.0f;          // player vertical velocity (we integrate gravity; the controller is kinematic)
     float trace_t = 0.0f;
     Vec3 cam_pos{0, 10, 18};
     float cam_yaw = 0.0f;     // orbit azimuth around Y (0 = behind the player, +Z)
@@ -268,21 +270,25 @@ void build_world() {
         }
     }
 
-    g.player = add_box(g.spawn, {kPlayerR, kPlayerH, kPlayerR}, true, Kind::Player);
+    // The player IS the engine character controller — a kinematic Box (flat bottom,
+    // lands stably on the box platforms exactly like the old dynamic body). Box
+    // half-extents {kPlayerR, kPlayerH, kPlayerR}: radius=kPlayerR, half_height=
+    // kPlayerH-kPlayerR, so the box spans kPlayerH and character_position is its center.
+    okn::physics::CharacterDesc cd;
+    cd.position = g.spawn;
+    cd.radius = kPlayerR;
+    cd.half_height = kPlayerH - kPlayerR;
+    cd.max_slope = 0.873f;            // ~50 deg
+    cd.step_height = 0.35f;
+    cd.shape = okn::physics::CharacterShape::Box;
+    g.player = g.phys->create_character(cd);
+    g.vy = 0.0f;
 }
 
 void reset_game() { g.score = 0; g.coins_got = 0; g.lives = 3; build_world(); }
 
 bool grounded() {
-    auto* rb = g.phys->get_body(g.player);
-    if (!rb) { return false; }
-    const float y = rb->position.y - kPlayerH - 0.02f;
-    const float o = kPlayerR * 0.7f;
-    const Vec3 pts[5] = {{rb->position.x, y, rb->position.z}, {rb->position.x + o, y, rb->position.z},
-                         {rb->position.x - o, y, rb->position.z}, {rb->position.x, y, rb->position.z + o},
-                         {rb->position.x, y, rb->position.z - o}};
-    for (const Vec3& p : pts) { if (g.phys->raycast(p, {0, -1, 0}, 0.2f).hit) { return true; } }
-    return false;
+    return g.phys->character_is_grounded(g.player);
 }
 
 void hurt() {
@@ -292,15 +298,13 @@ void hurt() {
 }
 
 void respawn() {
-    g.phys->set_transform(g.player, g.spawn, okn::math::Quat{0, 0, 0, 1});
-    g.phys->set_linear_velocity(g.player, {0, 0, 0});
+    g.phys->character_set_position(g.player, g.spawn);
+    g.vy = 0.0f;
     g.iframes = 1.0f;
 }
 
 void update(float dt) {
     if (g.state != State::Playing) { return; }
-    auto* rb = g.phys->get_body(g.player);
-    if (!rb) { return; }
     g.iframes = std::max(0.0f, g.iframes - dt);
     const bool gnd = grounded();
 
@@ -326,13 +330,15 @@ void update(float dt) {
         while (diff < -3.14159f) { diff += 6.28318f; }
         g.player_yaw += diff * std::min(1.0f, dt * 12.0f);
     }
-    float vy = rb->linear_velocity.y;
-    const bool jump = g.input.just(Action::Jump) || (g.autodemo && !g.swingtest && gnd && vy <= 0.1f);
-    if (jump && gnd) { vy = kJump; play(g_jump, 0.35f); }
-    g.player_jumped = (jump && gnd);
-    g.phys->set_linear_velocity(g.player, {mv.x, vy, mv.z});
 
-    // ── goombas patrol along their axis ──
+    // We integrate gravity for the kinematic controller: rest the fall when grounded,
+    // jump off the ground, then apply gravity. X-Z come straight from the move dir.
+    if (gnd && g.vy <= 0.0f) { g.vy = 0.0f; }
+    const bool jump = g.input.just(Action::Jump) || (g.autodemo && !g.swingtest && gnd && g.vy <= 0.1f);
+    if (jump && gnd) { g.vy = kJump; play(g_jump, 0.35f); }
+    g.vy += kGravity * dt;
+
+    // ── goombas patrol along their axis (dynamic bodies — stepped just below) ──
     for (auto& gb : g.goombas) {
         if (gb.dead) { continue; }
         if (auto* b = g.phys->get_body(gb.body)) {
@@ -346,80 +352,67 @@ void update(float dt) {
         }
     }
 
+    // Step the dynamic world (goombas + the swinging bridge), then move the kinematic
+    // player through the updated world: collide-and-slide + auto-step from the engine.
     g.phys->step(dt);
-    rb = g.phys->get_body(g.player);
-    g.phys->set_angular_velocity(g.player, {0, 0, 0});
-    g.phys->set_transform(g.player, rb->position, okn::math::Quat{0, 0, 0, 1});
+    g.phys->character_move(g.player, {mv.x, g.vy, mv.z}, dt);
+    const Vec3 pos = g.phys->character_position(g.player);
 
-    // Manually dampen the bridge planks (no damping field in the API) so the hinge
-    // chain doesn't resonate and fling the rider — it still sags + wobbles softly.
+    // Dampen the bridge planks (no damping field in the API) so the hinge chain doesn't
+    // resonate — it still sags + gives softly. The kinematic player can't be flung by it
+    // (it only moves by its own velocity), so the old upward-launch cancel is gone.
     for (const auto& bp : g.bridge) {
         if (auto* b = g.phys->get_body(bp.body)) {
             g.phys->set_linear_velocity(bp.body, b->linear_velocity * 0.88f);
             g.phys->set_angular_velocity(bp.body, b->angular_velocity * 0.82f);
         }
     }
-    // Even damped, a stiff hinge bridge can pop the rider upward. While the player is
-    // anywhere over the bridge span (and isn't deliberately jumping), cancel any
-    // upward launch velocity — the bridge still gives + wobbles softly underfoot, but
-    // it can never fling you off. A position zone (not a ground ray) so it still
-    // catches the player after they've already left contact.
-    if (!g.bridge.empty() && !g.player_jumped
-        && rb->position.x > g.bridge_left.x - 0.7f && rb->position.x < g.bridge_right.x + 0.7f
-        && std::abs(rb->position.z - g.bridge_left.z) < 1.7f
-        && rb->position.y < 2.0f && rb->linear_velocity.y > 0.4f) {
-        g.phys->set_linear_velocity(g.player, {rb->linear_velocity.x, 0.0f, rb->linear_velocity.z});
-    }
 
-    // ── CONTACT EVENTS: stomp vs hurt ──
-    for (const auto& c : g.phys->drain_contacts()) {
-        const auto ka = g.kind.find(c.body_a), kb = g.kind.find(c.body_b);
-        if (ka == g.kind.end() || kb == g.kind.end()) { continue; }
-        u32 gbomb = 0;
-        if (ka->second == Kind::Player && kb->second == Kind::Goomba) { gbomb = c.body_b; }
-        else if (kb->second == Kind::Player && ka->second == Kind::Goomba) { gbomb = c.body_a; }
-        else { continue; }
-        auto* pb = g.phys->get_body(g.player);
-        auto* eb = g.phys->get_body(gbomb);
-        if (!pb || !eb) { continue; }
-        if (g.autodemo || (pb->position.y > eb->position.y + 0.3f && pb->linear_velocity.y < 3.0f)) {
-            for (auto& gb : g.goombas) {
-                if (gb.body == gbomb && !gb.dead) {
-                    gb.dead = true; g.kind.erase(gbomb); g.phys->destroy_body(gbomb);
-                    g.score += 100; g.phys->set_linear_velocity(g.player, {pb->linear_velocity.x, kStompBounce, pb->linear_velocity.z});
-                    play(g_stomp, 0.5f); break;
-                }
-            }
+    // ── stomp vs hurt (manual overlap — the kinematic player isn't a contact body) ──
+    // Goomba half-extents are 0.4; add a small contact epsilon so resting-on-top and
+    // side-contact both register at the collide-and-slide boundary.
+    for (auto& gb : g.goombas) {
+        if (gb.dead) { continue; }
+        auto* eb = g.phys->get_body(gb.body);
+        if (!eb) { continue; }
+        const Vec3 d = pos - eb->position;
+        const bool overlap = std::fabs(d.x) < kPlayerR + 0.52f
+                          && std::fabs(d.z) < kPlayerR + 0.52f
+                          && std::fabs(d.y) < kPlayerH + 0.52f;
+        if (!overlap) { continue; }
+        if (g.autodemo || (pos.y > eb->position.y + 0.3f && g.vy < 3.0f)) {
+            gb.dead = true; g.kind.erase(gb.body); g.phys->destroy_body(gb.body);
+            g.score += 100; g.vy = kStompBounce; play(g_stomp, 0.5f);
         } else { hurt(); }
     }
+    (void)g.phys->drain_contacts();   // clear+discard goomba/bridge body contacts (player uses overlap)
 
     // ── coins (3D overlap) ──
-    rb = g.phys->get_body(g.player);
     for (auto& coin : g.coins) {
         if (coin.taken) { continue; }
-        if ((coin.pos - rb->position).length() < 0.9f) { coin.taken = true; ++g.coins_got; g.score += 50; play(g_coin, 0.4f); }
+        if ((coin.pos - pos).length() < 0.9f) { coin.taken = true; ++g.coins_got; g.score += 50; play(g_coin, 0.4f); }
     }
 
     // ── springs: launch up when you land on one ──
     for (const auto& sp : g.springs) {
         const float topy = sp.pos.y + sp.half.y;
-        const float feet = rb->position.y - kPlayerH;
-        if (std::fabs(rb->position.x - sp.pos.x) < sp.half.x + kPlayerR &&
-            std::fabs(rb->position.z - sp.pos.z) < sp.half.z + kPlayerR &&
-            feet < topy + 0.18f && feet > topy - 0.5f && rb->linear_velocity.y < 1.0f) {
-            g.phys->set_linear_velocity(g.player, {rb->linear_velocity.x, kSpringBounce, rb->linear_velocity.z});
+        const float feet = pos.y - kPlayerH;
+        if (std::fabs(pos.x - sp.pos.x) < sp.half.x + kPlayerR &&
+            std::fabs(pos.z - sp.pos.z) < sp.half.z + kPlayerR &&
+            feet < topy + 0.18f && feet > topy - 0.5f && g.vy < 1.0f) {
+            g.vy = kSpringBounce;
             play(g_spring, 0.5f);
         }
     }
 
     // ── win / fall ──
-    if ((g.goal - rb->position).length() < 2.8f) {   // flagpole touch
+    if ((g.goal - pos).length() < 2.8f) {   // flagpole touch
         g.state = State::Win; play(g_win, 0.6f);
         if (g.autodemo) { std::ofstream("mario3d_result.txt") << "WIN"; }
     }
-    if (rb->position.y < -6.0f) {
+    if (pos.y < -6.0f) {
         --g.lives;
-        if (g.lives <= 0) { g.state = State::GameOver; if (g.autodemo) { std::ofstream("mario3d_result.txt") << "GAMEOVER z=" << rb->position.z; } }
+        if (g.lives <= 0) { g.state = State::GameOver; if (g.autodemo) { std::ofstream("mario3d_result.txt") << "GAMEOVER z=" << pos.z; } }
         else { respawn(); }
     }
 
@@ -428,7 +421,7 @@ void update(float dt) {
     const Vec3 offset{g.cam_dist * cp * std::sin(g.cam_yaw),
                       g.cam_dist * sp,
                       g.cam_dist * cp * std::cos(g.cam_yaw)};
-    const Vec3 want = rb->position + offset;
+    const Vec3 want = pos + offset;
     g.cam_pos = g.cam_pos + (want - g.cam_pos) * std::min(1.0f, dt * 10.0f);   // smooth follow
 
     if (g.autodemo) {
@@ -436,7 +429,7 @@ void update(float dt) {
         if (g.trace_t >= 0.5f) {
             g.trace_t = 0.0f;
             std::ofstream f("mario3d_trace.txt", std::ios::app);
-            if (f) { f << "x=" << rb->position.x << " z=" << rb->position.z << " y=" << rb->position.y << " score=" << g.score
+            if (f) { f << "x=" << pos.x << " z=" << pos.z << " y=" << pos.y << " score=" << g.score
                        << " coins=" << g.coins_got << " lives=" << g.lives << " state=" << static_cast<int>(g.state) << "\n"; }
         }
     }
@@ -486,8 +479,7 @@ void draw_spring(const Vec3& pos, const Vec3& half) {
 // ── render ─────────────────────────────────────────────────────────────────────
 void render() {
     const float w = sapp_widthf(), h = sapp_heightf();
-    auto* rb = g.phys->get_body(g.player);
-    const Vec3 ppos = rb ? rb->position : g.spawn;
+    const Vec3 ppos = g.phys->character_position(g.player);
 
     Camera3D cam;
     cam.position = g.cam_pos;
@@ -532,9 +524,9 @@ void render() {
     g_mesh->draw_box(g.goal + Vec3{0, 1.5f, 0}, {0.10f, 2.2f, 0.10f}, rgba(235, 235, 235));
     g_mesh->draw_box(g.goal + Vec3{0.55f, 2.9f, 0}, {0.6f, 0.42f, 0.06f}, rgba(70, 205, 95));
     // player (Mario model; flicker on i-frames)
-    if (rb) {
+    {
         const bool blink = g.iframes > 0.0f && (static_cast<int>(g.iframes * 14.0f) % 2 == 0);
-        if (!blink) { draw_mario(rb->position, g.player_yaw); }
+        if (!blink) { draw_mario(ppos, g.player_yaw); }
     }
 
     sg_end_pass();
