@@ -247,9 +247,12 @@ capabilities.
 - **Scheduler in anger:** ✅ the **per-frame O(n²) re-levelization** is fixed (conflict
   levels are now cached + rebuilt only on `invalidate_order()`; test asserts one
   levelization across many frames) and the **busy spin-wait** barrier is replaced by the
-  job system's CV-backed `wait_all()`. *Still to do:* bridge the ECS scheduler onto
-  okn-platform's Chase-Lev work-stealing pool (unify the two `IJobSystem` interfaces) and
-  rebuild the **query hot path** on cached dense storage (adopt the typed `SparseSet<T>`).
+  job system's CV-backed `wait_all()`. ✅ The **query hot path** now caches each
+  component's store pointer once per `query()` (was a hash-map `find()` per component per
+  entity) and derefs through the cached sparse-set stores — verified by a 3-lens
+  adversarial review + a 600-entity intersection test. *Still to do:* bridge the ECS
+  scheduler onto okn-platform's Chase-Lev work-stealing pool (unify the two `IJobSystem`
+  interfaces).
 - **Acceptance:** a scene survives a restart through the engine format; one game
   runs **N real systems through the scheduler** with a **parallel-speedup
   assertion in the gate**; a query microbenchmark locks in the iteration gain.
