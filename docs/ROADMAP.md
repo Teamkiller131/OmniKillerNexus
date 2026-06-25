@@ -210,11 +210,13 @@ the next one) compose them instead of reinventing them.
   controllers** and re-point at it: platformer now clears L0+L1 (was stuck on L1);
   mario3d autodemo WINs + swingtest rides the hinge-bridge. mario3d reimplements its
   stomp as a manual overlap since a `CharacterVirtual` isn't a contact body.
-- **Collision layers/masks honored** (an N-layer table driven by
-  `collision_group`/`collision_mask`, currently ignored) + **trigger/sensor
-  volumes** with **enter/stay/exit** (wire `OnContactPersisted`/`OnContactRemoved`
-  + Jolt sensor bodies). This finally makes "Jolt contacts-as-triggers" — OKN's
-  claimed edge — *fully* real.
+- ✅ **Collision layers/masks honored** (32-layer `collision_group`/`collision_mask`,
+  mutual-mask test in the Jolt `GroupFilter`) + **trigger/sensor volumes** (`is_sensor`
+  → Jolt `mIsSensor`, no collision response) with **enter/stay/exit** (`ContactEvent.phase`;
+  `OnContactPersisted`/`OnContactRemoved`, Stay/Exit gated to sensors so collision
+  consumers aren't flooded). **Done** — makes "Jolt contacts-as-triggers" *fully* real;
+  gated by a trigger enter/stay/exit headless test (+4 tests, suite 23/83). The
+  ObjectLayer scheme + CharacterController filter were left untouched (no regression).
 - **`okn-input` action-mapping module** (bind actions → keys/buttons, rebindable,
   serializable) replacing the per-game raw key checks duplicated across ≥4 games.
 - **`okn-ui` menus** — now that text input exists, build a reusable settings/title
