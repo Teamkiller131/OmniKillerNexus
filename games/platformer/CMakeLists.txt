@@ -15,7 +15,7 @@ if(SOKOL_INCLUDE_DIR AND Stb_FOUND AND WIN32)
         "${RENDER_DIR}/gpu/sokol_impl_app.cpp")
     target_include_directories(platformer PRIVATE
         "${RENDER_DIR}/include" "${SOKOL_INCLUDE_DIR}" "${Stb_INCLUDE_DIR}")
-    target_link_libraries(platformer PRIVATE okn-math okn-audio okn-physics)
+    target_link_libraries(platformer PRIVATE okn-math okn-audio okn-physics okn-input)
     target_compile_features(platformer PRIVATE cxx_std_23)
     if(MSVC)
         target_compile_options(platformer PRIVATE /WX-)   # sokol/stb headers aren't /WX-clean

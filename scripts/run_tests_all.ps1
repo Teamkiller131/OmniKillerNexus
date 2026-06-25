@@ -43,6 +43,7 @@ $targets = [ordered]@{
     "okn-audio"    = "okn-audio_tests"
     "okn-script"   = "okn-script_tests"
     "okn-physics"  = "okn-physics_tests"
+    "okn-input"    = "okn-input_tests"          # action-map: bind/edge/rebind/save-load (headless)
     "okn-network"  = "okn-network_tests"        # headless transport over loopback ASIO
     "okn-ui"       = "okn-ui_tests"             # widget / layout / input logic (headless)
     "okn-render2d" = "okn-render2d_tests"       # 2D sprite path (software backend)

@@ -15,6 +15,7 @@
 #include <okn/physics/dynamics/body.hpp>
 #include <okn/physics/shapes/box.hpp>
 #include <okn/math/algebra/quat.hpp>
+#include <okn/input/action_map.hpp>
 
 #include <okn/render/mesh3d/mesh_renderer.hpp>
 #include <okn/render/mesh3d/camera3d.hpp>
@@ -69,25 +70,7 @@ enum class Kind { Other, Player, Goomba };
 enum class State { Playing, Win, GameOver };
 
 enum class Action { Left, Right, Fwd, Back, Jump, CamL, CamR, Count };
-struct InputMap {
-    sapp_keycode keys[static_cast<int>(Action::Count)][2]{};
-    bool down[static_cast<int>(Action::Count)]{};
-    bool pressed[static_cast<int>(Action::Count)]{};
-    void bind(Action a, sapp_keycode k0, sapp_keycode k1) {
-        keys[static_cast<int>(a)][0] = k0; keys[static_cast<int>(a)][1] = k1;
-    }
-    void on_key(sapp_keycode k, bool d) {
-        for (int a = 0; a < static_cast<int>(Action::Count); ++a) {
-            if (keys[a][0] == k || keys[a][1] == k) {
-                if (d && !down[a]) { pressed[a] = true; }
-                down[a] = d;
-            }
-        }
-    }
-    void end_frame() { for (auto& p : pressed) { p = false; } }
-    bool held(Action a) const { return down[static_cast<int>(a)]; }
-    bool just(Action a) const { return pressed[static_cast<int>(a)]; }
-};
+using InputMap = okn::input::ActionMap<Action>;   // engine module okn-input (was a per-game struct)
 
 struct Box { Vec3 center; Vec3 half; Rgba8 color; };
 struct Coin { Vec3 pos; bool taken = false; };

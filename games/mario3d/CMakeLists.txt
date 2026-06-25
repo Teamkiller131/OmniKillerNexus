@@ -14,7 +14,7 @@ if(SOKOL_INCLUDE_DIR AND WIN32)
         "${RENDER_DIR}/gpu/sokol_impl_app.cpp")
     target_include_directories(mario3d PRIVATE
         "${RENDER_DIR}/include" "${SOKOL_INCLUDE_DIR}")
-    target_link_libraries(mario3d PRIVATE okn-math okn-audio okn-physics)
+    target_link_libraries(mario3d PRIVATE okn-math okn-audio okn-physics okn-input)
     target_compile_features(mario3d PRIVATE cxx_std_23)
     if(MSVC)
         target_compile_options(mario3d PRIVATE /WX-)   # sokol headers aren't /WX-clean

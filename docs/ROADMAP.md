@@ -17,7 +17,7 @@
 | v2 phase | Status | Reality |
 |---|---|---|
 | **P5** Content & persistence foundation | ◑ partial | Disk-PNG import is real (stb importers). The `okn-ecs` binary scene serializer (`EKO1`) round-trips entities + POD components — **but it is wired into no pipeline and no game**, the editor still can't save/reload a scene across a restart, and there is **no atlas packing**. `scene_importer/scene_pipeline/serialize/deserialize` in okn-asset are 4-line stubs. |
-| **P6** Gameplay systems | ◑ partial | `okn-ui` keyboard/text input **landed**. The **character controller is now an engine primitive** (`okn-physics` `CharacterController`, Capsule+Box; platformer + mario3d deleted their per-game raycast controllers — see P12). Still: **collision_mask is ignored**, there are **no trigger/sensor volumes** (contact-*added* only), input action-mapping is **duplicated across games, not a module**, and the audio bus/stream/positional classes are wired into nothing audible. |
+| **P6** Gameplay systems | ◑ partial | Most P12 primitives now landed: `okn-ui` keyboard/text input, the **`CharacterController`** (Capsule+Box; platformer + mario3d deleted their raycast controllers), **collision layers/masks honored** + **trigger/sensor volumes** with enter/stay/exit, and an **`okn-input` action-map module** (platformer + mario3d deleted their copy-pasted `InputMap`). Still open: the audio bus/stream/positional classes are wired into nothing audible, and `okn-ui` has no reusable settings/title menu yet. |
 | **P7** Forcing-function game | ◑ partial | The **platformer is a complete sprite game** on the `sprite2d + okn-physics + okn-audio` slice, and **VOIDBORNE has the full shell** (title/settings/key-rebind/save) and now runs on `okn-ecs/asset/math`. But **no single game meets the full north-star** *on the engine stack*: the platformer has no title/settings menu and links no ECS/script; VOIDBORNE's shell is UniGUI, not the sprite/physics slice. |
 | **P8** Editor as real content tool | ✗ not started | The editor viewport renders **nothing** — `viewport_panel.cpp` is a 4-line stub and `render_bridge.cpp` returns `nullptr`. (Earlier docs said "rasterizes via ImDrawList"; that overstates it — there is no working viewport renderer at all.) No tilemap, no play-in-editor. |
 | **P9** Cross-platform, CI, the great prune | ◑ partial | **Prune:** the dead archetype/chunk ECS was **deleted** (15 files) ✓; the fake TCP/UDP transports are now **real over asio** and QUIC honestly reports unavailable ✓; but the **native render lib was partly finished, not deleted** (clear+triangle), leaving ~82 placeholder files. **CI:** the gate now compile-gates all 7 games + asserts VOIDBORNE's autodemo ✓ — but it is **still Windows-only**; **no sokol GL backend**, **no Linux build**, and whether the self-hosted gitea runner actually fires per push is **unverified**. The **determinism ADR is still unwritten.** |
@@ -217,8 +217,12 @@ the next one) compose them instead of reinventing them.
   consumers aren't flooded). **Done** — makes "Jolt contacts-as-triggers" *fully* real;
   gated by a trigger enter/stay/exit headless test (+4 tests, suite 23/83). The
   ObjectLayer scheme + CharacterController filter were left untouched (no regression).
-- **`okn-input` action-mapping module** (bind actions → keys/buttons, rebindable,
-  serializable) replacing the per-game raw key checks duplicated across ≥4 games.
+- ✅ **`okn-input` action-mapping module** — `ActionMap<Action>` (header-only template,
+  backend-agnostic `KeyCode=uint32_t`): `bind`/`rebind`/`key_of`, `on_key`,
+  `held`/`just`/`just_released`, `end_frame`, `clear_state`, and binary `save`/`load`.
+  **Done** — platformer + mario3d deleted their copy-pasted `InputMap` struct and run on
+  it (the same `using InputMap = ActionMap<Action>;` drives both); 8 headless tests in
+  the gate (suite #17). harvest/mario can adopt it next.
 - **`okn-ui` menus** — now that text input exists, build a reusable settings/title
   menu (sliders, key-capture rows) on the real widget set.
 - **Acceptance:** platformer + mario3d both move via the module controller (their

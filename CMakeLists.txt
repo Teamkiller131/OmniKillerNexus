@@ -79,12 +79,13 @@ add_subdirectory(modules/okn-core)
 add_subdirectory(modules/okn-math)
 add_subdirectory(modules/okn-memory)
 add_subdirectory(modules/okn-physics)
+add_subdirectory(modules/okn-input)
 
 if(OKN_ENABLE_CLIENT_SDK)
     add_library(okn-client-sdk INTERFACE)
     target_link_libraries(okn-client-sdk INTERFACE
             okn-core-interfaces okn-core okn-math okn-memory
-            okn-render okn-audio okn-ui okn-ecs okn-script okn-network okn-asset okn-platform okn-physics
+            okn-render okn-audio okn-ui okn-ecs okn-script okn-network okn-asset okn-platform okn-physics okn-input
     )
 endif()
 
@@ -100,7 +101,7 @@ if(OKN_ENABLE_EDITOR_SDK)
     add_library(okn-editor-sdk INTERFACE)
     target_link_libraries(okn-editor-sdk INTERFACE
             okn-core-interfaces okn-core okn-math okn-memory
-            okn-editor okn-render okn-audio okn-ui okn-ecs okn-script okn-network okn-asset okn-platform okn-physics
+            okn-editor okn-render okn-audio okn-ui okn-ecs okn-script okn-network okn-asset okn-platform okn-physics okn-input
     )
 endif()
 

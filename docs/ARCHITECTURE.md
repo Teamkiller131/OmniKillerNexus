@@ -221,6 +221,17 @@ disables FMA). OKN does **not** enable that flag, so OKN's build isn't
 cross-platform deterministic as configured — which gates *lockstep* netcode
 unless the flag is turned on (see [ROADMAP §10](ROADMAP.md)).
 
+### okn-input — **Substantial**
+A tiny, backend-agnostic action map (`include/okn/input/action_map.hpp`). `ActionMap<A>`
+binds gameplay actions (your own scoped enum) to a primary + alternate `KeyCode`
+(`uint32_t` — so the header pulls in **no** windowing/input backend; pass platform
+keycodes through as ints). Feed `on_key(code, down)`; query `held` / `just` (rising) /
+`just_released` (falling); `end_frame()` clears the per-frame edges; `clear_state()`
+drops held state on focus loss; binary `save`/`load` persist the bindings (action-count
+guarded). Replaces the `InputMap` struct that was copy-pasted across the demos —
+**platformer + mario3d run on it** (the same `using InputMap = ActionMap<Action>;`).
+**Tests:** `okn-input_tests`, 8 cases (edges, alt key, rebind, save/load round-trip).
+
 ### okn-audio — **Partial**
 **Real:** miniaudio engine + playback, DSP (RBJ biquad EQ, Freeverb,
 compressor), stereo pan, a real **WAV (RIFF/PCM 8/16-bit) decoder**, and a real

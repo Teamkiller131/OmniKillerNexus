@@ -13,6 +13,7 @@
 #include <okn/physics/dynamics/body.hpp>
 #include <okn/physics/shapes/box.hpp>
 #include <okn/math/algebra/quat.hpp>
+#include <okn/input/action_map.hpp>
 
 #include <okn/render/sprite2d/sprite_batch.hpp>
 #include <okn/render/sprite2d/camera2d.hpp>
@@ -72,30 +73,9 @@ constexpr unsigned kPlayerTex = 1;
 const char* kSavePath = "platformer_save.dat";
 const char* kSpritePath = "platformer_player.png";
 
-// ── P6: input action-map ────────────────────────────────────────────────────────
+// ── P6: input action-map (engine module okn-input; was a per-game struct) ────────
 enum class Action { Left, Right, Jump, Count };
-
-struct InputMap {
-    sapp_keycode keys[static_cast<int>(Action::Count)][2]{};
-    bool down[static_cast<int>(Action::Count)]{};
-    bool pressed[static_cast<int>(Action::Count)]{};  // rising edge this frame
-
-    void bind(Action a, sapp_keycode primary, sapp_keycode alt) {
-        keys[static_cast<int>(a)][0] = primary;
-        keys[static_cast<int>(a)][1] = alt;
-    }
-    void on_key(sapp_keycode k, bool is_down) {
-        for (int a = 0; a < static_cast<int>(Action::Count); ++a) {
-            if (keys[a][0] == k || keys[a][1] == k) {
-                if (is_down && !down[a]) { pressed[a] = true; }
-                down[a] = is_down;
-            }
-        }
-    }
-    void end_frame() { for (auto& p : pressed) { p = false; } }
-    bool held(Action a) const { return down[static_cast<int>(a)]; }
-    bool just(Action a) const { return pressed[static_cast<int>(a)]; }
-};
+using InputMap = okn::input::ActionMap<Action>;
 
 // ── Level data ──────────────────────────────────────────────────────────────────
 struct Plat { float cx, cy, hx, hy; };
