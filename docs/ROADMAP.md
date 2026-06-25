@@ -232,11 +232,13 @@ the next one) compose them instead of reinventing them.
 ### P13 — Content pipeline + the scheduler in anger
 Turn the disconnected serializers and the untested scheduler into real, exercised
 capabilities.
-- **Project/scene pipeline:** promote the `okn-ecs` `EKO1` serializer into an
-  `okn-asset` `SceneAsset` + a project manifest (scenes + asset-references-by-id);
-  add **entity-ref remapping on load** (today it assigns fresh ids and drops
-  refs); route through `AssetIO` + `PackWriter`. Hit the v2 test the editor still
-  fails: **save a scene, restart, reload it intact.**
+- **Project/scene pipeline:** ✅ **entity-ref remapping on load** landed — the EKO1
+  loader is now two-pass (build a saved-id→new-id remap, then patch component fields
+  declared via `register_entity_ref_fields<T>`), so cross-entity references survive a
+  save/restart/reload instead of keeping stale ids (test in `okn-ecs_tests`). *Still
+  to do:* promote the serializer into an `okn-asset` `SceneAsset` + a project manifest
+  (scenes + asset-references-by-id) routed through `AssetIO`/`PackWriter`, and wire the
+  editor's **save a scene, restart, reload it intact** test onto it.
 - **Runtime atlas packing** so the sprite batcher can draw many textures in few
   draws (and disk PNGs stop defeating the batcher).
 - **Scheduler in anger:** bridge the ECS scheduler onto okn-platform's Chase-Lev
