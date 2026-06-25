@@ -6,14 +6,16 @@
 # UNDERSCORE ("okn-<m>_tests"). Naive scripts that assume "okn-core_tests" fail.
 # This gate special-cases that mapping so the whole suite stays green in one shot.
 #
-# okn-editor is intentionally excluded (needs a GPU/windowing backend). Everything
-# else runs headless and IS in the gate: okn-network (loopback ASIO), okn-ui (pure
-# widget / layout / input logic), and the native D3D12 backend (okn-render-native:
-# offscreen clear + triangle readback via the WARP software adapter).
+# okn-editor's windowed runtime is excluded (needs a GPU/window), but its headless
+# --selftest (scene serialize round-trip + multi-level undo/redo) IS best-effort
+# gated below. Everything else runs headless and IS in the module gate: okn-network
+# (loopback ASIO), okn-ui (pure widget / layout / input logic), and the native D3D12
+# backend (okn-render-native: offscreen clear + triangle readback via WARP).
 #
 # After the module suites it ALSO compile-gates all 7 games (a broken game build
-# must fail CI) and behaviour-gates VOIDBORNE headlessly (--selftest/--autodemo
-# result markers). The 6 sokol games need a GPU/window, so they are compile-only.
+# must fail CI) and behaviour-gates VOIDBORNE + the editor headlessly (their
+# --selftest/--autodemo markers). The 6 sokol games need a GPU/window, so they are
+# compile-only.
 #
 # Usage:
 #   .\scripts\run_tests_all.ps1                 # configure (if needed) + build + run
@@ -143,6 +145,26 @@ if (-not $SkipGames) {
             }
         }
         Pop-Location
+    }
+
+    # okn-editor (UniGUI / Dear ImGui) also exposes a headless --selftest that
+    # returns before the window loop — it checks the scene serialize round-trip and
+    # the multi-level undo/redo. Best-effort: build it (needs unigui); if the exe
+    # appears, assert its marker. A unigui-less config simply skips it.
+    Write-Host "[*] Building okn-editor-app ..." -ForegroundColor Yellow
+    Invoke-Dev "cmake --build `"$buildPath`" --target okn-editor-app"
+    if (Test-Path (Join-Path $binDir "okn-editor-app.exe")) {
+        Push-Location $binDir
+        $editorOut = (& ".\okn-editor-app.exe" --selftest 2>&1 | Out-String)
+        Pop-Location
+        if ($editorOut -like "*EDITOR SELFTEST OK*") {
+            $summary += "  okn-editor   --selftest OK"
+        } else {
+            $failures += "okn-editor --selftest"
+            $summary += "  okn-editor   --selftest MARKER FAILED"
+        }
+    } else {
+        $summary += "  okn-editor   SKIPPED (not built — needs unigui)"
     }
 }
 
