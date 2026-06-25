@@ -2,7 +2,8 @@
 
 // Platformer — the roadmap-v2 "forcing-function" game (P5+P6+P7).
 //
-// Pulls together: a Jolt-backed 2D CHARACTER CONTROLLER (move/jump/ground-ray) and
+// Pulls together: the ENGINE'S okn-physics CharacterController (a kinematic capsule
+// with collide-and-slide + auto-step + grounded query — no hand-rolled raycast) and
 // an INPUT ACTION-MAP (P6); a sprite LOADED FROM DISK via stb + a binary PROGRESS
 // SAVE (P5); and a COMPLETE small game loop — several levels, a goal, fall-respawn,
 // win, and persistence (P7). Rendered on the engine's 2D GPU sprite path.
@@ -105,6 +106,7 @@ struct Game {
     std::vector<std::unique_ptr<okn::physics::Box>> shapes;
     std::vector<Plat> plats;
     okn::math::u32 player = 0;
+    float vy = 0.0f;       // player vertical velocity (we integrate gravity; the controller is kinematic)
     Vec2 spawn{0, 0};
     Vec2 goal{0, 0};
     int level = 0;
@@ -238,7 +240,6 @@ void build_levels() {
                         {-4.0f, 1.5f}, {10.0f, 8.6f}});
 }
 
-std::unique_ptr<okn::physics::Box> g_player_shape;
 
 void load_level(int idx) {
     g.phys = okn::physics::make_jolt_physics_world();
@@ -253,31 +254,27 @@ void load_level(int idx) {
     g.goal = lv.goal;
     for (const auto& p : lv.plats) { add_static_box(p.cx, p.cy, p.hx, p.hy); }
 
-    if (!g_player_shape) { g_player_shape = std::make_unique<okn::physics::Box>(Vec3{kPlayerHX, kPlayerHY, 0.6f}); }
-    RigidBody d;
-    d.type = BodyType::kDynamic;
-    d.position = {lv.spawn.x, lv.spawn.y, 0.0f};
-    d.mass = 1.0f; d.inv_mass = 1.0f;
-    d.material.friction = 0.0f;     // no wall-stick; control is explicit
-    d.material.restitution = 0.0f;
-    d.ccd_enabled = true;
-    d.set_shape(g_player_shape.get());
-    g.player = g.phys->create_body(d);
+    // The player IS the engine character controller — a kinematic capsule. radius =
+    // player half-width; cylinder half-height makes the capsule total half-height the
+    // player half-height, so its center (character_position) rests where the old box
+    // center did. plane_2d locks it to Z=0; step_height auto-climbs the platform lips.
+    okn::physics::CharacterDesc cd;
+    cd.position = {lv.spawn.x, lv.spawn.y, 0.0f};
+    cd.radius = kPlayerHX;
+    cd.half_height = kPlayerHY - kPlayerHX;   // total half-height = kPlayerHY
+    cd.max_slope = 0.873f;                     // ~50 deg
+    cd.step_height = 0.3f;
+    cd.plane_2d = true;
+    cd.shape = okn::physics::CharacterShape::Box;   // flat bottom: stable on ledges
+    g.player = g.phys->create_character(cd);
+    g.vy = 0.0f;
 }
 
 bool grounded() {
-    if (auto* rb = g.phys->get_body(g.player)) {
-        const Vec3 origin{rb->position.x, rb->position.y - kPlayerHY - 0.02f, 0.0f};
-        const auto hit = g.phys->raycast(origin, {0.0f, -1.0f, 0.0f}, 0.16f);
-        return hit.hit;
-    }
-    return false;
+    return g.phys->character_is_grounded(g.player);
 }
 
 void update(float dt) {
-    auto* rb = g.phys->get_body(g.player);
-    if (rb == nullptr) { return; }
-
     const bool gnd = grounded();
     float vx = 0.0f;
     const bool want_left = g.input.held(Action::Left);
@@ -285,22 +282,21 @@ void update(float dt) {
     if (want_left) { vx -= kMoveSpeed; g.facing_right = false; }
     if (want_right) { vx += kMoveSpeed; g.facing_right = true; }
 
-    float vy = rb->linear_velocity.y;
-    const bool want_jump = g.input.just(Action::Jump) || (g.autodemo && gnd && vy <= 0.1f);
-    if (want_jump && gnd) { vy = kJumpSpeed; play(g_jump_sfx, 0.4f); }
-    g.phys->set_linear_velocity(g.player, {vx, vy, 0.0f});
+    // We integrate gravity ourselves (the controller is kinematic): rest the fall when
+    // grounded, jump off the ground, then apply gravity. The controller collide-and-
+    // slides this velocity, auto-steps platform lips, and keeps us out of the geometry.
+    if (gnd && g.vy <= 0.0f) { g.vy = 0.0f; }
+    const bool want_jump = g.input.just(Action::Jump) || (g.autodemo && gnd && g.vy <= 0.1f);
+    if (want_jump && gnd) { g.vy = kJumpSpeed; play(g_jump_sfx, 0.4f); }
+    g.vy += kGravity * dt;
+    g.phys->character_move(g.player, {vx, g.vy, 0.0f}, dt);
 
-    g.phys->step(dt);
-
-    // Keep the character upright (lock rotation) — read the post-step transform.
-    rb = g.phys->get_body(g.player);
-    g.phys->set_angular_velocity(g.player, {0.0f, 0.0f, 0.0f});
-    g.phys->set_transform(g.player, rb->position, okn::math::Quat{0, 0, 0, 1});
+    const Vec3 pos = g.phys->character_position(g.player);
 
     // Win on a flagpole touch: horizontally at the goal and at/above the pole base
     // (forgiving for a jumping player).
-    const float gdx = std::fabs(rb->position.x - g.goal.x);
-    if (!g.won && gdx < 1.0f && rb->position.y > g.goal.y - 1.8f) {
+    const float gdx = std::fabs(pos.x - g.goal.x);
+    if (!g.won && gdx < 1.0f && pos.y > g.goal.y - 1.8f) {
         g.won = true;
         play(g_win_sfx, 0.5f);
         if (g.level >= g.best) { g.best = g.level + 1; save_progress(); }
@@ -309,9 +305,9 @@ void update(float dt) {
     }
 
     // Fall off -> respawn at the level spawn.
-    if (rb->position.y < -4.0f) {
-        g.phys->set_transform(g.player, {g.spawn.x, g.spawn.y, 0.0f}, okn::math::Quat{0, 0, 0, 1});
-        g.phys->set_linear_velocity(g.player, {0, 0, 0});
+    if (pos.y < -4.0f) {
+        g.phys->character_set_position(g.player, {g.spawn.x, g.spawn.y, 0.0f});
+        g.vy = 0.0f;
     }
 
     // Verification trace (auto-demo only): record the player's trajectory so the
@@ -322,8 +318,8 @@ void update(float dt) {
             g.trace_t = 0.0f;
             std::ofstream f("platformer_trace.txt", std::ios::app);
             if (f) {
-                f << "lvl=" << (g.level + 1) << " x=" << rb->position.x
-                  << " y=" << rb->position.y << " grounded=" << (gnd ? 1 : 0)
+                f << "lvl=" << (g.level + 1) << " x=" << pos.x
+                  << " y=" << pos.y << " grounded=" << (gnd ? 1 : 0)
                   << " best=" << g.best << "\n";
             }
         }
@@ -366,8 +362,9 @@ void render() {
     quad(world, {g.goal.x, g.goal.y - 0.3f}, 0.12f, 1.4f, rgba(180, 150, 90));
     quad(world, {g.goal.x + 0.4f, g.goal.y + 0.25f}, 0.7f, 0.45f, rgba(230, 80, 80));
 
-    if (auto* rb = g.phys->get_body(g.player)) {
-        quad(world, {rb->position.x, rb->position.y}, kPlayerHX * 2.4f, kPlayerHY * 2.2f,
+    {
+        const Vec3 pp = g.phys->character_position(g.player);
+        quad(world, {pp.x, pp.y}, kPlayerHX * 2.4f, kPlayerHY * 2.2f,
              rgba(255, 255, 255), 0.0f, kPlayerTex, !g.facing_right);
     }
 
@@ -384,7 +381,7 @@ void render() {
 
     Camera2D world_cam;       // follows the player
     float cx = g.spawn.x, cy = 4.0f;
-    if (auto* rb = g.phys->get_body(g.player)) { cx = rb->position.x; cy = std::max(3.5f, rb->position.y); }
+    { const Vec3 pp = g.phys->character_position(g.player); cx = pp.x; cy = std::max(3.5f, pp.y); }
     world_cam.center = {cx, cy};
     world_cam.viewport_h = vh;
     world_cam.viewport_w = vw;
