@@ -175,19 +175,24 @@ placeholder subsystem `.cpp` (graph/culling/passes/rt/postfx/lighting/material/�
 that recorded no GPU work) + their dead tests were **pruned** (125 files); sokol
 stays the renderer. (Subsystem *headers* remain pending a follow-up header prune.)
 
-### okn-network — **Partial**
-**Real:** live **asio TCP and UDP** transports (`TcpAcceptor` listen/accept,
-`UdpSocket` bind/send_to/recv_from — the old null-`impl_` ctor bug is fixed) and a
-transport-agnostic **`ReliabilityLayer`** (seq/ACK/retransmit) verified end-to-end
-over loopback UDP; the suite (`okn-network_tests`, loopback ASIO) **is in the
-build-phys gate**. The reliability core is **naive**, though — in-order delivery
-only (out-of-order packets dropped), the `ack_bitfield` is unused, and there's no
-congestion control — so it is below a production transport's floor (see
-[ROADMAP Fork 2](ROADMAP.md): buy GameNetworkingSockets/ENet, build only the
-state-sync glue). **Stub:** QUIC honestly reports unavailable (`connect()` →
-`false`; msquic never wired). ~85 placeholder files (mux/qos/flow/session/routing/
-bridges) carry no game consumer. Networking is deferred until single-player ships
-([ROADMAP P17](ROADMAP.md)).
+### okn-network — **Partial → now genuinely online**
+**Real:** live **asio TCP and UDP** transports (`TcpAcceptor` listen/accept +
+non-blocking `try_accept`, `UdpSocket` bind/send_to/recv_from) and a
+transport-agnostic **`ReliabilityLayer`** that now delivers reliably **and in order
+over loss + reordering** — out-of-order packets are held in a reorder buffer and
+released once the gap is filled, a **32-bit selective-ack bitfield** retires many
+in-flight packets per ack (and survives a lost ack), with wraparound-safe
+serial-number sequencing. A real **`Session`** ties it together: a server binds +
+accepts clients (each with its own persistent reliability layer) and a client
+connects and **exchanges messages bidirectionally over real TCP loopback**. Verified
+both over a fault-injected lossy+reordering link and over live loopback UDP/TCP;
+`okn-network_tests` (**106 cases / 872 asserts**, loopback ASIO) **is in the
+build-phys gate**. **Still missing:** congestion control / RTT estimation, ECS
+state-sync/snapshot primitives, and a game consumer; QUIC is an honest stub
+(`connect()` → `false`; msquic never wired); ~45 placeholder subsystem files
+(mux/qos/routing/bridges) remain. Netcode-for-a-game stays deferred until
+single-player ships ([ROADMAP P17](ROADMAP.md)); the buy-vs-build call is
+[Fork 2](ROADMAP.md) (the owner chose to keep building).
 
 ### okn-physics — **Verified** *(the one fully-real Layer-3 module)*
 **Jolt-backed**, the proven foundation that gameplay is built on. **Real:**
