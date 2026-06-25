@@ -244,10 +244,12 @@ capabilities.
   texture_id and the batcher emits one DrawGroup instead of N (header-only, deterministic,
   4 headless tests incl. a 3-textures→1-draw assertion). *Still to do:* hook it into the
   asset/sprite-load path so disk PNGs are atlased automatically.
-- **Scheduler in anger:** bridge the ECS scheduler onto okn-platform's Chase-Lev
-  work-stealing pool (unify the two `IJobSystem` interfaces); fix the **busy
-  spin-wait** and the **per-frame O(n²) re-levelization**; rebuild the **query hot
-  path** on cached dense storage (adopt the typed `SparseSet<T>`).
+- **Scheduler in anger:** ✅ the **per-frame O(n²) re-levelization** is fixed (conflict
+  levels are now cached + rebuilt only on `invalidate_order()`; test asserts one
+  levelization across many frames) and the **busy spin-wait** barrier is replaced by the
+  job system's CV-backed `wait_all()`. *Still to do:* bridge the ECS scheduler onto
+  okn-platform's Chase-Lev work-stealing pool (unify the two `IJobSystem` interfaces) and
+  rebuild the **query hot path** on cached dense storage (adopt the typed `SparseSet<T>`).
 - **Acceptance:** a scene survives a restart through the engine format; one game
   runs **N real systems through the scheduler** with a **parallel-speedup
   assertion in the gate**; a query microbenchmark locks in the iteration gain.
