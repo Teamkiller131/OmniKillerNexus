@@ -239,8 +239,11 @@ capabilities.
   to do:* promote the serializer into an `okn-asset` `SceneAsset` + a project manifest
   (scenes + asset-references-by-id) routed through `AssetIO`/`PackWriter`, and wire the
   editor's **save a scene, restart, reload it intact** test onto it.
-- **Runtime atlas packing** so the sprite batcher can draw many textures in few
-  draws (and disk PNGs stop defeating the batcher).
+- ✅ **Runtime atlas packing** landed — `build_atlas()` shelf-packs source images into
+  one atlas Image + per-source normalized uv_rects, so atlased sprites share one
+  texture_id and the batcher emits one DrawGroup instead of N (header-only, deterministic,
+  4 headless tests incl. a 3-textures→1-draw assertion). *Still to do:* hook it into the
+  asset/sprite-load path so disk PNGs are atlased automatically.
 - **Scheduler in anger:** bridge the ECS scheduler onto okn-platform's Chase-Lev
   work-stealing pool (unify the two `IJobSystem` interfaces); fix the **busy
   spin-wait** and the **per-frame O(n²) re-levelization**; rebuild the **query hot
