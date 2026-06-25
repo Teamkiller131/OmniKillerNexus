@@ -122,14 +122,15 @@ inherit them silently.
   experiment. Revisit only if a specific **D3D12-first title** is committed and
   needs a capability sokol can't express (bindless / GPU-driven culling via
   `ExecuteIndirect` / DXR).
-- **Fork 2 — Netcode transport.** A hand-rolled reliable-UDP layer is textbook
-  *undifferentiated infra* (ADR-0003) that ENet/GameNetworkingSockets already
-  provide — and OKN's is below their floor (in-order only, no bitfield ACK, no
-  congestion control). **Recommendation:** *buy* GameNetworkingSockets (or ENet),
-  delete the ~85-file hand-rolled stack, and build only the **differentiated**
-  glue (ECS state snapshot/delta on the sparse-set World). **After** single-player
-  ships and the determinism ADR is written. (This reverses `DECISIONS.md:50`'s
-  "finish the core" — make it an explicit ADR, don't drift.)
+- **Fork 2 — Netcode transport. ✅ DECIDED: build.** The recommendation was to
+  *buy* GameNetworkingSockets/ENet, but the **owner chose to build** — and the
+  reliability layer was brought up to a usable floor: reorder buffer, 32-bit
+  selective-ack bitfield, adaptive RTO (RFC 6298 + Karn), AIMD congestion control,
+  and keepalive/liveness, plus the differentiated **ECS state snapshot/delta**
+  codec — all adversarially reviewed (10 bugs fixed) and gate-tested. Remaining: a
+  real multiplayer demo game wiring it to the ECS, and the determinism ADR before
+  any lockstep. (QUIC stays an honest stub; ~45 placeholder subsystem files still
+  to prune.)
 - **Fork 3 — ECS storage.** Keep the sparse-set World; the no-archetype decision
   is defensible but was made **without a benchmark**. **Recommendation:** first
   fix the hot path (cached dense iteration; adopt the unused typed `SparseSet<T>`)
@@ -330,7 +331,7 @@ okn-audio + okn-script + okn-ui + okn-input`, shipping **cross-platform**
 | Assets | **Buy** stb/assimp | Importers + I/O + hot-reload + pack format real. No atlas/compression; scene pipeline is stubs; streaming is single-threaded. |
 | UI | **Build** | Widgets + layout + keyboard/text real. **No game uses it for menus yet.** |
 | Editor | **Buy** Dear ImGui via UniGUI (Qt artifacts linger) | Shell only; **viewport renders nothing** (stub). Pick ImGui-vs-Qt; wire the real renderer. |
-| Networking | **Decide (Fork 2)** | Reliability core real but **naive**; TCP/UDP real; QUIC honest. ~85 placeholder files. Buy GNS/ENet; build only state-sync glue. After single-player + the ADR. |
+| Networking | **Decided (Fork 2): build** | Reliable-over-loss/reorder + adaptive RTO + AIMD congestion + keepalive/liveness + online Session + ECS state-sync, all reviewed + gated (116/916). QUIC honest stub; ~45 placeholder files left. Needs a demo game + the determinism ADR. |
 | Cross-platform | **Build** (presets + GL) over portable sources | `okn-platform` coded for POSIX/Apple but never built off Windows. The blocker is the render/windowing edge + `D:/vcpkg` + no Linux CI. |
 
 ---
