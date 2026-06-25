@@ -1,0 +1,53 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-${presetName}",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "windows-msvc",
+      "displayName": "Windows (MSVC + Ninja)",
+      "description": "Run from a MSVC dev shell (vcvars64) so Ninja finds cl.exe. Requires $env:VCPKG_ROOT.",
+      "inherits": "base",
+      "binaryDir": "${sourceDir}/build-phys",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    },
+    {
+      "name": "linux-clang",
+      "displayName": "Linux (Clang + Ninja)",
+      "description": "Foundation + headless games. Requires $env{VCPKG_ROOT}, clang, ninja.",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      },
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" }
+    },
+    {
+      "name": "macos-clang",
+      "displayName": "macOS (AppleClang + Ninja)",
+      "description": "Foundation + headless games. Requires $env{VCPKG_ROOT}, ninja.",
+      "inherits": "base",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "windows-msvc", "configurePreset": "windows-msvc" },
+    { "name": "linux-clang", "configurePreset": "linux-clang" },
+    { "name": "macos-clang", "configurePreset": "macos-clang" }
+  ],
+  "testPresets": [
+    { "name": "windows-msvc", "configurePreset": "windows-msvc", "output": { "outputOnFailure": true } },
+    { "name": "linux-clang", "configurePreset": "linux-clang", "output": { "outputOnFailure": true } },
+    { "name": "macos-clang", "configurePreset": "macos-clang", "output": { "outputOnFailure": true } }
+  ]
+}

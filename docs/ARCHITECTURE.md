@@ -47,15 +47,17 @@ Each module is rated by **what the test gate and a live build actually prove**:
 | **Partial** | A real spine exists; a meaningful fraction is stub/fake. |
 | **Stub/Dead** | Present in the tree but non-functional or unreferenced. |
 
-The build-phys gate has **15 module test suites, all green** (~800 cases /
+The build-phys gate has **16 module test suites, all green** (~800 cases /
 ~6,100 assertions) and additionally **compiles all 7 games** and asserts
 **VOIDBORNE's headless `--selftest`/`--autodemo` markers** (the 6 sokol games need
 a GPU/window, so they are compile-gated only). Suites build to
 `build-phys/bin/*_tests.exe` and are **run directly** (they are not registered with
 ctest — `ctest -N` reports 0). The suites don't map 1:1 to modules: `okn-render`
-contributes **four** (`render2d`, `render2d_gpu`, `slice`, `lua_slice`), while
-`okn-ui` and `okn-network` have **no** suite in this gate (their tests, where
-they exist, live in-submodule). See [BUILD.md](BUILD.md).
+contributes **five** (`render2d`, `render2d_gpu`, `render-native` — the native
+D3D12 offscreen clear+triangle via the WARP software adapter — `slice`,
+`lua_slice`); `okn-ui` and `okn-network` run headless and **are** in the gate;
+only `okn-editor` is excluded (it needs a GPU/windowing backend). See
+[BUILD.md](BUILD.md).
 
 ---
 
@@ -158,20 +160,33 @@ dedup + callbacks). **Missing:** basisu compression. **Tests:** `okn-asset_tests
 113 cases / 394 assertions. **Consumed by a game:** **VOIDBORNE** loads all data
 through `AssetIO` and live-hot-reloads `events.json`.
 
-### okn-render — **Partial** *(the GPU-backend lib is Stub/Dead; the 2D/3D/slice paths are Real)*
-The most nuanced module. The native **D3D12/Vulkan static lib is dead** —
-duplicate-symbol stubs (`queue.cpp` vs `command_queue.cpp`) make it
-**unlinkable**; nothing ships against it. **The live, tested rendering is three
-header-first paths that bypass that lib and link only `okn-math`** (plus ECS/
-physics/audio for the slice). These are the engine's real graphics — see §6.
+### okn-render — **Partial** *(the native backend is a labeled experiment; the 2D/3D/slice paths are Real)*
+The most nuanced module. **The live, tested rendering is three header-first paths
+that bypass the native lib and link only `okn-math`** (plus ECS/physics/audio for
+the slice): the 2D sprite path, the 3D mesh path, and the vertical slice — the
+engine's real graphics (see §6). The native **D3D12 lib now builds clean** (the old
+`queue.cpp`/`command_queue.cpp` ODR conflict is gone) and its backend genuinely
+**renders** — a pixel-exact offscreen clear and a rasterized triangle (runtime HLSL
+→ root signature → PSO → `DrawInstanced` → GPU readback, WARP fallback), gated as
+`okn-render-native`. But it is **not a usable backend**: no textures/materials/
+depth, the render graph records no GPU commands, and ~82 `src/*.cpp` are
+placeholder stubs — a clearly-labeled experiment, not the default path
+([ROADMAP Fork 1](ROADMAP.md): delete the placeholders unless a D3D12-first title
+is committed).
 
 ### okn-network — **Partial**
-**Real:** the transport-agnostic reliability core — `ReliabilityLayer`
-(seq/ACK/retransmit), `Mux`, `RingBuffer`, `FlowControl` (token bucket), `QoS`
-priority (~80% of the over-asio design; tested in-submodule, not in the
-build-phys gate). **Fake:** the QUIC/TCP/UDP transports (`connect()` → `true`
-no-ops; `UdpSocket` has a null-`impl_` construction bug; msquic never wired).
-Deferred until single-player ships ([ROADMAP P17](ROADMAP.md)).
+**Real:** live **asio TCP and UDP** transports (`TcpAcceptor` listen/accept,
+`UdpSocket` bind/send_to/recv_from — the old null-`impl_` ctor bug is fixed) and a
+transport-agnostic **`ReliabilityLayer`** (seq/ACK/retransmit) verified end-to-end
+over loopback UDP; the suite (`okn-network_tests`, loopback ASIO) **is in the
+build-phys gate**. The reliability core is **naive**, though — in-order delivery
+only (out-of-order packets dropped), the `ack_bitfield` is unused, and there's no
+congestion control — so it is below a production transport's floor (see
+[ROADMAP Fork 2](ROADMAP.md): buy GameNetworkingSockets/ENet, build only the
+state-sync glue). **Stub:** QUIC honestly reports unavailable (`connect()` →
+`false`; msquic never wired). ~85 placeholder files (mux/qos/flow/session/routing/
+bridges) carry no game consumer. Networking is deferred until single-player ships
+([ROADMAP P17](ROADMAP.md)).
 
 ### okn-physics — **Verified** *(the one fully-real Layer-3 module)*
 **Jolt-backed**, the proven foundation that gameplay is built on. **Real:**

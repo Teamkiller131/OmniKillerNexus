@@ -12,7 +12,7 @@ gate, and launching the demo games. For *what* the modules are, see
 |---|---|
 | **C++26 compiler** | MSVC (Visual Studio 18 2026) — the primary target. The build uses `/std:c++latest` (= C++26 preview); the literal `CMAKE_CXX_STANDARD 23` is only the CMake→MSVC mapping, **not** a downgrade ([ADR-0001](DECISIONS.md)). |
 | **CMake ≥ 3.20** | Generator: **Ninja** (recommended). |
-| **vcpkg** (manifest mode) | The root `vcpkg.json` declares every third-party dep; vcpkg installs them into `build-phys/vcpkg_installed/` at configure time. Default root used here: `D:\vcpkg`. |
+| **vcpkg** (manifest mode) | The root `vcpkg.json` declares every third-party dep; vcpkg installs them into `build-phys/vcpkg_installed/` at configure time. Point **`VCPKG_ROOT`** at your vcpkg checkout (the build scripts and `CMakePresets.json` read it, and fall back to `D:\vcpkg`). |
 | **Submodules** | `git submodule update --init --recursive` — the `okn-*` modules **and** `third_party/TeamkillerUniGUI` (needed for the editor and `games/voidborne`). |
 
 > **Use a dedicated build directory.** This repo's canonical out-of-source dir is
@@ -24,17 +24,25 @@ gate, and launching the demo games. For *what* the modules are, see
 
 ## 2. Configure (one time)
 
-MSVC + Ninja needs the MSVC environment. From a developer prompt **or** by
-sourcing `vcvars64.bat` first:
+The project ships a **`CMakePresets.json`** (`windows-msvc`, `linux-clang`,
+`macos-clang`); each reads `$env{VCPKG_ROOT}` for the vcpkg toolchain. MSVC + Ninja
+needs the MSVC environment, so set `VCPKG_ROOT`, source `vcvars64.bat`, then
+configure with the preset:
 
 ```bat
+set VCPKG_ROOT=D:\vcpkg
 :: load the MSVC toolchain (adjust the VS path to your install)
 "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"
 
-:: configure into build-phys with the vcpkg toolchain
+cmake --preset windows-msvc          :: configures into build-phys
+```
+
+The preset is equivalent to the explicit form (still supported):
+
+```bat
 cmake -S . -B build-phys -G Ninja ^
   -DCMAKE_BUILD_TYPE=Debug ^
-  -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake
+  -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake
 ```
 
 Key root CMake options (all default **ON** except install):

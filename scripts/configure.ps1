@@ -8,13 +8,17 @@ param(
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-$vcpkg_toolchain = "D:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+# vcpkg toolchain: prefer $env:VCPKG_ROOT (portable / CI / non-author hosts);
+# fall back to D:/vcpkg so the author's existing flow keeps working unchanged.
+$vcpkg_root = if ($env:VCPKG_ROOT) { $env:VCPKG_ROOT } else { "D:/vcpkg" }
+$vcpkg_toolchain = "$vcpkg_root/scripts/buildsystems/vcpkg.cmake"
 
 Write-Host "=== OmniKillerNexus Configure (Ninja) ===" -ForegroundColor Cyan
 
 # 检查 vcpkg toolchain
 if (-not (Test-Path $vcpkg_toolchain)) {
     Write-Host "[ERROR] vcpkg toolchain not found at: $vcpkg_toolchain" -ForegroundColor Red
+    Write-Host "        Set `$env:VCPKG_ROOT to your vcpkg checkout (or install vcpkg at D:/vcpkg)." -ForegroundColor Red
     exit 1
 }
 Write-Host "[OK] vcpkg toolchain" -ForegroundColor Green

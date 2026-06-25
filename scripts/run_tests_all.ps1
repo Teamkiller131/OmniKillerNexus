@@ -6,9 +6,10 @@
 # UNDERSCORE ("okn-<m>_tests"). Naive scripts that assume "okn-core_tests" fail.
 # This gate special-cases that mapping so the whole suite stays green in one shot.
 #
-# okn-editor and the native render backend are intentionally excluded (need GPU
-# backends / windowing). okn-network (loopback ASIO) and okn-ui (pure widget /
-# layout / input logic) run headless, so they ARE in the gate.
+# okn-editor is intentionally excluded (needs a GPU/windowing backend). Everything
+# else runs headless and IS in the gate: okn-network (loopback ASIO), okn-ui (pure
+# widget / layout / input logic), and the native D3D12 backend (okn-render-native:
+# offscreen clear + triangle readback via the WARP software adapter).
 #
 # After the module suites it ALSO compile-gates all 7 games (a broken game build
 # must fail CI) and behaviour-gates VOIDBORNE headlessly (--selftest/--autodemo
@@ -68,7 +69,8 @@ function Invoke-Dev([string]$cmd) {
 # Configure if there's no cache yet.
 if (-not (Test-Path (Join-Path $buildPath "CMakeCache.txt"))) {
     Write-Host "[*] Configuring $BuildDir ..." -ForegroundColor Yellow
-    $toolchain = "D:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+    $vcpkgRoot = if ($env:VCPKG_ROOT) { $env:VCPKG_ROOT } else { "D:/vcpkg" }
+    $toolchain = "$vcpkgRoot/scripts/buildsystems/vcpkg.cmake"
     $cfg = "cmake -S `"$root`" -B `"$buildPath`" -G Ninja -DCMAKE_BUILD_TYPE=$Config " +
            "-DCMAKE_TOOLCHAIN_FILE=$toolchain"
     Invoke-Dev $cfg

@@ -40,7 +40,7 @@ exists alongside it:
 
 Evidence: **7 buildable demo games** across 5 genres (flappy, knockdown,
 platformer, mario, mario3d, harvest, voidborne); **~800 test cases / 6109
-assertions, `--no-skip` clean**, across 15 module suites + 7 game compiles +
+assertions, `--no-skip` clean**, across 16 module suites + 7 game compiles +
 VOIDBORNE's `--selftest`/`--autodemo`, all green in the gate
 (`scripts/run_tests_all.ps1`); a real 3D game (mario3d) on the depth-tested
 mesh path with Jolt joints/kinematic platforms; VOIDBORNE running on the engine

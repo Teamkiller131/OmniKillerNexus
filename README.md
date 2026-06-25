@@ -51,13 +51,13 @@ genre-agnostic and physics is opt-in. Full details + how to run: **[docs/GAMES.m
 git clone <repo-url> OmniKillerNexus && cd OmniKillerNexus
 git submodule update --init --recursive
 
-:: load MSVC (adjust to your VS install), then configure into build-phys
+:: point vcpkg at your checkout (any path), then load MSVC
+set VCPKG_ROOT=D:\vcpkg
 "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"
-cmake -S . -B build-phys -G Ninja -DCMAKE_BUILD_TYPE=Debug ^
-  -DCMAKE_TOOLCHAIN_FILE=D:/vcpkg/scripts/buildsystems/vcpkg.cmake
+cmake --preset windows-msvc                  :: configure into build-phys (uses %VCPKG_ROOT%)
 
 cmake --build build-phys -j                  :: build everything
-pwsh scripts/run_tests_all.ps1               :: run the 13-suite test gate (all green)
+pwsh scripts/run_tests_all.ps1               :: run the 16-suite test gate (all green)
 
 cmake --build build-phys --target flappy     :: build + play a game
 build-phys\bin\flappy.exe
