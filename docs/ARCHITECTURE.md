@@ -47,10 +47,11 @@ Each module is rated by **what the test gate and a live build actually prove**:
 | **Partial** | A real spine exists; a meaningful fraction is stub/fake. |
 | **Stub/Dead** | Present in the tree but non-functional or unreferenced. |
 
-The build-phys gate has **16 module test suites, all green** (~800 cases /
-~6,100 assertions) and additionally **compiles all 7 games** and asserts
-**VOIDBORNE's headless `--selftest`/`--autodemo` markers** (the 6 sokol games need
-a GPU/window, so they are compile-gated only). Suites build to
+The build-phys gate has **17 module test suites, all green** (~850 cases /
+~6,800 assertions; the 17th is `okn-input`, and many suites grew this cycle) and
+additionally **compiles all 7 games** and asserts **VOIDBORNE's headless
+`--selftest`/`--autodemo` markers** plus **okn-editor's `--selftest`** (the 6 sokol
+games need a GPU/window, so they are compile-gated only). Suites build to
 `build-phys/bin/*_tests.exe` and are **run directly** (they are not registered with
 ctest — `ctest -N` reports 0). The suites don't map 1:1 to modules: `okn-render`
 contributes **five** (`render2d`, `render2d_gpu`, `render-native` — the native
@@ -162,9 +163,13 @@ compile no-op when the optional ports are absent), **WAV + TrueType importers**,
 mesh pipeline (vertex-cache opt / normals / tangents / LOD), pack-file read/write,
 LRU cache, registry, dependency graph, **real mtime hot-reload** (`AssetIO::
 file_mtime` + `HotReload`), and **streaming queues** (mip/chunk/upload with
-dedup + callbacks). **Missing:** basisu compression. **Tests:** `okn-asset_tests`,
-113 cases / 394 assertions. **Consumed by a game:** **VOIDBORNE** loads all data
-through `AssetIO` and live-hot-reloads `events.json`.
+dedup + callbacks). **Scenes are now a first-class asset:** `SceneImporter` (was a
+stub) validates the EKO1 header and carries the scene bytes verbatim (ECS-agnostic —
+a consumer with okn-ecs deserializes them); a scene bundles through `PackWriter` as a
+`kScene` entry and re-imports (serialize → pack → unpack → import). **Missing:** basisu
+compression; a project manifest. **Tests:** `okn-asset_tests`, 117 cases / 417
+assertions. **Consumed by a game:** **VOIDBORNE** loads all data through `AssetIO` and
+live-hot-reloads `events.json`.
 
 ### okn-render — **Partial** *(the native backend is a labeled experiment; the 2D/3D/slice paths are Real)*
 The most nuanced module. **The live, tested rendering is three header-first paths
@@ -241,18 +246,27 @@ guarded). Replaces the `InputMap` struct that was copy-pasted across the demos �
 ### okn-audio — **Partial**
 **Real:** miniaudio engine + playback, DSP (RBJ biquad EQ, Freeverb,
 compressor), stereo pan, a real **WAV (RIFF/PCM 8/16-bit) decoder**, and a real
-**bus mixer** (sums routed sounds scaled by bus×master, clamps). **Fake:**
-mp3/flac/ogg decoders return empty; platform backends are bool-flip stubs.
-**Tests:** `okn-audio_tests`, ~106 cases.
+**bus mixer** — buses now form a **hierarchy** (a sound's gain = `master_volume` ×
+the product of its bus's volume up the parent chain) with **ducking** (`set_duck`
+dips a bus while another has audio), summed and clamped. **Wired into nothing
+audible yet:** the bus model + spatializer are CPU/headless-tested but not routed
+through `ma_sound_group`/`ma_sound` (P14 windowed follow-up); mp3/flac/ogg decoders
+return empty; platform backends are bool-flip stubs.
+**Tests:** `okn-audio_tests`, 49 cases / 465 assertions.
 
-### okn-script — **Partial**
+### okn-script — **Partial → Lua now drives the live ECS**
 **sol2 over Lua 5.4 is the only runtime** (JS/QuickJS + CPython were deleted —
 they were `return true` fakes; [ADR-0007](DECISIONS.md)). **Real:** `LuaContext`
 is sol2-backed so `load_string`/`load_file` actually *run* chunks; `EngineBindings`
-are real & callable (`vec3()`/`vec3_*`, `okn.log`/`okn.version`, `okn_input.*`,
-`entity(id)`) — implemented as Lua tables/functions (not `new_usertype`, which
-crashes at `lua_close` with this sol2/Lua build). **Thin:** sandbox, debugger,
-binding-gen. **Tests:** `okn-script_tests`, ~11 cases.
+are real & callable (`vec3()`/`vec3_*`, `okn.log`, `okn_input.*`). **`bind_ecs()`**
+(header `binding/ecs_binding.hpp`) bridges `okn-ecs`'s `ScriptingBridge` to sol2 so a
+Lua script **creates/destroys entities and adds/has/queries components by name on the
+live `World`** — `Entity` and components are real sol2 `new_usertype`s here (the
+earlier "usertype crashes at `lua_close`" note no longer holds; the ecs-binding test
+runs them through `destroy_context`). A headless test also shows a **hot-reloadable Lua
+rules file** driving the ECS each tick, reloaded to swap rules while the World persists.
+**Thin:** sandbox, debugger, binding-gen. **Still missing:** a *game* whose rules live in
+Lua. **Tests:** `okn-script_tests`, 16 cases / 56 assertions.
 
 ### okn-ui — **Partial** *(submodule — carries pre-existing local edits; do not modify)*
 **Real & tested:** widget tree, 11 widgets emitting `DrawCommand`s, 3 layout
