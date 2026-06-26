@@ -127,12 +127,16 @@ integration itself (P15).
 ## 6. Phased plan (forward — current status + acceptance)
 
 ### P10 — Cross-platform foundation — ✗ the biggest remaining gap *(headless-partial)*
-The prerequisite for the north star's "Linux" half. Largely untouched: the live render path
-is D3D11-only, there is no sokol `GLCORE` TU, no Linux build, and `D:/vcpkg` is still
-hard-coded across scripts/CMake (13 files). **First slices (verifiable on Windows):** purge
-`D:/vcpkg` → `$VCPKG_ROOT`; cross-compile the sprite/mesh shader pairs to GLSL (validate on
-D3D11/dummy); add a `sokol_impl_gl.cpp` (`SOKOL_GLCORE`). **Then (needs a Linux runner):** a
-`linux-clang` preset, a headless VOIDBORNE `--autodemo` on Linux, hosted matrix CI.
+The prerequisite for the north star's "Linux" half. The live render path is D3D11-only, there
+is no sokol `GLCORE` TU, and no Linux build. ✅ **`D:/vcpkg` purge:** the hard-coded toolchain
+ref in the GitHub CI workflow + the `doctest_DIR` fallbacks in 4 module CMakeLists now drive
+off `$VCPKG_ROOT` (configure/run_tests already did; okn-platform's CMakeLists is left as the
+one remaining — it carries a protected pre-existing `BUILD_SAMPLES` edit, so its line can't be
+committed without that edit). **Remaining (needs the GL backend / a Linux runner):** add a
+`sokol_impl_gl.cpp` (`SOKOL_GLCORE`) and the GLSL sprite/mesh shader variants **together**, so
+the GLSL is actually exercised (adding unexercised GLSL strings on the D3D11-only path now
+would be a placeholder, against the no-capability-without-a-consumer rule); a `linux-clang`
+preset; a headless VOIDBORNE `--autodemo` on Linux; hosted matrix CI.
 **Acceptance:** green CI on Windows AND Linux; VOIDBORNE `--autodemo` passes on Linux.
 
 ### P11 — The great prune II — ◑ partial
@@ -242,9 +246,10 @@ the renderer) · lockstep multiplayer (state-sync first) · resurrecting the arc
 1. ✅ **P14 audio — the spatializer math** landed (`okn-audio` `spatializer.hpp`):
    listener-relative pan + inverse distance attenuation, headless-tested. The remaining
    `ma_sound`/`ma_sound_group` wiring is windowed.
-2. **P10 cheap slice** (fully verifiable on Windows): purge the 13 hard-coded `D:/vcpkg`
-   references → `$VCPKG_ROOT`; cross-compile the sprite/mesh shaders to GLSL on the D3D11/dummy
-   path. Unblocks every non-author build and de-risks the GL backend.
+2. ◑ **P10 cheap slice** — ✅ the `D:/vcpkg` purge landed (CI workflow + 4 module CMakeLists
+   → `$VCPKG_ROOT`; okn-platform's left, protected). The GLSL shader variants are deferred to
+   land **with** the `SOKOL_GLCORE` backend (so they're exercised, not a placeholder) — the
+   bigger P10 step that needs a GL/Linux runner.
 3. **P11 honesty** — wire `check_no_stub_tus.ps1 -Strict` (baseline-diffed) into the gate;
    prune `okn-network`'s ~45 placeholder files + the `okn-editor` Qt artifacts.
 4. **P15 kickoff (the big one)** — pick the north-star title (promote the platformer is the
