@@ -142,11 +142,14 @@ keyed by a typeid-hash store id; host-endian, same-build save games).
 conflict-based level grouping (cached, rebuilt only when the system set changes) →
 **okn-platform's `WorkStealingThreadPool`** (the unified `IJobSystem`; the ECS module's
 old duplicate pool was deleted), joined per level by a CV-backed `wait_all()`.
-**ScriptingBridge:** a runtime component-reflection surface — name→`ComponentTypeId`
-resolution against the live store + a registration callback (no longer a stub).
+**ScriptingBridge:** a runtime component-reflection surface for scripts — register a
+component under a name (keyed by the World's store id), then create/destroy entities and
+**add / read-write / query components by name** on the live `World` (backed by type-erased
+`World` ops: `component_data_by_id`, `add_component_by_id`, `entities_with`). The sol2/Lua
+binding on top is the next step.
 **Removed (2026-06-23):** the dead archetype/chunk `Storage` second ECS core was
 **deleted** — the live sparse-set `World` is the one ECS core ([ADR-0004](DECISIONS.md)).
-**Tests:** `okn-ecs_tests`, 58 cases / 3142 assertions (incl. serialization
+**Tests:** `okn-ecs_tests`, 60 cases / 3168 assertions (incl. serialization
 round-trip, the cached-store query intersection test, and the parallel scheduler
 over okn-platform's real work-stealing pool).
 **Consumed by a game:** **VOIDBORNE** models its 20 crew as ECS entities with a
