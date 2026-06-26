@@ -269,10 +269,12 @@ capabilities.
 ### P14 — Audio and scripting become real features
 Wire the dead-but-real classes into the audible/runtime path, each proven by a
 game.
-- **Audio:** expose `ma_sound_group` buses (SFX / Music / Master) with ducking;
-  drop `NO_SPATIALIZATION` and feed `ma_sound` 3D position/listener so the
-  spatializer math actually drives gain/pan; stream BGM with
-  `MA_SOUND_FLAG_STREAM`.
+- **Audio:** ◑ the **bus model** is now real + headless-tested — `AudioMixer` buses form
+  a hierarchy (SFX/Music parented under Master; gain chains to the root) with **ducking**
+  (`set_duck` dips a bus while another has audio), proven by mixed-amplitude tests. *Still
+  to do (windowed):* route each bus through a `ma_sound_group` so it's audible, drop
+  `NO_SPATIALIZATION` and feed `ma_sound` 3D position/listener so the spatializer drives
+  gain/pan, and stream BGM with `MA_SOUND_FLAG_STREAM`.
 - **Scripting:** ✅ `ScriptingBridge` → sol2 bridged — `bind_ecs()` lets a Lua script
   create/destroy entities and add/has/query components by name on the **live World**
   (read/write of component fields via per-component sol2 usertypes); the ECS side gained
