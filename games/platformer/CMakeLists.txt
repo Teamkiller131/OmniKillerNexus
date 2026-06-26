@@ -20,4 +20,18 @@ if(SOKOL_INCLUDE_DIR AND Stb_FOUND AND WIN32)
     if(MSVC)
         target_compile_options(platformer PRIVATE /WX-)   # sokol/stb headers aren't /WX-clean
     endif()
+
+    # P15: levels authored in a hot-reloadable Lua file (sol2/Lua, like the slice). Optional
+    # — without sol2/Lua the game uses its built-in levels.
+    find_package(Lua QUIET)
+    find_package(sol2 CONFIG QUIET)
+    if(sol2_FOUND AND LUA_FOUND)
+        target_sources(platformer PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/platformer_lua.cpp")
+        target_link_libraries(platformer PRIVATE sol2::sol2 ${LUA_LIBRARIES})
+        target_compile_definitions(platformer PRIVATE OKN_PLAT_HAS_LUA=1)
+        add_custom_command(TARGET platformer POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_CURRENT_SOURCE_DIR}/platformer_levels.lua"
+                "$<TARGET_FILE_DIR:platformer>/platformer_levels.lua")
+    endif()
 endif()

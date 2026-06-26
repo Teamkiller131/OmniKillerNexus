@@ -169,7 +169,10 @@ inverse distance attenuation, headless-tested).
 `MA_SOUND_FLAG_STREAM`; **prove it in a game.** **Acceptance:** one game ships positional ambient SFX + a streamed
 music bed + a settings-driven SFX/Music split; one game's rules live in a hot-reloaded Lua file.
 
-### P15 — The north-star game — ✗ not started (the next big push)
+### P15 — The north-star game — ◑ started (platformer promoted; Lua-authored levels)
+The platformer is the chosen title; its levels are now authored + hot-reloaded from `okn-script`
+Lua (`platformer_levels.lua`, sol2 in a confined `OKN_PLAT_HAS_LUA` TU; built-in fallback).
+Next: title/settings (okn-ui + okn-input rebind + audio bus split), SceneImporter levels.
 Promote the platformer (or a new small title) to the full loop on the full stack, shipping
 cross-platform as a packaged artifact (`install` + asset staging + **CPack**; CI publishes the
 bundle on a tag). This is where P10–P14 become **capabilities** and the next gap list is born.
@@ -258,8 +261,10 @@ the renderer) · lockstep multiplayer (state-sync first) · resurrecting the arc
 3. ✅ **P11 honesty** — `check_no_stub_tus.ps1 -Strict` (baseline ratchet) is wired into the
    gate, and okn-network's 46 placeholder stubs are pruned. Remaining: prune the bigger halos
    in the baseline (okn-editor 92, okn-audio 41, …) + the `okn-editor` Qt artifacts over time.
-4. **P15 kickoff (the big one)** — pick the north-star title (promote the platformer is the
-   shortest path: it already has the CharacterController, `okn-input`, save/load) and start the
-   full-stack loop: title → data-authored levels (SceneImporter) → settings (okn-ui + okn-input
-   rebind + the audio bus split) → hot-reloaded Lua rules. This is what converts P12–P14's
-   headless cores into capabilities.
+4. ◑ **P15 kickoff (the big one)** — ✅ the platformer is now the north-star title and its
+   levels are **authored + hot-reloaded from Lua** (`platformer_levels.lua` via a sol2 TU,
+   `OKN_PLAT_HAS_LUA`), composing `okn-script` onto the existing CharacterController + `okn-input`
+   + save/load stack. Proven headlessly: the autodemo is driven by the Lua level count (a
+   1-level Lua file caps the run at `lvl=1` where the 3 built-in levels reach `lvl=3`), and a
+   missing/invalid file falls back to the built-ins. Remaining: title screen → settings
+   (okn-ui + okn-input rebind + the audio bus split) → SceneImporter-authored levels in-editor.

@@ -24,11 +24,14 @@
 #include <okn/audio/mixer/playback.hpp>
 #include <okn/audio/decode/wav_decoder.hpp>
 
+#include "platformer_lua.hpp"   // hot-reloadable Lua level loader (P15)
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <string>
@@ -207,6 +210,25 @@ okn::math::u32 add_static_box(float cx, float cy, float hx, float hy) {
 
 void build_levels() {
     g_levels.clear();
+#if defined(OKN_PLAT_HAS_LUA)
+    // P15: levels are authored in a hot-reloadable Lua file. Fall through to the built-in
+    // levels below if it is missing or errors.
+    std::vector<plat::LuaLevel> lua_levels;
+    if (plat::load_levels_from_lua("platformer_levels.lua", lua_levels)) {
+        for (const auto& ll : lua_levels) {
+            Level lv;
+            for (const auto& p : ll.plats) { lv.plats.push_back(Plat{p.cx, p.cy, p.hx, p.hy}); }
+            lv.spawn = {ll.spawn_x, ll.spawn_y};
+            lv.goal = {ll.goal_x, ll.goal_y};
+            g_levels.push_back(std::move(lv));
+        }
+        std::fprintf(stderr, "[platformer] loaded %zu levels from platformer_levels.lua\n",
+                     g_levels.size());
+        return;
+    }
+    std::fprintf(stderr, "[platformer] platformer_levels.lua missing/invalid; using built-in levels\n");
+#endif
+    // Built-in levels (fallback, and when built without Lua).
     // L0 — gentle intro
     g_levels.push_back({{{0, 0, 6, 0.5f}, {9, 1.5f, 1.5f, 0.5f}, {14, 3.0f, 2.0f, 0.5f}},
                         {-3.0f, 1.5f}, {14.0f, 4.0f}});
@@ -422,7 +444,26 @@ void on_event(const sapp_event* ev) {
     }
 }
 
+#if defined(OKN_PLAT_HAS_LUA)
+// Hot-reload: re-author the levels (and reload the current one) when the Lua file changes
+// on disk — edit platformer_levels.lua and save to see it live.
+void check_lua_hot_reload() {
+    static std::filesystem::file_time_type last{};
+    std::error_code ec;
+    const auto mt = std::filesystem::last_write_time("platformer_levels.lua", ec);
+    if (ec) { return; }
+    if (last != std::filesystem::file_time_type{} && mt != last) {
+        build_levels();
+        load_level(g.level);
+    }
+    last = mt;
+}
+#endif
+
 void on_frame() {
+#if defined(OKN_PLAT_HAS_LUA)
+    if (!g.autodemo) { check_lua_hot_reload(); }
+#endif
     float dt = static_cast<float>(sapp_frame_duration());
     dt = std::clamp(dt, 0.0f, 1.0f / 30.0f);
     if (!(g.won && g.level + 1 >= static_cast<int>(g_levels.size()))) { update(dt); }
