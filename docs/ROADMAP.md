@@ -270,9 +270,11 @@ game.
 - **Scripting:** ✅ `ScriptingBridge` → sol2 bridged — `bind_ecs()` lets a Lua script
   create/destroy entities and add/has/query components by name on the **live World**
   (read/write of component fields via per-component sol2 usertypes); the ECS side gained
-  type-erased `component_data_by_id`/`add_component_by_id`/`entities_with`. Proven by a
-  headless Lua test driving a real `okn-ecs` World. *Still to do:* hot-reload a gameplay
-  Lua file via `okn-asset` `HotReload`, and drive a game's rules from it.
+  type-erased `component_data_by_id`/`add_component_by_id`/`entities_with`. ✅ **Hot-reload**:
+  a headless test shows a Lua **rules file** driving the ECS each tick (an `on_tick` that
+  spawns/tunes entities) and reloading to swap rules — v1→v2 — while the **World persists**
+  (`okn-script`'s `HotReload` is the production file-watch trigger). *Still to do:* wire a
+  real game's rules onto a hot-reloaded Lua file end-to-end (lands with P15).
 - **Acceptance:** one game ships **positional ambient SFX + a streamed music bed +
   a settings-driven SFX/Music split**; one game's rules (spawn/win/lose/tuning)
   live in a **hot-reloadable Lua file** driving the ECS.
