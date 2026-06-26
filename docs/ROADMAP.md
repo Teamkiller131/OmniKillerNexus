@@ -267,9 +267,12 @@ game.
   drop `NO_SPATIALIZATION` and feed `ma_sound` 3D position/listener so the
   spatializer math actually drives gain/pan; stream BGM with
   `MA_SOUND_FLAG_STREAM`.
-- **Scripting:** bridge `ScriptingBridge` → sol2 so Lua can create/destroy
-  entities and read/write/query components on the live World; hot-reload gameplay
-  scripts via `okn-asset` `HotReload`.
+- **Scripting:** ✅ `ScriptingBridge` → sol2 bridged — `bind_ecs()` lets a Lua script
+  create/destroy entities and add/has/query components by name on the **live World**
+  (read/write of component fields via per-component sol2 usertypes); the ECS side gained
+  type-erased `component_data_by_id`/`add_component_by_id`/`entities_with`. Proven by a
+  headless Lua test driving a real `okn-ecs` World. *Still to do:* hot-reload a gameplay
+  Lua file via `okn-asset` `HotReload`, and drive a game's rules from it.
 - **Acceptance:** one game ships **positional ambient SFX + a streamed music bed +
   a settings-driven SFX/Music split**; one game's rules (spawn/win/lose/tuning)
   live in a **hot-reloadable Lua file** driving the ECS.
