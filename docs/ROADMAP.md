@@ -240,8 +240,10 @@ capabilities.
   hero→sword link into a fresh World. ✅ **`okn-asset` `SceneImporter`** is now real (was a
   stub): scenes are a first-class asset — `import()` validates the EKO1 header and carries
   the bytes verbatim (round-trips through `AssetIO`), keeping the asset layer ECS-agnostic.
-  *Still to do:* a project manifest (scenes + asset-references-by-id), `PackWriter` bundling,
-  and wiring the editor's restart test onto it.
+  ✅ **`PackWriter` bundling** proven end-to-end: a scene bundles into a `.oknp` pack as a
+  `kScene` entry, is located by type, extracted, and re-imported (serialize → pack → unpack
+  → import). *Still to do:* a project manifest (scenes + asset-references-by-id) and wiring
+  the editor's restart test onto it.
 - ✅ **Runtime atlas packing** landed — `build_atlas()` shelf-packs source images into
   one atlas Image + per-source normalized uv_rects, so atlased sprites share one
   texture_id and the batcher emits one DrawGroup instead of N (header-only, deterministic,
