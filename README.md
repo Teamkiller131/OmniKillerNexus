@@ -72,7 +72,7 @@ Full build / test / run / screenshot instructions: **[docs/BUILD.md](docs/BUILD.
 
 ```
 OmniKillerNexus/
-├── modules/            13 okn-* engine module submodules (see below)
+├── modules/            14 okn-* engine modules (13 submodules + okn-input, a directory; see below)
 ├── games/              flappy · knockdown · platformer · mario · mario3d · harvest · voidborne
 ├── third_party/
 │   └── TeamkillerUniGUI   Dear ImGui app/widget toolkit (powers okn-editor + voidborne)
@@ -87,16 +87,17 @@ OmniKillerNexus/
 
 ## The modules
 
-13 submodules in four layers. **Authoritative per-module state, the render
-routes, and the dependency map: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).**
+14 modules (13 submodules + `okn-input`, a directory in the root repo) in four
+layers. **Authoritative per-module state, the render routes, and the dependency
+map: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).**
 
 | Layer | Modules | Headline state |
 |---|---|---|
 | **0 — foundation** | `okn-core` · `okn-math` · `okn-memory` | substantial, fully tested |
-| **1 — platform** | `okn-platform` | substantial (OS threads/fs/input/crash) |
-| **2 — services** | `okn-ecs` · `okn-asset` | partial (sparse-set World + serialization; import spine) |
-| **3 — features** | `okn-render` · `okn-physics` · `okn-audio` · `okn-script` · `okn-network` | physics **verified** (Jolt); render's 2D/3D/slice paths real; audio/script partial; network deferred |
-| **4 — integration** | `okn-ui` · `okn-editor` · `tools/` | UI widgets real (mouse-only); editor on Dear ImGui |
+| **1 — platform / independent** | `okn-platform` · `okn-input` | platform substantial (OS threads/fs/input/crash); `okn-input` a backend-agnostic action-map (2 games on it) |
+| **2 — services** | `okn-ecs` · `okn-asset` | sparse-set World (parallel scheduler on the work-stealing pool) + scene save/load + SceneImporter; import spine |
+| **3 — features** | `okn-render` · `okn-physics` · `okn-audio` · `okn-script` · `okn-network` | physics **verified** (Jolt; CharacterController + layers/masks + sensors); render 2D/3D/slice + runtime atlas; **Lua drives the live ECS**; audio bus model real (not yet audible); network online (no game) |
+| **4 — integration** | `okn-ui` · `okn-editor` · `tools/` | UI widgets real (keyboard/text + mouse); editor shell on Dear ImGui (viewport still a stub) |
 
 The real rendering lives in **three header-first paths inside `okn-render` that
 bypass its (dead) GPU lib**: the **2D sprite path**, the **3D mesh path**, and
