@@ -28,7 +28,8 @@
 param(
     [switch]$Strict,
     [switch]$List,
-    [string]$Root = (Split-Path -Parent $PSScriptRoot)
+    [string]$Root = (Split-Path -Parent $PSScriptRoot),
+    [string]$Baseline = (Join-Path $PSScriptRoot 'stub_baseline.txt')
 )
 
 function Test-IsStubTU([string]$path) {
@@ -85,9 +86,31 @@ if ($List) {
     }
 }
 
-if ($Strict -and $stubs.Count -gt 0) {
-    Write-Host ("[FAIL] {0} placeholder stub TU(s) — delete them or gate behind a committed consumer (ROADMAP P11)." -f $stubs.Count) -ForegroundColor Red
-    exit 1
+# Baseline ratchet: -Strict fails only on stubs NOT in the allowlist (a NEW halo). The
+# baseline freezes today's known stubs (legit header-first empties + the halos still to
+# prune) so they can't grow, without forcing a full prune in one go.
+$allow = @{}
+if (Test-Path $Baseline) {
+    foreach ($line in [System.IO.File]::ReadAllLines($Baseline)) {
+        $t = $line.Trim()
+        if ($t -ne '' -and -not $t.StartsWith('#')) { $allow[$t] = $true }
+    }
+}
+$newStubs = @()
+foreach ($s in $stubs) {
+    $rel = $s.FullName.Substring($modules.Length).TrimStart('\', '/').Replace('\', '/')
+    if (-not $allow.ContainsKey($rel)) { $newStubs += $rel }
+}
+Write-Host ("baseline allows {0} known stubs; {1} new beyond it" -f $allow.Count, $newStubs.Count)
+
+if ($Strict) {
+    if ($newStubs.Count -gt 0) {
+        Write-Host ("[FAIL] {0} NEW stub TU(s) beyond the baseline — delete them or gate behind a committed consumer; do not grow the halo (ROADMAP P11):" -f $newStubs.Count) -ForegroundColor Red
+        foreach ($n in ($newStubs | Sort-Object)) { Write-Host ("    modules/{0}" -f $n) -ForegroundColor Red }
+        exit 1
+    }
+    Write-Host "[OK] no new stub TUs beyond the baseline." -ForegroundColor Green
+    exit 0
 }
 Write-Host "[OK] inventory complete." -ForegroundColor Green
 exit 0

@@ -169,6 +169,19 @@ if (-not $SkipGames) {
     }
 }
 
+# Honesty ratchet: fail if a NEW placeholder stub TU appeared beyond the baseline
+# (scripts/stub_baseline.txt). Prevents the halos from growing back as code is added.
+$stubGuard = Join-Path $PSScriptRoot 'check_no_stub_tus.ps1'
+if (Test-Path $stubGuard) {
+    & pwsh -NoProfile -File $stubGuard -Strict | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        $failures += "stub-guard"
+        $summary  += "  stub-guard (-Strict)  NEW PLACEHOLDER STUB(S) — run check_no_stub_tus.ps1 -Strict"
+    } else {
+        $summary  += "  stub-guard (-Strict)  OK (no new halos)"
+    }
+}
+
 Write-Host ""
 Write-Host "=== Test gate summary ===" -ForegroundColor Cyan
 $summary | ForEach-Object { Write-Host $_ }

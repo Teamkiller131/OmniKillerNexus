@@ -76,8 +76,9 @@ engine core.
 - **Capability-with-consumer is now much better — but two big ones are still windowed.** The
   audio bus model and the spatializer are tested but **not wired to `ma_sound_group`/`ma_sound`
   (nothing audible yet)**; no single game yet meets the full north-star *on the engine stack*.
-- **Placeholder halos remain** in `okn-network` (~45 files) and `okn-editor` (its viewport is
-  a stub); `check_no_stub_tus.ps1` exists but isn't wired `-Strict` into the gate. `okn-memory`
+- **Placeholder halos** — okn-network's are pruned and the **stub-guard `-Strict` is now wired
+  into the gate** (a baseline ratchet: no new halos can appear); the bigger ones (okn-editor 92,
+  okn-audio 41, okn-script 36, …) remain in the frozen baseline to prune over time. `okn-memory`
   is still an island.
 
 ---
@@ -139,10 +140,14 @@ would be a placeholder, against the no-capability-without-a-consumer rule); a `l
 preset; a headless VOIDBORNE `--autodemo` on Linux; hosted matrix CI.
 **Acceptance:** green CI on Windows AND Linux; VOIDBORNE `--autodemo` passes on Linux.
 
-### P11 — The great prune II — ◑ partial
-Fork 1 pruned (125 files). **Remaining:** delete `okn-network`'s ~45 placeholder files + the
-committed `okn-editor` Qt build artifacts; wire `check_no_stub_tus.ps1 -Strict` (baseline-diffed)
-into the gate so halos can't regress.
+### P11 — The great prune II — ◑ mostly done
+Fork 1 pruned (125 files). ✅ **okn-network's 46 placeholder stub TUs deleted** (symbol-neutral;
+116/916 still green), and ✅ **`check_no_stub_tus.ps1 -Strict` is wired into the gate** as a
+**baseline ratchet** — `scripts/stub_baseline.txt` freezes today's 283 known stubs (legit
+header-first empties + the remaining halos) and the gate fails on any NEW stub, so the debt
+can't grow back. **Remaining:** prune the bigger halos still in the baseline (okn-editor 92,
+okn-audio 41, okn-script 36, okn-asset 31, okn-ui 31) over time + delete the committed
+`okn-editor` Qt build artifacts; each prune shrinks the baseline.
 
 ### P12 — Gameplay primitives — ✅ COMPLETE
 CharacterController · layers/masks · sensors · contact phases · `okn-input`. *(Soft leftover:
@@ -250,8 +255,9 @@ the renderer) · lockstep multiplayer (state-sync first) · resurrecting the arc
    → `$VCPKG_ROOT`; okn-platform's left, protected). The GLSL shader variants are deferred to
    land **with** the `SOKOL_GLCORE` backend (so they're exercised, not a placeholder) — the
    bigger P10 step that needs a GL/Linux runner.
-3. **P11 honesty** — wire `check_no_stub_tus.ps1 -Strict` (baseline-diffed) into the gate;
-   prune `okn-network`'s ~45 placeholder files + the `okn-editor` Qt artifacts.
+3. ✅ **P11 honesty** — `check_no_stub_tus.ps1 -Strict` (baseline ratchet) is wired into the
+   gate, and okn-network's 46 placeholder stubs are pruned. Remaining: prune the bigger halos
+   in the baseline (okn-editor 92, okn-audio 41, …) + the `okn-editor` Qt artifacts over time.
 4. **P15 kickoff (the big one)** — pick the north-star title (promote the platformer is the
    shortest path: it already has the CharacterController, `okn-input`, save/load) and start the
    full-stack loop: title → data-authored levels (SceneImporter) → settings (okn-ui + okn-input
