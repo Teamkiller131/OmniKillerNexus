@@ -243,8 +243,10 @@ capabilities.
 - ✅ **Runtime atlas packing** landed — `build_atlas()` shelf-packs source images into
   one atlas Image + per-source normalized uv_rects, so atlased sprites share one
   texture_id and the batcher emits one DrawGroup instead of N (header-only, deterministic,
-  4 headless tests incl. a 3-textures→1-draw assertion). *Still to do:* hook it into the
-  asset/sprite-load path so disk PNGs are atlased automatically.
+  4 headless tests incl. a 3-textures→1-draw assertion), and ✅ the usable **`TextureAtlas`**
+  layer on top — `add()` named images → `build()` → `make_sprite(name)` hands back sprites
+  sharing the atlas texture_id (adversarially reviewed; a real texture_id-0 footgun fixed).
+  *Still to do:* an asset-load step that auto-atlases a game's loose disk PNGs through it.
 - **Scheduler in anger:** ✅ the **per-frame O(n²) re-levelization** is fixed (conflict
   levels are now cached + rebuilt only on `invalidate_order()`; test asserts one
   levelization across many frames) and the **busy spin-wait** barrier is replaced by the
