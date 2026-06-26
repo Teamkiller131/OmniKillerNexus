@@ -232,13 +232,14 @@ the next one) compose them instead of reinventing them.
 ### P13 — Content pipeline + the scheduler in anger
 Turn the disconnected serializers and the untested scheduler into real, exercised
 capabilities.
-- **Project/scene pipeline:** ✅ **entity-ref remapping on load** landed — the EKO1
-  loader is now two-pass (build a saved-id→new-id remap, then patch component fields
-  declared via `register_entity_ref_fields<T>`), so cross-entity references survive a
-  save/restart/reload instead of keeping stale ids (test in `okn-ecs_tests`). *Still
-  to do:* promote the serializer into an `okn-asset` `SceneAsset` + a project manifest
-  (scenes + asset-references-by-id) routed through `AssetIO`/`PackWriter`, and wire the
-  editor's **save a scene, restart, reload it intact** test onto it.
+- **Project/scene pipeline:** ✅ **entity-ref remapping on load** + ✅ **scene save/load
+  to disk**. The EKO1 loader is two-pass (build a saved-id→new-id remap, then patch
+  component fields declared via `register_entity_ref_fields<T>`), and `Serializer` now has
+  `save_to_file`/`load_from_file`, so a scene **survives a process restart** with its
+  cross-entity references intact — proven by a disk round-trip test that reloads a
+  hero→sword link into a fresh World. *Still to do:* promote the serializer into an
+  `okn-asset` `SceneAsset` + project manifest (scenes + asset-references-by-id) routed
+  through `AssetIO`/`PackWriter`, and wire the editor's restart test onto it.
 - ✅ **Runtime atlas packing** landed — `build_atlas()` shelf-packs source images into
   one atlas Image + per-source normalized uv_rects, so atlased sprites share one
   texture_id and the batcher emits one DrawGroup instead of N (header-only, deterministic,
