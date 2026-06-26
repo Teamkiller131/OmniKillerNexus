@@ -237,9 +237,11 @@ capabilities.
   component fields declared via `register_entity_ref_fields<T>`), and `Serializer` now has
   `save_to_file`/`load_from_file`, so a scene **survives a process restart** with its
   cross-entity references intact — proven by a disk round-trip test that reloads a
-  hero→sword link into a fresh World. *Still to do:* promote the serializer into an
-  `okn-asset` `SceneAsset` + project manifest (scenes + asset-references-by-id) routed
-  through `AssetIO`/`PackWriter`, and wire the editor's restart test onto it.
+  hero→sword link into a fresh World. ✅ **`okn-asset` `SceneImporter`** is now real (was a
+  stub): scenes are a first-class asset — `import()` validates the EKO1 header and carries
+  the bytes verbatim (round-trips through `AssetIO`), keeping the asset layer ECS-agnostic.
+  *Still to do:* a project manifest (scenes + asset-references-by-id), `PackWriter` bundling,
+  and wiring the editor's restart test onto it.
 - ✅ **Runtime atlas packing** landed — `build_atlas()` shelf-packs source images into
   one atlas Image + per-source normalized uv_rects, so atlased sprites share one
   texture_id and the batcher emits one DrawGroup instead of N (header-only, deterministic,
