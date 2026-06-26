@@ -250,9 +250,11 @@ capabilities.
   job system's CV-backed `wait_all()`. ✅ The **query hot path** now caches each
   component's store pointer once per `query()` (was a hash-map `find()` per component per
   entity) and derefs through the cached sparse-set stores — verified by a 3-lens
-  adversarial review + a 600-entity intersection test. *Still to do:* bridge the ECS
-  scheduler onto okn-platform's Chase-Lev work-stealing pool (unify the two `IJobSystem`
-  interfaces).
+  adversarial review + a 600-entity intersection test. ✅ The scheduler is **unified onto
+  okn-platform's Chase-Lev `WorkStealingThreadPool`** (its duplicate `IJobSystem` +
+  `ThreadPoolJobSystem` deleted), whose `wait_all()` is now CV-backed instead of a
+  yield-spin — also adversarially reviewed (lost-wakeup/deadlock-free; the exclusive-pool
+  per-level-join invariant is documented). **Scheduler frontier complete.**
 - **Acceptance:** a scene survives a restart through the engine format; one game
   runs **N real systems through the scheduler** with a **parallel-speedup
   assertion in the gate**; a query microbenchmark locks in the iteration gain.

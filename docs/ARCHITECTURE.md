@@ -138,14 +138,17 @@ input, crash handling, dynamic-library loading, system info. **Gap:** the
 components, queries — plus **save/load serialization** (`Serializer`/
 `Deserializer` snapshot live entities + trivially-copyable component bytes,
 keyed by a typeid-hash store id; host-endian, same-build save games).
-**Scheduling:** a real parallel `Scheduler` runs systems over the live `World`
-(conflict-based level grouping → `ThreadPoolJobSystem` worker threads).
+**Scheduling:** a real parallel `Scheduler` runs systems over the live `World` —
+conflict-based level grouping (cached, rebuilt only when the system set changes) →
+**okn-platform's `WorkStealingThreadPool`** (the unified `IJobSystem`; the ECS module's
+old duplicate pool was deleted), joined per level by a CV-backed `wait_all()`.
 **ScriptingBridge:** a runtime component-reflection surface — name→`ComponentTypeId`
 resolution against the live store + a registration callback (no longer a stub).
 **Removed (2026-06-23):** the dead archetype/chunk `Storage` second ECS core was
 **deleted** — the live sparse-set `World` is the one ECS core ([ADR-0004](DECISIONS.md)).
-**Tests:** `okn-ecs_tests`, 55 cases / 2325 assertions (incl. serialization
-round-trip + the parallel-scheduler-over-real-pool test).
+**Tests:** `okn-ecs_tests`, 58 cases / 3142 assertions (incl. serialization
+round-trip, the cached-store query intersection test, and the parallel scheduler
+over okn-platform's real work-stealing pool).
 **Consumed by a game:** **VOIDBORNE** models its 20 crew as ECS entities with a
 `CrewStats` component and runs the captain election as a `query<CrewStats>()` over
 the live `World`.
