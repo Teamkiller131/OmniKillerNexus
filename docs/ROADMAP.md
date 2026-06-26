@@ -152,11 +152,12 @@ editor's **save→restart→reload** test wired onto the engine format, and (opt
 microbenchmark** + a non-flaky parallel-speedup signal.
 
 ### P14 — Audio + scripting real — ◑ scripting done, audio core done
-**Done:** Lua drives the live ECS + hot-reloadable rules; the bus hierarchy + ducking model.
+**Done:** Lua drives the live ECS + hot-reloadable rules; the bus hierarchy + ducking model;
+the **spatializer math** (listener-relative pan via `cross(forward,up)` + miniaudio-style
+inverse distance attenuation, headless-tested).
 **Remaining (windowed):** route each bus through a `ma_sound_group` and drop
-`NO_SPATIALIZATION` so the **spatializer** drives gain/pan on a real `ma_sound` (the
-spatializer's math is the next clean *headless* slice); stream BGM with `MA_SOUND_FLAG_STREAM`;
-**prove it in a game.** **Acceptance:** one game ships positional ambient SFX + a streamed
+`NO_SPATIALIZATION` so the bus model + spatializer drive a real `ma_sound`; stream BGM with
+`MA_SOUND_FLAG_STREAM`; **prove it in a game.** **Acceptance:** one game ships positional ambient SFX + a streamed
 music bed + a settings-driven SFX/Music split; one game's rules live in a hot-reloaded Lua file.
 
 ### P15 — The north-star game — ✗ not started (the next big push)
@@ -206,7 +207,7 @@ the renderer) · lockstep multiplayer (state-sync first) · resurrecting the arc
 | 2D render | **Build** glue / **buy** sokol_gfx | Real (sw ref + GPU) + **runtime atlas + TextureAtlas**. Windows/D3D11-only; needs a GL backend (P10). |
 | 3D render | **Build** glue / **buy** sokol_gfx | Depth-tested mesh path (mario3d). Single Lambert light; no textures/materials/shadows. |
 | Windowing/input | **Buy** sokol_app + **build** `okn-input` | Real. **Action-mapping is now an `okn-input` module** (2 games on it). |
-| Audio | **Buy** miniaudio | Decode + playback real. **Bus hierarchy + ducking model now real + tested** — but not yet wired to `ma_sound_group` (nothing audible); spatializer not wired. |
+| Audio | **Buy** miniaudio | Decode + playback real. **Bus hierarchy + ducking model + spatializer math (pan + distance) now real + tested** — but not yet wired to `ma_sound_group`/`ma_sound` (nothing audible). |
 | Scripting | **Buy** sol2/Lua | **`bind_ecs()` lets Lua drive the live World** (create/destroy/add/read/write/query); hot-reloadable rules demonstrated. Needs a *game* on Lua rules. |
 | ECS | **Build** sparse-set World | Real + parallel scheduler (on the work-stealing pool) + save/load + **cached query hot path**. Scheduler/serializer still need a game consumer. Archetype stays dead. |
 | Threading | **Build** Chase-Lev pool | **Unified**: the ECS scheduler now runs on `okn-platform`'s work-stealing pool; the duplicate ECS pool was deleted; `wait_all()` is CV-backed. |
@@ -238,9 +239,9 @@ the renderer) · lockstep multiplayer (state-sync first) · resurrecting the arc
 ---
 
 ## 11. Immediate next (actionable now)
-1. **P14 audio — the spatializer math** (`okn-audio` `spatializer.hpp`): 3D position + listener
-   → gain/pan, unit-tested headlessly like the bus model. The last clean *headless* audio slice
-   before the `ma_sound`/`ma_sound_group` wiring (which is windowed).
+1. ✅ **P14 audio — the spatializer math** landed (`okn-audio` `spatializer.hpp`):
+   listener-relative pan + inverse distance attenuation, headless-tested. The remaining
+   `ma_sound`/`ma_sound_group` wiring is windowed.
 2. **P10 cheap slice** (fully verifiable on Windows): purge the 13 hard-coded `D:/vcpkg`
    references → `$VCPKG_ROOT`; cross-compile the sprite/mesh shaders to GLSL on the D3D11/dummy
    path. Unblocks every non-author build and de-risks the GL backend.
