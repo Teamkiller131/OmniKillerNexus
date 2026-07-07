@@ -11,6 +11,7 @@
 #include <okn/physics/impl/physics_factory.hpp>
 #include <okn/physics/api/physics_world.hpp>
 #include <okn/physics/dynamics/body.hpp>
+#include <okn/physics/detection/trigger_volume.hpp>
 #include <okn/physics/shapes/box.hpp>
 #include <okn/math/algebra/quat.hpp>
 #include <okn/input/action_map.hpp>
@@ -72,6 +73,7 @@ constexpr float kMoveSpeed = 6.5f;
 constexpr float kJumpSpeed = 11.5f;
 constexpr float kPlayerHX = 0.4f;
 constexpr float kPlayerHY = 0.5f;
+constexpr float kProxyZ = 1.2f;   // trigger-probe z offset: clear of the character's z span
 constexpr unsigned kPlayerTex = 1;
 const char* kSavePath = "platformer_save.dat";
 const char* kSpritePath = "platformer_player.png";
@@ -86,9 +88,12 @@ struct Level { std::vector<Plat> plats; Vec2 spawn; Vec2 goal; };
 
 struct Game {
     std::unique_ptr<IPhysicsWorld> phys;
+    std::unique_ptr<okn::physics::TriggerSet> triggers;   // after phys: destroyed first
     std::vector<std::unique_ptr<okn::physics::Box>> shapes;
     std::vector<Plat> plats;
     okn::math::u32 player = 0;
+    okn::math::u32 proxy = 0;   // kinematic trigger-probe glued to the character each frame
+    bool hit_goal = false;      // set by the goal trigger's on_enter; consumed after dispatch
     float vy = 0.0f;       // player vertical velocity (we integrate gravity; the controller is kinematic)
     Vec2 spawn{0, 0};
     Vec2 goal{0, 0};
@@ -244,10 +249,12 @@ void build_levels() {
 
 
 void load_level(int idx) {
+    g.triggers.reset();   // destroy trigger bodies while their (old) world is still alive
     g.phys = okn::physics::make_jolt_physics_world();
     g.phys->set_gravity({0.0f, kGravity, 0.0f});
     g.shapes.clear();
     g.won = false;
+    g.hit_goal = false;
     g.level = std::clamp(idx, 0, static_cast<int>(g_levels.size()) - 1);
 
     const Level& lv = g_levels[g.level];
@@ -270,6 +277,32 @@ void load_level(int idx) {
     cd.shape = okn::physics::CharacterShape::Box;   // flat bottom: stable on ledges
     g.player = g.phys->create_character(cd);
     g.vy = 0.0f;
+
+    // Win = a goal TriggerVolume (okn-physics sensor Enter), replacing the manual
+    // distance check. The kinematic character isn't a contact body, so a player-sized
+    // kinematic PROXY (group 1, meets only the trigger's group 2) is glued to the
+    // character's x/y each frame and overlaps the sensor. The proxy rides at z=kProxyZ:
+    // CharacterVirtual's collide-and-slide does NOT honor body masks, so an in-plane
+    // proxy would jam the character against its own probe — the z offset keeps them
+    // apart (character z span ±0.4; the game is plane-locked at z=0), and the trigger
+    // box is deep enough in z to still meet the proxy. Box sized so proxy-overlap ==
+    // the old center-point check: |px-gx| < 1.0 and py > goal.y - 1.8.
+    g.triggers = std::make_unique<okn::physics::TriggerSet>(*g.phys);
+    g.triggers->add_box({lv.goal.x, lv.goal.y + 1.7f, 0.0f},
+                        {1.0f - kPlayerHX, 3.0f, 2.0f},
+                        {.on_enter = [](okn::math::u32, okn::math::u32) { g.hit_goal = true; }},
+                        /*group=*/2, /*mask=*/(1u << 1));
+
+    okn::physics::Box* proxy_shape = g.shapes.emplace_back(
+        std::make_unique<okn::physics::Box>(Vec3{kPlayerHX, kPlayerHY, 0.4f})).get();
+    RigidBody pd;
+    pd.type = BodyType::kKinematic;
+    pd.position = {lv.spawn.x, lv.spawn.y, kProxyZ};
+    pd.collision_group = 1;
+    pd.collision_mask = (1u << 2);
+    pd.allow_sleep = false;   // stay trigger-tracked while standing still
+    pd.set_shape(proxy_shape);
+    g.proxy = g.phys->create_body(pd);
 }
 
 bool grounded() {
@@ -295,11 +328,17 @@ void update(float dt) {
 
     const Vec3 pos = g.phys->character_position(g.player);
 
-    // Win on a flagpole touch: horizontally at the goal and at/above the pole base
-    // (forgiving for a jumping player).
-    const float gdx = std::fabs(pos.x - g.goal.x);
-    if (!g.won && gdx < 1.0f && pos.y > g.goal.y - 1.8f) {
+    // Glue the trigger-probe proxy to the character (at its z offset), step the world
+    // (static level + kinematic proxy only), and route sensor phases.
+    g.phys->set_transform(g.proxy, {pos.x, pos.y, kProxyZ}, okn::math::Quat{0, 0, 0, 1});
+    g.phys->step(dt);
+    g.triggers->dispatch(g.phys->drain_contacts());
+
+    // Win on a flagpole touch — the goal TriggerVolume's on_enter (dispatched above;
+    // the level change is deferred here because load_level destroys the world).
+    if (!g.won && g.hit_goal) {
         g.won = true;
+        g.hit_goal = false;
         play(g_win_sfx, 0.5f);
         if (g.level >= g.best) { g.best = g.level + 1; save_progress(); }
         const bool last = g.level + 1 >= static_cast<int>(g_levels.size());
