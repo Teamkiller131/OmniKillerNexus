@@ -115,7 +115,8 @@ if(OKN_BUILD_CLI)
     add_subdirectory(tools)
 endif()
 
-# Games built on the engine (demos).
+# Games built on the engine (demos). okn_add_sokol_game() holds the shared recipe.
+include(cmake/OknGame.cmake)
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/games/flappy/CMakeLists.txt")
     add_subdirectory(games/flappy)
 endif()
