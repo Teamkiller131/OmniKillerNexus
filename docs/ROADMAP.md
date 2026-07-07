@@ -452,11 +452,13 @@ is unaffected by Jolt's opt-in determinism, per §10).
 The cheap, high-leverage front of §12, ordered so prerequisites land first. Each is independently
 gate-verifiable and respects rule #2 (names its consumer).
 
-1. **TriggerVolume → platformer** `[S]` · **mario3d positional audio** `[S]` · **finish okn-input
-   (mario/harvest)** `[S]` — three independent "consume a tested capability" wins, no prerequisites.
-2. **`okn_add_sokol_game()` helper + template** `[S]` and **`bitmap_text.hpp`** `[S]` — DX
-   consolidation; `bitmap_text` is the prerequisite for any okn-ui menu text and unblocks
-   `hud_bridge` `kText`.
+1. ✅ **TriggerVolume → platformer** (TriggerSet in okn-physics detection/; the goal flag is a
+   sensor via a z-offset kinematic probe — CharacterVirtual ignores body masks, found by autodemo)
+   · ✅ **mario3d positional audio** (play_at + AudioEngine::set_listener; hybrid third-person
+   listener) · ✅ **finish okn-input (mario/harvest)** — okn-input is 4-of-4.
+2. ✅ **`okn_add_sokol_game()` helper** (cmake/OknGame.cmake — the platform gate is now ONE edit
+   for P10; games/_template still open) and ✅ **`bitmap_text.hpp`** (5 glyph tables deleted;
+   `hud_bridge` `kText` unblock still open).
 3. **Public Git mirror** `[S]` and **lift `FaultyLink` into the testkit** `[S]` — unblock,
    respectively, hosted-Linux-CI and the netcode/replay substrate.
 4. **State-hash harness** `[M]` (`hash.cpp` + `World::state_hash()` + a save/load doctest) → then
