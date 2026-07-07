@@ -135,6 +135,10 @@ okn::audio::AudioBuffer dec(float f, float d, float k, bool r = false) {
     okn::audio::WavDecoder wd; const auto w = beep(f, d, k, r); return wd.decode(w.data(), w.size());
 }
 void play(const okn::audio::AudioBuffer& b, float v) { if (g_pb && b.data) { g_pb->play(b, v); } }
+// Positional one-shot: pans/attenuates against the listener set each frame in update().
+void play_at(const okn::audio::AudioBuffer& b, const Vec3& p, float v) {
+    if (g_pb && b.data) { g_pb->play_at(b, p, v); }
+}
 
 // ── world ───────────────────────────────────────────────────────────────────────
 u32 add_box(Vec3 c, Vec3 half, bool dynamic, Kind k, bool ccd = true) {
@@ -276,7 +280,7 @@ bool grounded() {
 
 void hurt() {
     if (g.iframes > 0.0f || g.autodemo) { return; }
-    --g.lives; g.iframes = 1.5f; play(g_hurt, 0.5f);
+    --g.lives; g.iframes = 1.5f; play_at(g_hurt, g.phys->character_position(g.player), 0.5f);
     if (g.lives <= 0) { g.state = State::GameOver; }
 }
 
@@ -318,7 +322,7 @@ void update(float dt) {
     // jump off the ground, then apply gravity. X-Z come straight from the move dir.
     if (gnd && g.vy <= 0.0f) { g.vy = 0.0f; }
     const bool jump = g.input.just(Action::Jump) || (g.autodemo && !g.swingtest && gnd && g.vy <= 0.1f);
-    if (jump && gnd) { g.vy = kJump; play(g_jump, 0.35f); }
+    if (jump && gnd) { g.vy = kJump; play_at(g_jump, g.phys->character_position(g.player), 0.35f); }
     g.vy += kGravity * dt;
 
     // ── goombas patrol along their axis (dynamic bodies — stepped just below) ──
@@ -365,7 +369,7 @@ void update(float dt) {
         if (!overlap) { continue; }
         if (g.autodemo || (pos.y > eb->position.y + 0.3f && g.vy < 3.0f)) {
             gb.dead = true; g.kind.erase(gb.body); g.phys->destroy_body(gb.body);
-            g.score += 100; g.vy = kStompBounce; play(g_stomp, 0.5f);
+            g.score += 100; g.vy = kStompBounce; play_at(g_stomp, eb->position, 0.5f);
         } else { hurt(); }
     }
     (void)g.phys->drain_contacts();   // clear+discard goomba/bridge body contacts (player uses overlap)
@@ -373,7 +377,7 @@ void update(float dt) {
     // ── coins (3D overlap) ──
     for (auto& coin : g.coins) {
         if (coin.taken) { continue; }
-        if ((coin.pos - pos).length() < 0.9f) { coin.taken = true; ++g.coins_got; g.score += 50; play(g_coin, 0.4f); }
+        if ((coin.pos - pos).length() < 0.9f) { coin.taken = true; ++g.coins_got; g.score += 50; play_at(g_coin, coin.pos, 0.4f); }
     }
 
     // ── springs: launch up when you land on one ──
@@ -384,13 +388,13 @@ void update(float dt) {
             std::fabs(pos.z - sp.pos.z) < sp.half.z + kPlayerR &&
             feet < topy + 0.18f && feet > topy - 0.5f && g.vy < 1.0f) {
             g.vy = kSpringBounce;
-            play(g_spring, 0.5f);
+            play_at(g_spring, sp.pos, 0.5f);
         }
     }
 
     // ── win / fall ──
     if ((g.goal - pos).length() < 2.8f) {   // flagpole touch
-        g.state = State::Win; play(g_win, 0.6f);
+        g.state = State::Win; play_at(g_win, g.goal, 0.6f);
         if (g.autodemo) { std::ofstream("mario3d_result.txt") << "WIN"; }
     }
     if (pos.y < -6.0f) {
@@ -406,6 +410,12 @@ void update(float dt) {
                       g.cam_dist * cp * std::cos(g.cam_yaw)};
     const Vec3 want = pos + offset;
     g.cam_pos = g.cam_pos + (want - g.cam_pos) * std::min(1.0f, dt * 10.0f);   // smooth follow
+
+    // Positional audio: hybrid third-person listener — AT the player (so event loudness
+    // tracks gameplay distance, not the ~13-unit camera orbit) but ORIENTED like the
+    // camera (same forward the render camera uses, so pan follows the view).
+    const Vec3 ear = pos + Vec3{0.0f, 0.6f, 0.0f};
+    g_audio.set_listener(ear, (ear - g.cam_pos).normalized(), {0.0f, 1.0f, 0.0f});
 
     if (g.autodemo) {
         g.trace_t += dt;
