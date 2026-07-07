@@ -15,6 +15,7 @@
 #include <okn/math/algebra/quat.hpp>
 
 #include <okn/render/sprite2d/sprite_batch.hpp>
+#include <okn/render/sprite2d/bitmap_text.hpp>
 #include <okn/render/sprite2d/camera2d.hpp>
 #include <okn/render/sprite2d/gpu_sprite_renderer.hpp>
 #include <okn/render/sprite2d/image.hpp>
@@ -255,28 +256,11 @@ void quad(SpriteBatch& b, Vec2 c, float w, float h, Rgba8 color, float rot = 0.0
     b.add(s);
 }
 
-const char* kFont[10][5] = {
-    {"###","# #","# #","# #","###"},{" # ","## "," # "," # ","###"},{"###","  #","###","#  ","###"},
-    {"###","  #","###","  #","###"},{"# #","# #","###","  #","  #"},{"###","#  ","###","  #","###"},
-    {"###","#  ","###","# #","###"},{"###","  #"," # "," # "," # "},{"###","# #","###","# #","###"},
-    {"###","# #","###","  #","###"}};
+// Score digits come from the engine's bitmap font (okn-render bitmap_text.hpp);
+// this wrapper just centers the number on cx (width minus the trailing gap).
 void draw_num(SpriteBatch& b, int n, float cx, float top, float px) {
-    if (n < 0) { n = 0; }
-    int ds[8]; int cnt = 0;
-    do { ds[cnt++] = n % 10; n /= 10; } while (n > 0 && cnt < 8);
-    const float dw = 4.0f * px;
-    const float total = static_cast<float>(cnt) * dw - px;
-    float x = cx - total * 0.5f;
-    for (int i = cnt - 1; i >= 0; --i) {
-        for (int row = 0; row < 5; ++row) {
-            for (int col = 0; col < 3; ++col) {
-                if (kFont[ds[i]][row][col] == '#') {
-                    quad(b, {x + (col + 0.5f) * px, top - (row + 0.5f) * px}, px, px, rgba(255, 255, 255));
-                }
-            }
-        }
-        x += dw;
-    }
+    const float total = okn::render::sprite2d::num_width(n, px) - px;
+    okn::render::sprite2d::draw_num(b, n, cx - total * 0.5f, top, px, rgba(255, 255, 255));
 }
 
 void render() {

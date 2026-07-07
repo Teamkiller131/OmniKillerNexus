@@ -15,6 +15,7 @@
 #include <okn/math/algebra/quat.hpp>
 
 #include <okn/render/sprite2d/sprite_batch.hpp>
+#include <okn/render/sprite2d/bitmap_text.hpp>
 #include <okn/render/sprite2d/camera2d.hpp>
 #include <okn/render/sprite2d/gpu_sprite_renderer.hpp>
 #include <okn/render/sprite2d/image.hpp>
@@ -448,21 +449,7 @@ void update(float dt) {
 void quad(SpriteBatch& b, Vec2 c, float w, float h, Rgba8 col, unsigned tex = 0, bool flip = false) {
     Sprite s; s.position = c; s.size = {flip ? -w : w, h}; s.color = col; s.texture_id = tex; b.add(s);
 }
-const char* kFont[10][5] = {
-    {"###","# #","# #","# #","###"},{" # ","## "," # "," # ","###"},{"###","  #","###","#  ","###"},
-    {"###","  #","###","  #","###"},{"# #","# #","###","  #","  #"},{"###","#  ","###","  #","###"},
-    {"###","#  ","###","# #","###"},{"###","  #"," # "," # "," # "},{"###","# #","###","# #","###"},
-    {"###","# #","###","  #","###"}};
-void draw_num(SpriteBatch& b, int n, float left, float top, float px, Rgba8 col) {
-    if (n < 0) { n = 0; }
-    int ds[8], cnt = 0;
-    do { ds[cnt++] = n % 10; n /= 10; } while (n > 0 && cnt < 8);
-    for (int i = cnt - 1; i >= 0; --i) {
-        for (int r = 0; r < 5; ++r) for (int c = 0; c < 3; ++c)
-            if (kFont[ds[i]][r][c] == '#') quad(b, {left + (c + 0.5f) * px, top - (r + 0.5f) * px}, px, px, col);
-        left += 4.0f * px;
-    }
-}
+// HUD numbers come from the engine's bitmap font (okn-render bitmap_text.hpp, via ADL).
 
 void render() {
     SpriteBatch world, hud;

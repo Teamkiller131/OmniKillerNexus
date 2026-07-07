@@ -17,6 +17,7 @@
 #include <okn/input/action_map.hpp>
 
 #include <okn/render/sprite2d/sprite_batch.hpp>
+#include <okn/render/sprite2d/bitmap_text.hpp>
 #include <okn/render/sprite2d/camera2d.hpp>
 #include <okn/render/sprite2d/gpu_sprite_renderer.hpp>
 #include <okn/render/sprite2d/image.hpp>
@@ -375,21 +376,7 @@ void quad(SpriteBatch& b, Vec2 c, float w, float h, Rgba8 col, float rot = 0.0f,
     b.add(s);
 }
 
-const char* kFont[10][5] = {
-    {"###","# #","# #","# #","###"},{" # ","## "," # "," # ","###"},{"###","  #","###","#  ","###"},
-    {"###","  #","###","  #","###"},{"# #","# #","###","  #","  #"},{"###","#  ","###","  #","###"},
-    {"###","#  ","###","# #","###"},{"###","  #"," # "," # "," # "},{"###","# #","###","# #","###"},
-    {"###","# #","###","  #","###"}};
-void draw_digit(SpriteBatch& b, int dgt, float left, float top, float px) {
-    if (dgt < 0 || dgt > 9) { return; }
-    for (int r = 0; r < 5; ++r) {
-        for (int c = 0; c < 3; ++c) {
-            if (kFont[dgt][r][c] == '#') {
-                quad(b, {left + (c + 0.5f) * px, top - (r + 0.5f) * px}, px, px, rgba(255, 255, 255));
-            }
-        }
-    }
-}
+// HUD digits come from the engine's bitmap font (okn-render bitmap_text.hpp, via ADL).
 
 void render() {
     SpriteBatch world;
@@ -411,7 +398,7 @@ void render() {
 
     // HUD: level number (top-left) + a win banner.
     quad(hud, {0.9f, 11.2f}, 1.0f, 0.55f, rgba(40, 40, 60, 200));
-    draw_digit(hud, g.level + 1, 0.55f, 11.45f, 0.22f);
+    draw_num(hud, g.level + 1, 0.55f, 11.45f, 0.22f, rgba(255, 255, 255));
     const bool last_done = g.won && g.level + 1 >= static_cast<int>(g_levels.size());
     if (last_done) {
         for (int i = 0; i < 3; ++i) { quad(hud, {8.0f, 7.0f - i * 0.6f}, 6.0f, 0.4f, rgba(250, 220, 90)); }

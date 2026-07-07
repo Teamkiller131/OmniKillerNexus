@@ -6,6 +6,7 @@
 // collision, scoring) is plain C++ — Flappy Bird needs no physics engine.
 
 #include <okn/render/sprite2d/sprite_batch.hpp>
+#include <okn/render/sprite2d/bitmap_text.hpp>
 #include <okn/render/sprite2d/camera2d.hpp>
 #include <okn/render/sprite2d/gpu_sprite_renderer.hpp>
 
@@ -194,45 +195,13 @@ void rect(SpriteBatch& b, float cx, float cy, float w, float h, Rgba8 color, flo
     b.add(s);
 }
 
-// 3x5 pixel font for digits 0-9 (rows top->bottom).
-const char* kFont[10][5] = {
-    {"###", "# #", "# #", "# #", "###"},  // 0
-    {" # ", "## ", " # ", " # ", "###"},  // 1
-    {"###", "  #", "###", "#  ", "###"},  // 2
-    {"###", "  #", "###", "  #", "###"},  // 3
-    {"# #", "# #", "###", "  #", "  #"},  // 4
-    {"###", "#  ", "###", "  #", "###"},  // 5
-    {"###", "#  ", "###", "# #", "###"},  // 6
-    {"###", "  #", " # ", " # ", " # "},  // 7
-    {"###", "# #", "###", "# #", "###"},  // 8
-    {"###", "# #", "###", "  #", "###"},  // 9
-};
-
-void draw_digit(SpriteBatch& b, int d, float left, float top, float px, Rgba8 color) {
-    if (d < 0 || d > 9) { return; }
-    for (int row = 0; row < 5; ++row) {
-        for (int col = 0; col < 3; ++col) {
-            if (kFont[d][row][col] == '#') {
-                rect(b, left + (static_cast<float>(col) + 0.5f) * px,
-                     top - (static_cast<float>(row) + 0.5f) * px, px, px, color);
-            }
-        }
-    }
-}
-
+// Score digits come from the engine's bitmap font (okn-render bitmap_text.hpp);
+// this wrapper just centers the number on center_x (width minus the trailing gap).
 void draw_number(SpriteBatch& b, int n, float center_x, float top, float px) {
-    if (n < 0) { n = 0; }
-    int digits[10];
-    int count = 0;
-    do { digits[count++] = n % 10; n /= 10; } while (n > 0 && count < 10);
-    const float dw = 3.0f * px + px;  // digit width + spacing
-    const float total = static_cast<float>(count) * dw - px;
-    float x = center_x - total * 0.5f;
-    for (int i = count - 1; i >= 0; --i) {
-        draw_digit(b, digits[i], x, top, px, rgba(255, 255, 255));
-        // small shadow under each digit for readability
-        x += dw;
-    }
+    using okn::render::sprite2d::draw_num;
+    using okn::render::sprite2d::num_width;
+    const float total = num_width(n, px) - px;   // drop the trailing 1-px gap
+    draw_num(b, n, center_x - total * 0.5f, top, px, rgba(255, 255, 255));
 }
 
 void build_scene(SpriteBatch& b) {
