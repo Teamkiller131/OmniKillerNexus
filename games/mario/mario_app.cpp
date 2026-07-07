@@ -23,6 +23,8 @@
 #include <okn/audio/mixer/playback.hpp>
 #include <okn/audio/decode/wav_decoder.hpp>
 
+#include <okn/input/action_map.hpp>
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -79,32 +81,9 @@ constexpr unsigned kTexGoomba = 3;
 enum class Kind { Other, Player, Goomba };
 enum class State { Playing, Win, GameOver };
 
-// ── input action-map ────────────────────────────────────────────────────────────
+// ── input action-map (okn-input) ───────────────────────────────────────────────
 enum class Action { Left, Right, Jump, Down, Count };
-struct InputMap {
-    sapp_keycode keys[static_cast<int>(Action::Count)][2]{};
-    bool down[static_cast<int>(Action::Count)]{};
-    bool pressed[static_cast<int>(Action::Count)]{};
-    bool released[static_cast<int>(Action::Count)]{};
-    void bind(Action a, sapp_keycode k0, sapp_keycode k1) {
-        keys[static_cast<int>(a)][0] = k0; keys[static_cast<int>(a)][1] = k1;
-    }
-    void on_key(sapp_keycode k, bool is_down) {
-        for (int a = 0; a < static_cast<int>(Action::Count); ++a) {
-            if (keys[a][0] == k || keys[a][1] == k) {
-                if (is_down && !down[a]) { pressed[a] = true; }
-                if (!is_down && down[a]) { released[a] = true; }
-                down[a] = is_down;
-            }
-        }
-    }
-    void end_frame() {
-        for (int i = 0; i < static_cast<int>(Action::Count); ++i) { pressed[i] = false; released[i] = false; }
-    }
-    bool held(Action a) const { return down[static_cast<int>(a)]; }
-    bool just(Action a) const { return pressed[static_cast<int>(a)]; }
-    bool just_released(Action a) const { return released[static_cast<int>(a)]; }
-};
+using InputMap = okn::input::ActionMap<Action>;
 
 struct Plat { float cx, cy, hx, hy; Rgba8 color; };
 struct Coin { Vec2 pos; bool taken = false; };

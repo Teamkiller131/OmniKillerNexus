@@ -30,6 +30,8 @@
 #include <okn/audio/mixer/playback.hpp>
 #include <okn/audio/decode/wav_decoder.hpp>
 
+#include <okn/input/action_map.hpp>
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -79,28 +81,9 @@ constexpr int kDemoRows[kDemoGather] = {12, 14, 16};
 
 enum class State { Playing, Win };
 
-// ── input action-map (held movement + discrete act/sleep) ─────────────────────────
+// ── input action-map (okn-input; held movement + discrete act/sleep) ──────────────
 enum class Action { Up, Down, Left, Right, Act, Sleep, Count };
-struct InputMap {
-    sapp_keycode keys[static_cast<int>(Action::Count)][2]{};
-    bool down[static_cast<int>(Action::Count)]{};
-    bool pressed[static_cast<int>(Action::Count)]{};
-    void bind(Action a, sapp_keycode k0, sapp_keycode k1) {
-        keys[static_cast<int>(a)][0] = k0; keys[static_cast<int>(a)][1] = k1;
-    }
-    void on_key(sapp_keycode k, bool is_down) {
-        for (int a = 0; a < static_cast<int>(Action::Count); ++a) {
-            if (keys[a][0] == k || keys[a][1] == k) {
-                if (is_down && !down[a]) { pressed[a] = true; }
-                down[a] = is_down;
-            }
-        }
-    }
-    void end_frame() { for (bool& p : pressed) { p = false; } }
-    void reset() { for (bool& d : down) { d = false; } for (bool& p : pressed) { p = false; } }
-    bool held(Action a) const { return down[static_cast<int>(a)]; }
-    bool just(Action a) const { return pressed[static_cast<int>(a)]; }
-};
+using InputMap = okn::input::ActionMap<Action>;
 
 struct Game {
     std::array<Tile, kMapW * kMapH> tiles{};
@@ -514,7 +497,7 @@ void build_world() {
 void reset_game() {
     g.gold = kStartGold; g.day = 1; g.harvested = 0; g.sold = 0;
     g.state = State::Playing; g.goal_reached = false; g.tool = Tool::Hoe; g.facing_right = true;
-    g.input.reset();                                    // a held key must not survive R and auto-walk
+    g.input.clear_state();                              // a held key must not survive R and auto-walk
     if (g.autodemo) { std::ofstream("harvest_trace.txt", std::ios::trunc); }   // fresh trace per run
     build_world();
     g.inv = Inventory{};
