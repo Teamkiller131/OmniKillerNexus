@@ -253,12 +253,11 @@ the renderer) · lockstep multiplayer (state-sync first) · resurrecting the arc
 - **Windowed verification ceiling** — audio audibility, the editor viewport, and the P15 game
   can't be held to the headless-gate bar on a single Windows dev box; they need a display/audio
   device (and ideally the matrix CI from P10).
-- **Bus factor / NAS single point of failure** — ◑ largely discharged: a public GitHub mirror
-  (github.com/Teamkiller131/*) now carries the root + 12 of 13 okn-* submodules, and
-  `.gitmodules`' relative urls make a GitHub clone self-contained. Remaining: okn-editor's
-  mirror (blocked by its committed-Qt-DLL history × an unstable local proxy — push it from
-  the NAS as a gitea push-mirror), and the fnos runner still bootstraps `act_runner` from
-  the NAS.
+- **Bus factor / NAS single point of failure** — ✅ discharged: the public GitHub mirror
+  (github.com/Teamkiller131/*) carries the root + ALL 13 okn-* submodules, and `.gitmodules`'
+  relative urls make a GitHub recursive clone fully self-contained (verified). Keep the mirror
+  fresh by pushing `github` alongside `origin` (or add gitea push-mirrors later). Residual:
+  the fnos runner still bootstraps `act_runner` from the NAS.
 - **Jolt cross-platform determinism is opt-in** → lockstep needs it on; state-sync/input-replay
   don't. Single-player unaffected.
 
@@ -462,14 +461,16 @@ gate-verifiable and respects rule #2 (names its consumer).
 2. ✅ **`okn_add_sokol_game()` helper** (cmake/OknGame.cmake — the platform gate is now ONE edit
    for P10; games/_template still open) and ✅ **`bitmap_text.hpp`** (5 glyph tables deleted;
    `hud_bridge` `kText` unblock still open).
-3. ◑ **Public Git mirror** — ✅ github.com/Teamkiller131/{OmniKillerNexus + 12 okn-*} live;
-   `.gitmodules` now uses RELATIVE urls so one clone command resolves from either host
-   (verified by a real recursive clone from GitHub — 13/14 submodules OK). **Gap: okn-editor**
-   — its history carries ~125MB of committed Qt DLLs and the local network path to GitHub
-   rides an unstable fake-IP proxy (198.18.x) that kills sustained uploads; every strategy
-   (HTTPS/SSH, chunked, blob-seeded, negotiated, no-delta) died mid-pack. Fix from the NAS
-   side: a gitea **push-mirror** for okn-editor (server-side push, no local proxy), or push
-   once from a stable network; the P11 Qt-artifact prune would also shrink the problem.
+3. ✅ **Public Git mirror COMPLETE** — github.com/Teamkiller131/{OmniKillerNexus + all 13
+   okn-*}; `.gitmodules` uses RELATIVE urls so ONE command
+   (`git clone --recurse-submodules https://github.com/Teamkiller131/OmniKillerNexus.git`)
+   resolves everything — **verified: all 14 submodules OK**. The okn-editor holdout (its
+   ~137MB committed-Qt-DLL history × an unstable local fake-IP proxy killed every direct
+   push) was solved by a **bundle-over-release bootstrap**: the 37MB bundle split into 5×8MB
+   release assets (each under the proxy's death threshold), reassembled + force-pushed by a
+   one-shot self-removing `workflow_dispatch` job on GitHub's own runner. All scaffolding
+   (seed branches, release, workflow) cleaned up. *Lesson recorded: git push exclusion only
+   prunes along commit ancestry — disjoint "seed" refs do NOT shrink a pack.*
    ✅ **`FaultyLink` lifted into the testkit** (public `loopback_link.hpp`; `FaultInjector`
    gains a reproducible seed, gate-tested) — the netcode/replay substrate is in place.
 4. ◑ **State-hash harness** ✅ (okn-math hash fns implemented + `okn::ecs::state_hash()` over the
