@@ -505,8 +505,16 @@ gate-verifiable and respects rule #2 (names its consumer).
    widgets+router+bridge headlessly ("menu ... MENU OK" in the trace) and gameplay still
    reaches maxLvl=3. Remaining: the **per-field descriptor layer** `[M]` (labeled generic
    editing for the inspector).
-7. **`games/netbox` state-sync demo** `[M]` — the netcode's first consumer, once `FaultyLink` (3)
-   and the state-hash oracle (4) exist. Then **record/replay** `[M]` has a real feeder.
+7. ✅ **`games/netbox` state-sync demo** — the netcode's FIRST consumer, in the gate: a
+   headless server-authoritative sim (32 deterministic bouncing boxes on an okn-ecs World)
+   replicated tick-by-tick as Snapshot DELTAS over a `ReliabilityLayer` on the testkit
+   `FaultyLink` (drops every 3rd, reorders every other frame — ~100 of 301 frames hostile),
+   client materializes via the type-erased reflection, verified by per-id blob equality AND
+   `state_hash` equality of the two Worlds (`NETBOX SYNC OK ... deltas=200 blobs=1 hash=1`).
+   *Found + fixed by the demo: a sender that never drains its inbox never processes ACKs —
+   the cwnd stays shut (16 frames in 200 ticks); real integration lesson the unit tests
+   couldn't surface.* This de-risks P17's core loop ahead of schedule (state-sync needs no
+   determinism ADR). Next: **record/replay** `[M]` now has a real feeder.
 
 **Browser/WASM** `[M]`, **CPack** `[M]`, **editor→EKO1** `[M]`, **manifest/auto-atlas** `[M]`, and
 **mesh3d textures** `[L]` are the next tier — land them as their consumers arrive, not speculatively.

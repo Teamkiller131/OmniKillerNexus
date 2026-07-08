@@ -170,6 +170,28 @@ if (-not $SkipGames) {
         $summary += "  swarm (20k ECS)  BUILD FAILED"
     }
 
+    # NETBOX: the netcode's first game consumer — a headless server-authoritative
+    # state-sync demo: ECS World -> Snapshot deltas -> ReliabilityLayer over the
+    # testkit FaultyLink (drops/reorders), verified by blob + state_hash equality.
+    Write-Host "[*] Building netbox (state-sync gate) ..." -ForegroundColor Yellow
+    Invoke-Dev "cmake --build `"$buildPath`" --target netbox"
+    if (Test-Path (Join-Path $binDir "netbox.exe")) {
+        Push-Location $binDir
+        Remove-Item "netbox_result.txt" -ErrorAction SilentlyContinue
+        $netboxOut = (& ".\netbox.exe" 2>&1 | Out-String)
+        Pop-Location
+        if ($netboxOut -like "*NETBOX SYNC OK*") {
+            $line = ($netboxOut -split "`n" | Select-String "NETBOX SYNC OK" | Select-Object -First 1)
+            $summary += "  netbox (state-sync)  OK  [$($line.ToString().Trim())]"
+        } else {
+            $failures += "netbox"
+            $summary += "  netbox (state-sync)  FAILED: $($netboxOut.Trim())"
+        }
+    } else {
+        $failures += "netbox"
+        $summary += "  netbox (state-sync)  BUILD FAILED"
+    }
+
     # okn-editor (UniGUI / Dear ImGui) also exposes a headless --selftest that
     # returns before the window loop — it checks the scene serialize round-trip and
     # the multi-level undo/redo. Best-effort: build it (needs unigui); if the exe
