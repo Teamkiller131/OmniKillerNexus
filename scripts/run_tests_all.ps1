@@ -12,9 +12,9 @@
 # (loopback ASIO), okn-ui (pure widget / layout / input logic), and the native D3D12
 # backend (okn-render-native: offscreen clear + triangle readback via WARP).
 #
-# After the module suites it ALSO compile-gates all 7 games (a broken game build
-# must fail CI) and behaviour-gates VOIDBORNE + the editor headlessly (their
-# --selftest/--autodemo markers). The 6 sokol games need a GPU/window, so they are
+# After the module suites it ALSO compile-gates all 8 game targets (a broken game
+# build must fail CI) and behaviour-gates the HEADLESS games — VOIDBORNE, swarm,
+# netbox — plus the editor (their result markers). Sokol games need a GPU/window, so they are
 # compile-only.
 #
 # Usage:
@@ -107,11 +107,11 @@ foreach ($mod in $targets.Keys) {
     }
 }
 
-# ── Games: compile-gate all 7, behaviour-gate the headless north-star ──
+# ── Games: compile-gate all 8 targets, behaviour-gate the headless ones ──
 # A commit that breaks a game's compile must fail CI (the module gate alone never
-# caught that). The 6 sokol games need a GPU/window so they are compile-gated
-# only; VOIDBORNE runs fully headless so its --selftest/--autodemo result markers
-# are asserted (the one game whose behaviour CI can verify without a display).
+# caught that). Sokol games need a GPU/window so they are compile-gated only;
+# VOIDBORNE, swarm, and netbox run fully headless so their result markers are
+# asserted (the behaviours CI can verify without a display).
 $gameCount = 0
 if (-not $SkipGames) {
     $gameTargets = @("flappy", "knockdown", "platformer", "platformer-gl", "mario", "mario3d", "harvest", "voidborne")
@@ -127,8 +127,8 @@ if (-not $SkipGames) {
         $summary += "  game:{0,-10} BUILD OK" -f $g
         $gameCount++
     }
-    # VOIDBORNE is the one game that runs headless (its demo returns before the
-    # window loop), so assert its result markers.
+    # VOIDBORNE runs headless (its demo returns before the window loop), so
+    # assert its result markers. (swarm + netbox, below, are headless too.)
     $binDir = Join-Path $buildPath "bin"
     if (Test-Path (Join-Path $binDir "voidborne.exe")) {
         Push-Location $binDir

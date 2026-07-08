@@ -1,548 +1,241 @@
-# OmniKillerNexus — Long-Term Development Plan (v5, 2026-06-28)
+# OmniKillerNexus — Long-Term Development Plan (v6, 2026-07-08)
 
-**Thesis (unchanged, validated): buy undifferentiated infrastructure, build only the
-game glue.** Jolt, sokol_gfx/app, miniaudio, sol2, stb/assimp, Dear ImGui/UniGUI are the
-load-bearing third-party; OKN writes the glue, the engine-owned gameplay primitives, and
-the games. v4 supersedes v3 (2026-06-24): since then the **P12 gameplay-primitive phase
-closed**, the **P13 content/scheduler phase landed its headless core**, and the **P14
-scripting bridge + audio bus model** shipped — all gate-verified, the riskiest pieces
-adversarially reviewed. What remains is mostly **windowed** (needs a display/audio device)
-and the **cross-platform structural unlock (P10)**, still the single biggest gap.
+**Thesis: v5's job is done — now ship the star.** v5's insight was that most built capability
+had no consumer; its §13 executed completely (~24 gate-verified deliverables) and that vein is
+mined out. v6's two-front thesis: **(A) the second platform** — Linux CI on the public mirror,
+then widening the one-line platform gate — and **(B) the finishable game** — the content/polish
+pass that turns the north-star acceptance ("a stranger downloads and FINISHES it") from
+aspiration into fact. Supporting fronts: honesty consolidation (the measured great prune III +
+ONE status surface instead of four), the editor-as-level-tool arc, the netcode ladder to a 1v1,
+and closing the perf track on corrected numbers.
 
-**v5 adds §12–§13: the untapped-potential dig.** A 14-agent code-grounded sweep
-(7 lenses × mine→adversarially-verify) found that the dominant lever is no longer building
-new capability — it is that *a large fraction of what's already built and tested has no game
-consumer*. The bus mixer, spatializer, ECS Serializer, the entire netcode stack, the Rollback
-ring, SimdVec4, okn-ui, okn-memory, and the contact Stay/Exit phases are all real, tested, and
-**unconsumed**. §12 is the verified backlog of those unlocks (plus one genuinely new reach
-surface — a browser/WASM build that free-rides the P10 GLSL); §13 sequences the cheap ones.
-Every item below was checked against the actual files; effort/leverage are the post-verification
-numbers, and rejected/over-stated claims were dropped (e.g. a macOS/Metal "free rider" — false,
-sokol needs hand-authored MSL, no source reuse).
+v6 supersedes v5 (2026-06-28). It was produced the same way: a multi-agent code-grounded
+survey (6 lenses × mine→adversarially-verify) whose every claim cites the tree; corrected
+facts below carry their evidence. **Structural change: v5 kept four independently-drifting
+status surfaces (§2 framing, §6 phases, §9 ledger, §13 markers) — within days of each other
+they contradicted the tree AND each other. v6 keeps ONE scorecard (§2) and ONE sequenced
+plan (§4–§5); when something lands, exactly one row changes.**
 
 ---
 
-## 1. What changed since v3 (the headless build-out)
+## 1. Where the engine actually is (post-v5, verified)
 
-Every item below is in the gate (`scripts/run_tests_all.ps1`) and pushed.
+**The gate** (`scripts/run_tests_all.ps1`, all green): 17 module suites (~877 TEST_CASEs) +
+**8 game compile targets** (flappy, knockdown, platformer, **platformer-gl**, mario, mario3d,
+harvest, voidborne) + **three headless behavioral games** — voidborne (selftest + autodemo
+M0-M7 + crewSave), swarm (20k-entity ECS scale + scheduling-independent state hashes), netbox
+(state-sync under loss + bit-exact record/replay) — + CPack bundle assertion + editor selftest
+(serialize, undo, reflection, EKO1 round-trip) + the stub-guard `-Strict` ratchet (284 baselined).
 
-**P12 — Gameplay primitives in the engine — ✅ COMPLETE**
-- **`CharacterController`** (`okn-physics`, Jolt `CharacterVirtual`; Capsule+Box, `plane_2d`
-  lock, collide-and-slide + auto-step + grounded). Platformer (2D) + mario3d (3D) deleted
-  their hand-rolled raycast controllers and run on it.
-- **Collision layers/masks honored** (32-group mutual-mask test in the Jolt `GroupFilter`,
-  ObjectLayer scheme + CharacterController filter untouched) + **sensor/trigger volumes**
-  (`is_sensor`, no impulse) + **contact `Enter`/`Stay`/`Exit`** (Stay/Exit gated to sensors
-  so collision consumers aren't flooded). The branded "Jolt-contacts-as-triggers" edge is
-  now real.
-- **`okn-input`** — a new module (#14): backend-agnostic `ActionMap<Action>` (bind / rebind
-  / `held`/`just`/`just_released` / save-load). Platformer + mario3d deleted their
-  copy-pasted `InputMap`.
+**What v5's execution changed, in one paragraph:** every former capability-island now has a
+gate-verified consumer — sensors/TriggerVolume (platformer goal), positional audio (mario3d),
+the audible bus mixer `MixerPlayback` (harvest Master▸Music▸SFX + ducking), the ECS Serializer
+(voidborne crew save + live `crew.<id>.<field>` event effects), okn-ui (the platformer's
+title/settings menu with persisted volume + key rebind, drawn via `hud_bridge` kText +
+`bitmap_text`), okn-input (4-of-4 keyboard games + the rebind UI), ScriptingBridge reflection
+(generic editor inspector + per-field descriptors + Lua `get_field`/`set_field`), the netcode
+stack (netbox: Snapshot deltas over `ReliabilityLayer` on the testkit `FaultyLink`, verified by
+blob + `state_hash` equality, `replay=1`), the GLSL sprite path (platformer-gl's full autodemo
+on desktop OpenGL), CPack download-and-play ZIPs (proven by the extract-and-run stranger test),
+and EKO1 scene authoring (editor Save → SceneImporter → a fresh world that simulates).
 
-**P13 — Content pipeline + scheduler in anger — ◑ headless core done**
-- **Scheduler frontier complete**: per-frame O(n²) re-levelization → **cached levels**;
-  busy spin-wait → **CV-backed `wait_all()`**; query hot path → **cached `ComponentStore`
-  pointers** (was a hash-map lookup per component per entity); and the ECS scheduler is
-  **unified onto `okn-platform`'s Chase-Lev work-stealing pool** (its duplicate `IJobSystem`
-  + `ThreadPoolJobSystem` deleted).
-- **Scene pipeline**: **entity-ref remapping on load** (refs survive save/restart/reload),
-  **`Serializer` save/load to disk**, a real **`okn-asset` `SceneImporter`** (was a stub —
-  validates the EKO1 header, ECS-agnostic), and **scene-through-`PackWriter` bundling**
-  (scene → `.oknp` as a `kScene` entry → unpack by type → re-import).
-- **Atlas**: **`build_atlas()`** (shelf-pack N images → one atlas + uv rects → one DrawGroup)
-  and the usable **`TextureAtlas`** named layer (`make_sprite(name)`).
-
-**P14 — Audio + scripting become real — ◑ scripting done, audio core done**
-- **Lua ↔ ECS bridge**: `ScriptingBridge` gained a type-erased **read/write/query-by-name**
-  surface (+ `World::component_data_by_id`/`add_component_by_id`/`entities_with`), and
-  `okn-script`'s **`bind_ecs()`** exposes it to sol2 so a **Lua script drives the live
-  World**. **Hot-reloadable Lua rules** demonstrated (an `on_tick` rules file, reloaded to
-  swap rules while the World persists).
-- **Audio bus model**: `AudioMixer` buses now form a **hierarchy** (gain chains SFX/Music →
-  Master → root) with **ducking** (`set_duck` dips a bus while another has audio) — proven
-  by mixed-amplitude tests, backward-compatible with flat buses.
+**Distribution:** all 14 repos mirror to `github.com/Teamkiller131/*` (recursive clone
+resolves; relative `.gitmodules`); gitea on the NAS stays primary. GitHub **Actions is proven
+to run** on the mirror (the okn-editor bundle bootstrap) but **zero standing workflows exist**
+— and the root repo's `.github/workflows/quick-check.yml` actively spawns doomed runs on every
+mirror push (`runs-on: fnos-shell`, no `if: false`). *Fix immediately (§5.1).*
 
 ---
 
-## 2. Where we are now (grounded)
+## 2. Scorecard (the ONE status surface — every row cites the gate or a file)
 
-The slice is **`input → okn-input action map → sparse-set ECS (parallel scheduler on a
-work-stealing pool) → Jolt physics (CharacterController + layers/masks + sensors + contact
-phases) → 2D sprite render (software ref + sokol/D3D11 GPU, runtime atlas) → audio (decode +
-playback + a hierarchical ducking bus model) → Lua drives the live ECS (sol2) → ImGui/UniGUI
-editor shell → EKO1 scene save/load + SceneImporter + pack bundling`**.
+| Module | State | Suite | Game consumer(s) | Halo* | Notes |
+|---|---|---|---|---|---|
+| okn-core | solid | 31 | all (transitively) | 0 | **WASM blocker**: `platform.hpp` `#error` on unknown platform + 64-bit `static_assert` — no `__EMSCRIPTEN__` branch |
+| okn-math | solid | 139 | all | 17 | `SimdVec4` still zero consumers (disposition due, §4F); fnv1a/state-hash oracle live |
+| okn-memory | **island** | 116 | none | 11 | unchanged: zero external includes — wire-or-scope decision still open |
+| okn-platform | solid | 113 | scheduler/swarm | 11 | Chase-Lev steal is REAL (task_queue.cpp:83-102); Linux impls (mmap/dlopen/signal) real but **never compiled** — 131 unexercised branch sites |
+| okn-ecs | solid | 61 | voidborne, swarm, netbox | 9 | Serializer+refs, state_hash, reflection+FieldDescs, snapshot/Rollback (ring still untested) |
+| okn-asset | solid | 117 | voidborne, editor (EKO1) | 31 | SceneImporter consumed; still NO project manifest, no auto-atlas, no streaming |
+| okn-audio | solid | 57 | harvest (mixer), mario3d (3D), all (SFX) | 41 | bus tree + duck + positional AUDIBLE; mp3 decode real (dr_mp3); **no streamed BGM anywhere** (`MA_SOUND_FLAG_STREAM`: 0 hits) |
+| okn-script | solid | 17 | platformer (levels), voidborne-adjacent | 36 | bind_ecs + hot-reload + generic get/set_field; no game runs LOGIC in Lua yet |
+| okn-physics | reference | 24 | platformer, knockdown, mario, mario3d | 1 | CharacterController, layers, sensors+TriggerSet, joints; single-threaded |
+| okn-input | solid | 8 | 4-of-4 keyboard games | 0 | ActionMap + rebind UI + persistence |
+| okn-network | solid | 120 | **netbox** | **0** | reliability+RTO+AIMD+session+snapshot/delta+testkit(FaultyLink/recorder/replayer); QUIC honest stub; **no input msg type, Session can't address clients** (§4E) |
+| okn-ui | solid | 29 | platformer (menu) | 31 | widgets+layout+keyboard/text+router; focus_manager still a stub (no tab-nav) |
+| okn-render 2D | solid | 15+3+8+3 | 6 games | 4 | sw ref + GPU; **HLSL/GLSL-330/GLES3 selected by backend**; atlas+TextureAtlas+bitmap_text+hud_bridge(kText) |
+| okn-render 3D | partial | 16 | mario3d | — | mesh3d **HLSL-only**; single Lambert light, no textures |
+| okn-editor | growing | selftest | (is the tool) | **92** | UniGUI shell; reflection inspector; EKO1 authoring; ImDrawList viewport (real content, not a device target); **dead Qt path + 143MB committed build/ DLLs** (§4C) |
 
-Evidence: **14 modules**, **17 module test suites + 7 game compiles + VOIDBORNE
-`--selftest`/`--autodemo` + okn-editor `--selftest`**, all green in the gate (e.g. okn-ecs
-60/3168, okn-asset 117/406, okn-audio 49/465, okn-platform 113/182, okn-render2d 15/99,
-okn-physics 23/82, okn-input 8/30, okn-script 16/56). 7 buildable demo games across 5 genres
-(flappy, knockdown, platformer, mario, mario3d, harvest, voidborne); VOIDBORNE runs on the
-engine core.
+\* Halo = entries in `scripts/stub_baseline.txt` (284 total; measured: **221 of 284 are pure
+halo** — empty .cpp with empty/absent header pairs).
 
-**The honest framing that still holds:**
-- **Windows-only in practice — but no longer D3D11-only.** *(updated after §13)* The sprite
-  path now runs on desktop OpenGL too (backend-selected HLSL/GLSL + `sokol_impl_gl.cpp`;
-  `platformer-gl` autodemo-verified + compile-gated), with the GLES3/WASM strings staged.
-  Still true: game targets are `if(... AND WIN32)`, the editor forces `UNIGUI_BACKEND_DX11`,
-  mesh3d is HLSL-only, and `okn-platform` has **never been built or CI'd off Windows**.
-  *The remaining P10 gap is the Linux runner + the WIN32 gate widening.*
-- **Capability-with-consumer is now much better — but two big ones are still windowed.** The
-  audio bus model and the spatializer are tested but **not wired to `ma_sound_group`/`ma_sound`
-  (nothing audible yet)**; no single game yet meets the full north-star *on the engine stack*.
-- **Placeholder halos** — okn-network's are pruned and the **stub-guard `-Strict` is now wired
-  into the gate** (a baseline ratchet: no new halos can appear); the bigger ones (okn-editor 92,
-  okn-audio 41, okn-script 36, …) remain in the frozen baseline to prune over time. `okn-memory`
-  is still an island.
+**Corrected findings the old docs got wrong** (each was verified against the tree):
+audio IS audible (only streamed BGM remains of P14); okn-ui HAS a game menu consumer; the
+serializer/scheduler HAVE consumers; okn-network has ZERO baseline stubs (not "~45 left");
+the editor viewport DOES render (ImDrawList over real SpriteBatch); the work-stealing deque
+is NOT fake; okn-ui is NOT mouse-only; mp3 decode is NOT empty; P16 is STARTED (inspector +
+EKO1); the 2D renderer is NOT D3D11-only. Still true: okn-memory island, SimdVec4 unconsumed,
+no asset manifest, mesh3d HLSL-only, QUIC stub, determinism ADR missing.
 
----
-
-## 3. Strategy (unchanged thesis, the two standing rules)
-
-1. **No placeholder halos.** A module may not carry a near-empty `.cpp` halo unless every
-   file is in a build target with a committed consumer. Delete or gate. (Wire the stub-guard.)
-2. **Every capability has a game consumer in the gate, or it isn't done.** This is now the
-   dominant lens: the headless cores of P12–P14 are real, but several (audio buses, the Lua
-   bridge, the scene pipeline, scheduler parallelism) are still proven by **tests, not a game**.
-   P15 is what turns them into capabilities.
-
-Standing discipline: vertical slice over horizontal breadth; game-as-forcing-function;
-honesty as a feature; gate everything you claim.
+**The perf reversal (§4F):** the gate's recorded 9.44ms/20k-entities is a **Debug** number.
+A Release build in-tree measures **~0.69ms** — and a *worse* parallel ratio (0.73x). Profiling
+attribution: ~90% of even the Release frame is engine-controlled overhead (a fresh 20k-entry
+matched vector allocated per query per frame; sparse-indirect `get()` per component per
+entity). 20k entities ≈ 1000× the biggest real game (voidborne: 20 crew). The §8 "benchmark
+demands it" clause triggered — and what it demands first is *correct numbers*, not chunking.
 
 ---
 
-## 4. The open forks (status)
+## 3. North star (unchanged) + what's actually left
 
-- **Fork 1 — Native render backend. ✅ RESOLVED (pruned).** D3D12 clear+triangle kept as a
-  labeled experiment; ~113 placeholder subsystem `.cpp` deleted. Revisit only for a committed
-  D3D12-first title.
-- **Fork 2 — Netcode transport. ✅ DECIDED: build.** Reliable-over-loss/reorder + adaptive RTO
-  + AIMD congestion + keepalive + ECS state snapshot/delta, all reviewed + gated. Remaining: a
-  demo game wiring it to the ECS, the determinism ADR, and ~45 placeholder files to prune.
-- **Fork 3 — ECS storage. ✅ HOT PATH ADDRESSED.** v3 said "first fix the hot path (cached
-  dense iteration) + benchmark before any archetype work." The **query hot path is now cached**
-  (store pointers resolved once per `query()`); archetype stays dead. Remaining (optional): a
-  microbenchmark to lock the gain, and adopt the typed `SparseSet<T>` only if data demands it.
+> One complete game composing the FULL stack — title → authored levels → win/lose →
+> save/load → settings — built and distributable on Windows AND Linux, that a stranger
+> downloads and FINISHES.
 
----
-
-## 5. North star (unchanged — the acceptance test for the engine)
-
-> **One complete game that composes the FULL engine stack — `sprite2d + okn-ecs +
-> okn-physics + okn-audio + okn-script + okn-ui + okn-input` — with title → authored levels →
-> win/lose → save/load → settings (audio + key rebind), built and distributable on Windows
-> AND Linux.**
-
-Nearly every primitive that game needs now **exists and is tested**. What it still needs:
-the cross-platform half (P10), audible audio + a settings menu (P14/P16 tails), and the
-integration itself (P15).
+Verified distance: **Windows-side, the machinery exists end-to-end** (menu/settings/rebind ✓,
+Lua levels ✓, save ✓, CPack ZIP proven by extract-and-run ✓). What's left is honest content
+("finishes" — §4B) and the second platform (§4A). The Linux half is no longer a research
+problem: the headless spine (netbox/swarm/network/ecs/asset/ui/script sources) has **zero**
+`_WIN32`/`windows.h`; UniGUI already builds green on ubuntu-latest in its own Actions (with a
+copy-pasteable apt list); voidborne has NO WIN32 gate; the game gate is ONE line
+(`cmake/OknGame.cmake:39`); the enumerated hazards are shallow (okn-audio's unguarded MSVC
+pragmas under `-Werror`; `renderer.hpp`'s unguarded `<d3d12.h>` include chain; the gate
+script's vcvars/`D:/vcpkg`/`.exe` Windows-isms).
 
 ---
 
-## 6. Phased plan (forward — current status + acceptance)
+## 4. The v6 arcs
 
-### P10 — Cross-platform foundation — ✗ the biggest remaining gap *(headless-partial)*
-The prerequisite for the north star's "Linux" half. The live render path is D3D11-only, there
-is no sokol `GLCORE` TU, and no Linux build. ✅ **`D:/vcpkg` purge:** the hard-coded toolchain
-ref in the GitHub CI workflow + the `doctest_DIR` fallbacks in 4 module CMakeLists now drive
-off `$VCPKG_ROOT` (configure/run_tests already did; okn-platform's CMakeLists is left as the
-one remaining — it carries a protected pre-existing `BUILD_SAMPLES` edit, so its line can't be
-committed without that edit). **Remaining (needs the GL backend / a Linux runner):** add a
-`sokol_impl_gl.cpp` (`SOKOL_GLCORE`) and the GLSL sprite/mesh shader variants **together**, so
-the GLSL is actually exercised (adding unexercised GLSL strings on the D3D11-only path now
-would be a placeholder, against the no-capability-without-a-consumer rule); a `linux-clang`
-preset; a headless VOIDBORNE `--autodemo` on Linux; hosted matrix CI.
-**Acceptance:** green CI on Windows AND Linux; VOIDBORNE `--autodemo` passes on Linux.
+### A. The second platform (P10 close-out) — Linux CI on the mirror
+Ladder, each rung gate-verifiable:
+1. **`linux.yml` headless spine** `[L]` — ubuntu-latest on the mirror: vcpkg (GHA binary
+   cache), build okn-core→platform→ecs→network(+asset/ui/script), run the suites + **swarm +
+   netbox + voidborne/editor selftests** (all headless-safe; swarm's budget is a loose
+   tripwire by design). First-ever off-Windows compile of okn-platform's 131 branch sites —
+   expect the enumerated shallow breaks (audio pragmas, d3d12 include) and fix them as found.
+2. **Widen the ONE game gate** `[M]` — `WIN32` → `WIN32 OR LINUX` + the X11/GL link glue in
+   `okn_add_sokol_game`; platformer-gl builds as an ELF and runs its **full autodemo under
+   xvfb** (maxLvl=3 + MENU OK markers already exist for this).
+3. **windows-latest gate job** `[M]` — the full `run_tests_all.ps1` on hosted Windows (needs
+   the script's portability fixes: vcvars discovery, `VCPKG_INSTALLATION_ROOT`, exe naming).
+   Kills the single-NAS-runner bus factor.
+4. **Linux bundle** `[S]` — the CPack component on the Linux job; the stranger test, on the
+   second platform.
 
-### P11 — The great prune II — ◑ mostly done
-Fork 1 pruned (125 files). ✅ **okn-network's 46 placeholder stub TUs deleted** (symbol-neutral;
-116/916 still green), and ✅ **`check_no_stub_tus.ps1 -Strict` is wired into the gate** as a
-**baseline ratchet** — `scripts/stub_baseline.txt` freezes today's 283 known stubs (legit
-header-first empties + the remaining halos) and the gate fails on any NEW stub, so the debt
-can't grow back. **Remaining:** prune the bigger halos still in the baseline (okn-editor 92,
-okn-audio 41, okn-script 36, okn-asset 31, okn-ui 31) over time + delete the committed
-`okn-editor` Qt build artifacts; each prune shrinks the baseline.
+### B. The finishable game (the star's content half)
+- **Platformer finishing kit** `[L]` — the honest assessment: today it's a 2-minute tech demo
+  (3 levels, no fail state, a win "screen" of 3 yellow rects, 2 beeps). The kit: level schema
+  v2 (kill zones, collectibles in `platformer_lua`), ~6 more levels with a difficulty curve,
+  death counter + timer HUD, a real ending screen (stats + Continue from `g.best`), streamed
+  music bed + Music/SFX split driven from the existing settings screen (`MA_SOUND_FLAG_STREAM`
+  — the last P14 tail), save moved onto the Serializer/EKO path. Autodemo extended per feature.
+- **voidborne finish-quality** `[S]` — the only game a stranger could finish TODAY (7 endings,
+  bilingual, title/save/settings) has **no sound**. Ambient loop + day-tick/event/harvest/ending
+  SFX on Master/Music/SFX buses + a volume slider in its existing settings, autodemo-asserted.
+  Keep it the behavior-gated flagship alongside the platformer.
 
-### P12 — Gameplay primitives — ✅ COMPLETE
-CharacterController · layers/masks · sensors · contact phases · `okn-input`. *(Soft leftover:
-a reusable `okn-ui` settings/title menu — folds into P16/P15.)*
+### C. Honesty III (the measured prune) + one status surface
+- **Stage 1: the editor purge** `[M]` — delete the dead uncompiled Qt world (`editor_app_qt.cpp`,
+  `editor_engine.cpp`, the fake `ecs_bridge.cpp` returning `"{}"`, QML, ~40 uncompiled src/
+  subdirectories), `git rm -r` the **143MB** of committed Qt build artifacts + `.gitignore` it.
+  Baseline 284 → ~192. (This is also mirror hygiene — those DLLs are why okn-editor's mirror
+  needed a bundle bootstrap.) Split the 924-line single-TU `editor.cpp` into 3-4 files while
+  the tree is open.
+- **Stage 2: the empty-pair halos** `[M]` — okn-audio 38/41, okn-script 35/36, okn-ui 29/31,
+  okn-asset 27/31 measured deletable → baseline lands ≈ 63 legit header-first entries.
+- **Docs consolidation** `[S]` — this document's §2 is now the only scorecard; ARCHITECTURE's
+  stale rows corrected (done with v6); the gate script's own stale comments fixed.
 
-### P13 — Content pipeline + scheduler — ◑ core done
-Scheduler frontier complete; scene pipeline (ref-remap, disk save/load, SceneImporter, pack
-bundling) + atlas (packing + TextureAtlas) done. **Remaining:** a **project manifest** (scenes
-+ asset-refs-by-id), an **asset-load step that auto-atlases** a game's loose PNGs, the
-editor's **save→restart→reload** test wired onto the engine format, and (optional) a **query
-microbenchmark** + a non-flaky parallel-speedup signal.
+### D. Editor as the level tool (P16, replanned on evidence)
+1. **The level bridge** `[M]` — the P16 acceptance is about *platformer* levels, but the editor
+   authors *SliceWorld* scenes — different documents. Bridge: `GoalTag`/`SpawnPoint` markers +
+   a `platformer_levels.lua` exporter; selftest authors a level via editor ops, exports, parses
+   back with `plat::load_levels_from_lua`, asserts value-identity. (The game side is DONE — it
+   hot-reloads the file by mtime.)
+2. **plat_sim extraction** `[L]` — the editor's Play steps SliceWorld physics, which cannot
+   reproduce the game's kinematic controller. Extract the platformer's sim into a `plat_sim`
+   lib consumed by the game (gate unchanged) → play-in-editor becomes honest.
+3. **Offscreen sokol viewport** `[M]` — **the v5 blocker is stale**: `DX11Renderer`'s device
+   members are already public; only a ~10-line app-layer accessor is missing, in UniGUI, which
+   the owner controls. First milestone is engine-side and headless: offscreen D3D11 device →
+   `sg_setup` with injected device → GpuSpriteRenderer draws into an offscreen target →
+   readback asserted in the selftest. The UniGUI patch + pin bump follows.
 
-### P14 — Audio + scripting real — ◑ scripting done, audio core done
-**Done:** Lua drives the live ECS + hot-reloadable rules; the bus hierarchy + ducking model;
-the **spatializer math** (listener-relative pan via `cross(forward,up)` + miniaudio-style
-inverse distance attenuation, headless-tested).
-**Remaining (windowed):** route each bus through a `ma_sound_group` and drop
-`NO_SPATIALIZATION` so the bus model + spatializer drive a real `ma_sound`; stream BGM with
-`MA_SOUND_FLAG_STREAM`; **prove it in a game.** **Acceptance:** one game ships positional ambient SFX + a streamed
-music bed + a settings-driven SFX/Music split; one game's rules live in a hot-reloaded Lua file.
+### E. Netcode (P17, un-gated by evidence)
+The ladder, in order:
+1. **The determinism ADR** `[S]` — it now documents *proven facts*: server-authoritative
+   state-sync under loss (gate), same-build bit-exact replay (gate), lockstep + cross-platform
+   determinism explicitly out (JPH flag stays off), interpolation-only for the 1v1 (no
+   prediction/lag-comp), and the **measured scale limits** with named upgrade triggers
+   (apply_delta is O(changed×n) sorted-insert; reliable-ordered streaming has head-of-line
+   blocking; ~24KB/tick at 1000 moving entities — LAN-fine; the `base_tick` wire field is the
+   hook for the Quake-style unreliable-delta upgrade).
+2. **netbox-duplex** `[S]` — client input → server (an `InputCommand{tick, buttons}` message;
+   the transport is already symmetric), server applies at tick boundaries (not recv-time —
+   the determinism hazard), replicates back; input-journal replay asserted in the gate
+   (`NETBOX DUPLEX OK`).
+3. **Session identity + 2-process TCP** `[M]` — `send_to`/`recv_from` with client ids (today
+   send() broadcasts and recv() is anonymous — a 1v1 cannot exist); then the gate spawns
+   server + client as separate processes on real loopback TCP.
+4. **The 1v1** `[L]` — pong/box-pusher on the duplex stack + a headless interpolation-buffer
+   test (buffer K ticks, query fractional render time, never extrapolate), then the windowed
+   client on the platformer's shell with `--autodemo`. This IS the P17 acceptance.
 
-### P15 — The north-star game — ◑ started (platformer promoted; Lua-authored levels)
-The platformer is the chosen title; its levels are now authored + hot-reloaded from `okn-script`
-Lua (`platformer_levels.lua`, sol2 in a confined `OKN_PLAT_HAS_LUA` TU; built-in fallback).
-Next: title/settings (okn-ui + okn-input rebind + audio bus split), SceneImporter levels.
-Promote the platformer (or a new small title) to the full loop on the full stack, shipping
-cross-platform as a packaged artifact (`install` + asset staging + **CPack**; CI publishes the
-bundle on a tag). This is where P10–P14 become **capabilities** and the next gap list is born.
-**Acceptance:** a stranger downloads and finishes it on Windows AND Linux; progress persists;
-audio/keys configurable; it links the full stack; CI emits the per-platform bundle.
+### F. Perf close-out (measure, correct, then decide)
+1. **Release perf lane + phase decomposition** `[S]` — the gate's swarm line sourced from a
+   Release build; three phase timers (query build / view iterate / raw-array ceiling). The
+   recorded finding gets corrected (Debug 9.44 → Release ~0.69ms, ratio 0.73x, overhead-dominated).
+2. **Only if the phases demand it** `[M]` — cached/reusable Views (a World structural-version
+   counter) + a dense-walk fast path for n==1 queries; then `par_for_each` (chunked
+   intra-system, joined on a `std::latch` — NOT pool `wait_all`, a real deadlock hazard) gated
+   at the scale where it pays.
+3. **SimdVec4 disposition** `[S]` — name its consumer or scope the claim; the standing-rule
+   violation doesn't get to live in the tree indefinitely.
 
-### P16 — Editor as the real content tool — ✗ not started
-Replace the viewport `nullptr` stub with the engine's own renderer into an **offscreen sokol
-target** (first settle the ImGui-vs-Qt fork). Tilemap / level editing, play-in-editor,
-offscreen thumbnails. **Acceptance:** every P15 level is authored in-editor, WYSIWYG against
-the real renderer.
-
-### P17 — Networking — gated (only after P15 + the determinism ADR)
-Write the **determinism ADR** (default server-authoritative state-sync; lockstep is opt-in
-behind `JPH_CROSS_PLATFORM_DETERMINISTIC`). Build the snapshot/delta replication glue on the
-sparse-set World (the `ScriptingBridge` reflection is finally a consumer). A 2-player
-server-authoritative demo. **Acceptance:** ADR merged; 1v1 demo runs with client interpolation;
-a bit-exact input-replay test in the gate.
-
----
-
-## 7. Continuous tracks
-- **No placeholder halos** — every phase removes more dead surface than it adds; wire the
-  stub-guard.
-- **Every capability has a game consumer** — the now-dominant rule; P15 is the forcing function.
-- **Determinism/perf harness** — record/replay + state-hash + microbenchmarks, built once and
-  reused for scheduler/physics/netcode.
-- **Docs-vs-reality** — keep ARCHITECTURE matching the gate; correct stale claims as found.
-
----
-
-## 8. Explicit non-goals (do not start yet)
-PBR/GI/raytracing/shadows-heavy 3D · a finished native D3D12/Vulkan/Metal backend (sokol is
-the renderer) · lockstep multiplayer (state-sync first) · resurrecting the archetype ECS
-(sparse-set stays; chunked iteration only if a benchmark demands it) · mobile/console.
-
----
-
-## 9. Buy-vs-build ledger (refreshed)
-
-| Subsystem | Decision | Status |
-|---|---|---|
-| Physics | **Buy** Jolt | Reference module. **CharacterController + layers/masks + sensors + contact phases now real.** Single-threaded; dead native integrator to prune. |
-| 2D render | **Build** glue / **buy** sokol_gfx | Real (sw ref + GPU) + **runtime atlas + TextureAtlas**. Windows/D3D11-only; needs a GL backend (P10). |
-| 3D render | **Build** glue / **buy** sokol_gfx | Depth-tested mesh path (mario3d). Single Lambert light; no textures/materials/shadows. |
-| Windowing/input | **Buy** sokol_app + **build** `okn-input` | Real. **Action-mapping is now an `okn-input` module** (2 games on it). |
-| Audio | **Buy** miniaudio | Decode + playback real. **Bus hierarchy + ducking model + spatializer math (pan + distance) now real + tested** — but not yet wired to `ma_sound_group`/`ma_sound` (nothing audible). |
-| Scripting | **Buy** sol2/Lua | **`bind_ecs()` lets Lua drive the live World** (create/destroy/add/read/write/query); hot-reloadable rules demonstrated. Needs a *game* on Lua rules. |
-| ECS | **Build** sparse-set World | Real + parallel scheduler (on the work-stealing pool) + save/load + **cached query hot path**. Scheduler/serializer still need a game consumer. Archetype stays dead. |
-| Threading | **Build** Chase-Lev pool | **Unified**: the ECS scheduler now runs on `okn-platform`'s work-stealing pool; the duplicate ECS pool was deleted; `wait_all()` is CV-backed. |
-| Assets | **Buy** stb/assimp | Importers + I/O + hot-reload + pack real. **SceneImporter real + scene pack bundling proven.** No compression; no project manifest; streaming single-threaded. |
-| Memory | **Build** arenas/pools + **buy** mimalloc | Real but an **island** (nothing includes it). Wire it or scope the claim. |
-| UI | **Build** | Widgets + layout + keyboard/text real. **Still no game uses it for menus.** |
-| Editor | **Buy** ImGui via UniGUI (Qt artifacts linger) | Shell + multi-level undo; **viewport renders nothing** (stub). Pick ImGui-vs-Qt; wire the real renderer (P16). |
-| Networking | **Decided: build** | Reliable + adaptive RTO + AIMD + keepalive + ECS state-sync, reviewed + gated. QUIC honest stub; ~45 placeholder files left. Needs a demo game + the ADR. |
-| Cross-platform | **Build** (presets + GL) | `okn-platform` POSIX/Apple-coded but never built off Windows. Blocker: render/windowing edge + `D:/vcpkg` + no Linux CI. **Top priority (P10).** |
+### G. Reach (opportunistic)
+- **flappy.html / WASM** `[M]` — the GLES3 shaders are staged and shared-bodied with the
+  exercised GL330 path; flappy is the verified ideal target (no file IO, no Jolt, WebAudio-safe
+  procedural audio). Blockers: emsdk (not installed) + exactly two lines in okn-core's
+  `platform.hpp` (`#error` + the 64-bit `static_assert`). Publish via GitHub Pages on the mirror.
+- **mesh3d GL** `[M]` — GLSL for the box shader unlocks mario3d off-Windows; only worth it
+  with arc-A rung 2 landed.
 
 ---
 
-## 10. Risks & watch-items
-- **The cross-platform gap (P10)** is now the dominant risk: the north star's "Linux half"
-  blocks on the GL backend + a Linux runner, none of which exist yet.
-- **Capability-without-a-game** — the audio buses, Lua bridge, scene pipeline, and scheduler
-  parallelism are tested but unproven under a real game; P15 is the mitigation.
-- **Placeholder-halo honesty debt** — `okn-network`/`okn-editor` halos + the unwired
-  stub-guard keep the tree over-stating; honesty is the project's edge.
-- **Windowed verification ceiling** — audio audibility, the editor viewport, and the P15 game
-  can't be held to the headless-gate bar on a single Windows dev box; they need a display/audio
-  device (and ideally the matrix CI from P10).
-- **Bus factor / NAS single point of failure** — ✅ discharged: the public GitHub mirror
-  (github.com/Teamkiller131/*) carries the root + ALL 13 okn-* submodules, and `.gitmodules`'
-  relative urls make a GitHub recursive clone fully self-contained (verified). Keep the mirror
-  fresh by pushing `github` alongside `origin` (or add gitea push-mirrors later). Residual:
-  the fnos runner still bootstraps `act_runner` from the NAS.
-- **Jolt cross-platform determinism is opt-in** → lockstep needs it on; state-sync/input-replay
-  don't. Single-player unaffected.
+## 5. Sequenced next (S-first, each names its verification)
+
+1. ✅ *(with v6)* **Kill the mirror-hazard workflow** — `quick-check.yml` gets `if: false` (it
+   targets the gitea runner label; on GitHub it spawns a doomed run per push). Docs corrected.
+2. **Determinism ADR** `[S]` — §4E.1; a document, but one that un-gates P17 formally.
+3. **netbox-duplex** `[S]` — §4E.2; `NETBOX DUPLEX OK` in the gate.
+4. **Release perf lane** `[S]` — §4F.1; the corrected swarm line in the gate.
+5. **voidborne sound** `[S]` — §4B; autodemo asserts the mixer path.
+6. **Prune III stage 1 (editor)** `[M]` — §4C; baseline ≤ 192, gate green, mirror slimmed.
+7. **linux.yml headless spine** `[L]` — §4A.1; the first off-Windows green.
+8. **Platformer finishing kit** `[L]` — §4B; the star's content half, feature-by-feature.
+9. **Editor level bridge** `[M]` — §4D.1; then plat_sim, then the offscreen viewport.
+10. **Session identity → 1v1** `[M→L]` — §4E.3-4, after duplex + the ADR.
 
 ---
 
-## 11. Immediate next (actionable now)
-1. ✅ **P14 audio — the spatializer math** landed (`okn-audio` `spatializer.hpp`):
-   listener-relative pan + inverse distance attenuation, headless-tested. The remaining
-   `ma_sound`/`ma_sound_group` wiring is windowed.
-2. ◑ **P10 cheap slice** — ✅ the `D:/vcpkg` purge landed (CI workflow + 4 module CMakeLists
-   → `$VCPKG_ROOT`; okn-platform's left, protected). The GLSL shader variants are deferred to
-   land **with** the `SOKOL_GLCORE` backend (so they're exercised, not a placeholder) — the
-   bigger P10 step that needs a GL/Linux runner.
-3. ✅ **P11 honesty** — `check_no_stub_tus.ps1 -Strict` (baseline ratchet) is wired into the
-   gate, and okn-network's 46 placeholder stubs are pruned. Remaining: prune the bigger halos
-   in the baseline (okn-editor 92, okn-audio 41, …) + the `okn-editor` Qt artifacts over time.
-4. ◑ **P15 kickoff (the big one)** — ✅ the platformer is now the north-star title and its
-   levels are **authored + hot-reloaded from Lua** (`platformer_levels.lua` via a sol2 TU,
-   `OKN_PLAT_HAS_LUA`), composing `okn-script` onto the existing CharacterController + `okn-input`
-   + save/load stack. Proven headlessly: the autodemo is driven by the Lua level count (a
-   1-level Lua file caps the run at `lvl=1` where the 3 built-in levels reach `lvl=3`), and a
-   missing/invalid file falls back to the built-ins. Remaining: title screen → settings
-   (okn-ui + okn-input rebind + the audio bus split) → SceneImporter-authored levels in-editor.
+## 6. Non-goals (carried + new)
+PBR/GI/shadow-heavy 3D · native D3D12/Vulkan/Metal (sokol IS the renderer; the dead D3D12
+experiment stays labeled) · lockstep + cross-platform bit-determinism (ADR: out) · client
+prediction/lag-compensation for the 1v1 (interpolation only) · interest management before its
+ADR-named trigger · archetype ECS resurrection · chunked iteration before §4F.1's numbers
+demand it · mobile/console · SDK install/export until modules are EXPORT-tagged
+(`OKN_ENABLE_INSTALL` stays OFF; `OKN_PACKAGE_GAMES` is the shipping path).
 
----
-
-## 12. Untapped potential (code-grounded deep-dig, 2026-06-28)
-
-Every item is anchored to real files and was adversarially verified; `[leverage/effort]` are the
-post-verification numbers (effort S/M/L). The governing insight: **the project's own rule #2
-("every capability needs a game consumer") is now the biggest backlog generator** — most of these
-turn an already-built, already-tested island into a shipped feature, not new tech.
-
-### A. The "capability with no consumer" wave — turn tested islands into shipped features
-The highest-density theme: each is a real, gate-tested capability with **zero game consumers**.
-
-- **TriggerVolume primitive** `[high/S]` — sensor Enter/**Stay/Exit** is fully built + tested
-  (`physics_world_jolt.cpp:144-166`, `test_jolt.cpp:534-565`) but **no game sets `is_sensor`**;
-  every game polls `drain_contacts()` for Enter only. A header-only `on_enter/stay/exit` helper
-  unlocks checkpoints, damage zones, pickups, level-exit gates. *Consumer:* one platformer
-  trigger. *Caveat:* the kinematic CharacterController isn't a contact body — the trigger needs a
-  dynamic proxy or an overlap query for the player.
-- **Make the audio bus mixer + ducking audible** `[high/M]` — `AudioMixer` is a complete bus-tree +
-  ducking core with 13 passing tests but its `process()` output is never handed to miniaudio
-  (`playback.cpp:57-101` routes each sound through its own `ma_sound`). Feed `process()` through
-  **one** `ma_data_source`/`ma_sound`; submit per-sound PCM via `submit_samples()`. *Consumer:*
-  harvest (26 play sites) with a Master▸Music▸SFX tree + `set_duck`. The single most-expected
-  audio feature, math already proven.
-- **mario3d positional audio** `[high/S]` — `SpatializerNode` math is tested
-  (`spatializer.cpp:16-53`) but `playback.cpp:80` hard-sets `NO_SPATIALIZATION`; mario3d plays 6
-  world-positioned events flat. Drop the flag, add `play_at(buf, vec3)` → `ma_sound_set_position`
-  and `set_listener()` ← Camera3D. Keep `SpatializerNode` as the headless test oracle. *The
-  spatializer's only 3D-game consumer.*
-- **ECS Serializer as the one save path** `[high/M]` — `serialize.cpp` is a complete EKO1 World
-  save/load **with entity-ref remapping**, tested, **zero game consumers**; meanwhile voidborne
-  hand-writes 30+ rapidjson pairs (`main.cpp:1775-1828`) yet already runs crew on a real
-  `crewWorld` it *ignores on save*, and platformer writes a raw 8-byte `.dat`. Route voidborne's
-  crew through `Serializer::save_to_file`. *Caveat:* EKO1 is host-endian/same-build (dev saves);
-  `CrewStats` is POD-safe, but crew text lives in a parallel side-table (needs a string table or
-  JSON sidecar). Directly satisfies the P15 "progress persists" clause.
-- **Finish the okn-input migration** `[medium/S]` — okn-input shipped to kill the copy-pasted
-  `InputMap`, but mario (`mario_app.cpp:84-92`) + harvest (`:84-91`) still hand-roll it. Swap to
-  `using InputMap = okn::input::ActionMap<Action>` (mechanical for mario; the call sites already
-  match). Takes okn-input to 4-of-4 keyboard games and gives both **free rebindable+persistable
-  keys** that feed the settings menu.
-- **SimdVec4 first consumer** `[medium/M]` — a complete SSE4.1 path with a scalar fallback,
-  **zero production consumers** (a standing-rule violation). Wire a Vec4-packed/SoA batch transform
-  (the swarm bench in §D) with a scalar-equality + timing doctest. *Caveat:* a real win needs SoA,
-  not wrapping the existing AoS `Vec3`.
-- **okn-memory off its island** `[low/S→L]` — confirmed island (zero external includes). Cheapest
-  honest wiring is a load-scoped arena behind the Deserializer's scratch buffers `[low/S]`. The
-  hot-path version (per-frame query/scheduler scratch) is `[L]` and **conditional**: `LinearArena`
-  doesn't derive `IAllocator` and isn't thread-safe, so it needs an `IAllocator` arena adapter +
-  per-worker arenas, and only pays off if the §D swarm bench shows query-vector allocs are hot.
-
-### B. One reflection to rule them all (the structural unlock)
-- **A thin per-field descriptor layer** `[high/M]` — `ComponentInfo` carries no field
-  offsets/names (`component.hpp:18-27`); `ecs_binding.hpp:9-12` says verbatim that a generic
-  by-name field surface "would need per-field reflection the ECS deliberately doesn't carry." That
-  one missing `{name,offset,type}` table per component is consumed **two ways at once**: (1) a
-  generic, labeled **editor inspector** (today hard-codes 3 component types, `editor.cpp:319-353`);
-  (2) **okn-script** generic `component.field` get/set instead of per-game `new_usertype`. (A third
-  use — field-granular netcode delta — is *future*: the delta encoder is whole-entity today, so it
-  needs a rewrite, not just the descriptor.) *Land it WITH a consumer (the inspector) in the same
-  change.* The cheap pre-step: **wire the editor's fake `EcsBridge` onto a real World +
-  ScriptingBridge** `[high/M]` — `ecs_bridge.cpp:96` returns literal `"{}"`; the live
-  reflection + the working `CommandManager` undo already exist. Read-only generic discovery is
-  reachable now; labeled editing waits on the descriptor. *This is the cheapest first real P16 step,
-  independent of the viewport renderer.*
-
-### C. New reach surface + distribution (the genuinely-new direction)
-- **Browser/WASM build riding the P10 GLSL** `[high/M]` — the renderer's only backend-specific code
-  is two HLSL shader pairs; **no GLSL exists**. The GLSL the roadmap already commits to writing for
-  Linux/`SOKOL_GLCORE` is byte-identical to what sokol's `SOKOL_GLES3` (emscripten) needs. flappy is
-  the ideal first target: canonical `sokol_main`, **zero file IO** (procedural audio via
-  `make_beep`), no Jolt, audio via `ma_engine` (WebAudio under emscripten). A zero-install,
-  link-shareable `flappy.html` is the single biggest distribution multiplier for a solo author —
-  for the marginal cost of a GLES3 impl TU on top of planned P10 work. *"wasm/emscripten/browser"
-  appears nowhere in v4.* (harvest is **not** a first target — it `stbi_load`s a PNG.)
-- **Public Git mirror** `[high/S]` — discharges the §10 bus-factor risk (everything resolves only
-  from one NAS, which flaked mid-session) **and** is the hard precondition for hosted Linux CI /
-  any outside runner. *Honest caveat (verified):* it unblocks the precondition, not instant-green
-  Linux game builds — okn-platform has never been built off Windows, and the runner currently
-  bootstraps `act_runner` *from* the NAS, so the mirror must rehost that too.
-- **CPack + `install()` rules** `[medium/M]` — `OKN_ENABLE_INSTALL` is OFF; no game/SDK has install
-  rules and no CPack exists (an `install()` pattern already lives in `tools/CMakeLists.txt:54` to
-  copy). The voidborne post-build data-staging is 90% of an `install()` rule; CPack ZIP is the lid.
-  Turns "clone + build with vcvars" into "download + double-click" — the literal north-star clause.
-- **Not worth it (rejected):** a sokol **Metal/macOS** "free rider" off the GLSL — false. sokol does
-  not cross-compile hand-written shader source at runtime; Metal needs hand-authored MSL strings +
-  Apple hardware to verify. No source reuse; defer until a Mac box/runner exists.
-
-### D. Determinism + perf harness — made concrete (the §7 track that was vaporware)
-- **State-hash determinism harness** `[high/M]` — the hard part already exists: `serialize.cpp`
-  emits a **byte-deterministic** World snapshot (entities in index order, components sorted by type
-  id — verified). But `okn-math/hash.cpp` is an empty include (`hash_combine` declared, never
-  defined) and the network `recorder/replayer.hpp` are stubs. Implement `fnv1a` + `World::state_hash()
-  = hash(Snapshot::capture())`; first consumer = a save/load hash-equality doctest in the gate. The
-  one oracle reused by save/load, scheduler, physics, and future netcode.
-- **10k-entity swarm stress demo = the ECS perf gate** `[high/M]` — nothing in `games/` exceeds
-  ~1000 entities; the cached query hot path (`world.hpp:191-232`) was built for scale it never
-  sees. A headless swarm (N boids: Position+Velocity under the parallel scheduler) at 10k–50k with
-  a loose per-frame budget stress-tests sparse-set growth + cached query + the thread pool at once,
-  and is **the benchmark §8 conditions chunked-iteration on** ("only if a benchmark demands it").
-- **Scheduler speedup microbench** `[medium/S]` — the parallel test asserts only *correctness*; the
-  claimed speedup is measured nowhere. Extend the existing 1000-entity disjoint-write fixture to
-  time `set_job_system(&pool)` vs sequential; assert a loose floor gated on `worker_count()>=2` to
-  stay non-flaky.
-- **Record/replay** `[medium/M]` — capture the seeded fault/tick stream + per-tick `state_hash`,
-  replay, assert identical. *Gated on a real feeder* (the netbox/voidborne state-sync below), else
-  another island. *Note (verified):* voidborne is a **weak** determinism host — its sim mutates
-  plain `g.*` structs, not the ECS, so `state_hash(crewWorld)` is ~constant; hash the `g.*` fields
-  or prefer the swarm/save-load tests.
-
-### E. Engine-as-product / DX (cheap consolidation, no new capability)
-- **`okn_add_sokol_game()` CMake helper + `games/_template`** `[high/S]` — all 6 sokol games repeat
-  the same ~10-line recipe (WIN32 gate, two render-TU paths, DPI manifest, `/WX-`) with **no
-  helper anywhere**. One function makes the **WIN32→GL gate a single edit** (the precondition for
-  the P10 backend swap) and "new game" a copy-one-dir op. *Needs an `EXTRA_SRC`/`RENDER_TU` hook*
-  (mario3d uses `mesh_renderer.cpp`; platformer has the optional Lua block).
-- **Promote the 3×5 bitmap font into okn-render** `[high/S]` — the identical `kFont[10][5]` glyph
-  table is copy-pasted in 4 games (+ harvest's A–Z); the sprite path is header-only so a
-  `bitmap_text.hpp` drops in with zero link changes. It also **unblocks `hud_bridge`'s skipped
-  `kText`** — i.e. the precondition for any readable in-game okn-ui menu.
-- **okn-ui's first consumer: a title/settings menu** `[medium/M]` — already a named P15 item, but
-  the *actual blocker* is the **empty `renderer_bridge.hpp` stub** `[medium/M]`: implement the one
-  adapter that walks `DrawCommand`s → SpriteBatch quads (`kRect`/`kImage` ≈ 1:1), then a
-  `SettingsPanel` (audio sliders + `ActionMap::rebind` rows) closes okn-ui + audio-bus + input-
-  persistence gaps in one screen. *Sequence after bitmap_text (`kText`) + note `focus_manager.cpp`
-  is a 4-line stub, so tab-nav needs filling; mouse sliders work now.*
-- **Editor authors EKO1** `[medium/M]` — the editor saves text Lua; okn-asset has a real binary
-  EKO1 `SceneImporter` whose magic **matches** the okn-ecs Serializer (verified) — but the editor
-  uses neither, and levels live in a *third* place (`platformer_levels.lua`). Emit EKO1 from the
-  editor's live `SliceWorld` + load it in one game → "every P15 level authored in-editor" without
-  the offscreen-sokol rewrite (which stays blocked on UniGUI not exposing its D3D11 device).
-- **Per-game stb → `TextureImporter` (+ atlas for mario)** `[medium/S]` — 3 games re-`#define
-  STB_IMAGE_IMPLEMENTATION`, duplicating the guarded `TextureImporter`. Gives the importer its
-  first consumer; the atlas (3 draws→1) win applies **only to mario** (the others load one sprite).
-  *Caveat:* `TextureData`→`Image` needs a per-pixel conversion (not a drop-in); the write-impl stays.
-- **Project manifest + auto-atlas** `[medium/M]` — compose `PackWriter` + `TextureImporter` +
-  `TextureAtlas` + `AssetRegistry` (all real, none composed) into the engine's first content
-  pipeline, one game + textures only. *Avoid the name collision with the Win32 `.manifest` files.*
-- **mesh3d textured material** `[medium/L]` — colored-boxes-only; borrow sprite2d's existing
-  sampler setup to add UVs + a textured `draw_box(tex_id)`. First textured 3D. Worth it only
-  because mario3d is a committed consumer (rule #1).
-
-### F. Networking's first real consumer (sequence the unexploited stack)
-The entire reliable-transport + snapshot/delta stack (116 gate cases) has **zero consumers**. The
-cheapest path is **headless, loopback, server-authoritative — needs no determinism ADR** (state-sync
-is unaffected by Jolt's opt-in determinism, per §10).
-- **Lift `FaultyLink` into the public testkit** `[high/S]` — a complete deterministic in-memory
-  loss/reorder `ITransport` pair is trapped in an anonymous namespace inside a test
-  (`test_reliability.cpp:176-235`); the `testkit/recorder.hpp`/`replayer.hpp` homes are empty stubs.
-  Lift it out + add a seed param to `FaultInjector` (clock-seeded today). The substrate P17's
-  in-the-gate replay test depends on.
-- **voidborne crewWorld / a `games/netbox` as the first state-sync consumer** `[high/M]` — snapshot
-  `entities_with(CrewStats)` → `encode_delta` over a seeded `FaultyLink` → `apply_delta` on a 2nd
-  World → assert byte-equality, as a headless `--netdemo` marker in the gate. A dedicated
-  **`games/netbox`** (links only ecs+network+math, no sokol) is the cleaner first *networked game* —
-  a genre the engine has zero of. *POD components only.* Runs **ahead of** the v4 P17 sequencing but
-  satisfies rule #2 immediately and stays CI-safe.
-- **`Session` is already the headless server** `[medium/M]` — `session.cpp:18-95` already
-  binds/listens, accepts clients with per-client `ReliabilityLayer`, broadcasts, keepalives, and
-  drops dead clients; `loopback_test.cpp` spins a real localhost TCP pair. Only a per-tick snapshot
-  pump + a host `main()` are missing. *(The `okn-server-sdk` interface lib is a dead halo, but
-  voidborne is **not** the cheap headless host the lens first assumed — it's a windowed UniGUI app
-  whose `--autodemo` returns before the window loop; a true headless server wants netbox, not a
-  de-ImGui'd voidborne.)*
-
----
-
-## 13. Sequenced quick wins (dependency-ordered; do the S's first)
-
-The cheap, high-leverage front of §12, ordered so prerequisites land first. Each is independently
-gate-verifiable and respects rule #2 (names its consumer).
-
-1. ✅ **TriggerVolume → platformer** (TriggerSet in okn-physics detection/; the goal flag is a
-   sensor via a z-offset kinematic probe — CharacterVirtual ignores body masks, found by autodemo)
-   · ✅ **mario3d positional audio** (play_at + AudioEngine::set_listener; hybrid third-person
-   listener) · ✅ **finish okn-input (mario/harvest)** — okn-input is 4-of-4.
-2. ✅ **`okn_add_sokol_game()` helper** (cmake/OknGame.cmake — the platform gate is now ONE edit
-   for P10; games/_template still open) and ✅ **`bitmap_text.hpp`** (5 glyph tables deleted;
-   `hud_bridge` `kText` unblock still open).
-3. ✅ **Public Git mirror COMPLETE** — github.com/Teamkiller131/{OmniKillerNexus + all 13
-   okn-*}; `.gitmodules` uses RELATIVE urls so ONE command
-   (`git clone --recurse-submodules https://github.com/Teamkiller131/OmniKillerNexus.git`)
-   resolves everything — **verified: all 14 submodules OK**. The okn-editor holdout (its
-   ~137MB committed-Qt-DLL history × an unstable local fake-IP proxy killed every direct
-   push) was solved by a **bundle-over-release bootstrap**: the 37MB bundle split into 5×8MB
-   release assets (each under the proxy's death threshold), reassembled + force-pushed by a
-   one-shot self-removing `workflow_dispatch` job on GitHub's own runner. All scaffolding
-   (seed branches, release, workflow) cleaned up. *Lesson recorded: git push exclusion only
-   prunes along commit ancestry — disjoint "seed" refs do NOT shrink a pack.*
-   ✅ **`FaultyLink` lifted into the testkit** (public `loopback_link.hpp`; `FaultInjector`
-   gains a reproducible seed, gate-tested) — the netcode/replay substrate is in place.
-4. ◑ **State-hash harness** ✅ (okn-math hash fns implemented + `okn::ecs::state_hash()` over the
-   byte-deterministic EKO1 image; gate-tested for equality/round-trip/mutation-sensitivity) →
-   **the 20k swarm perf gate** ✅ (`games/swarm`, headless, in the gate: seq-vs-pool with
-   `state_hash` equality across scheduling — the oracle's 2nd consumer — plus a loose budget).
-   **FINDING: system-level parallelism is a net LOSS at this shape — speedup ≈0.9x** (one heavy
-   Move system dominates the 3-wide level; dispatch overhead eats the gains). The §8 condition
-   "chunked iteration only if a benchmark demands it" now has its benchmark, and it demands the
-   question: intra-system (chunked query) parallelism is where the pool would actually pay.
-   Remaining: **SimdVec4** wired into a Vec4-packed/SoA transform bench on the swarm.
-5. ◑ ✅ **ECS Serializer as voidborne's save** — crew stats are now DYNAMIC (apply_effect
-   handles the `crew.<id>.<field>` effects the events data always carried but silently
-   dropped) and persist via `Serializer::save_to_file` (its first game consumer; staged-World
-   load + idx copy-back; autodemo proves mutate→save→damage→load→restored, `crewSave=1`).
-   ✅ **Bus mixer audible in harvest** — `MixerPlayback` (okn-audio): ONE miniaudio data
-   source whose audio-thread callback stages voices + runs `process()`, so the bus tree +
-   ducking shape the device output; harvest runs Master▸Music▸SFX with a looping pad that
-   audibly ducks under all 26 SFX. Gate test: a real device pull through the mixer.
-   ✅ **Editor generic reflection inspector** — the honest version of "wire `EcsBridge`":
-   the fake `EcsBridge`'s only consumers are the dead uncompiled Qt path (P11 prune
-   material, NOT wired), so the LIVE editor instead gained an "All components
-   (reflection)" Inspector section driven by the real `ScriptingBridge` (new
-   `descriptors()` enumerator; PlayerTag visible with zero editor code) + `--selftest`
-   reflection assertions in the gate. **Step 5 complete.**
-6. ◑ ✅ **renderer bridge kText** — hud_bridge renders okn-ui `kText` via the engine bitmap
-   font (centered in the widget rect; okn-ui's empty `renderer_bridge.hpp` stub deleted —
-   the recorded architecture is renderer-side consumption). ✅ **Platformer title/settings
-   menu** — the P15 acceptance screen on okn-ui's FIRST game consumer: Title→PLAY/SETTINGS,
-   a master-volume Slider (persisted) + jump-key rebind (ActionMap::rebind+save, loaded at
-   boot), pixel-space camera matching InputRouter hit-testing; autodemo drives the real
-   widgets+router+bridge headlessly ("menu ... MENU OK" in the trace) and gameplay still
-   reaches maxLvl=3. ✅ **Per-field descriptor layer** — opt-in `FieldDesc{name, offset,
-   type}` on `register_component<T>` + `fields()/find_field()/field_data()`; ONE
-   registration powers okn-script's generic `get_field`/`set_field` (Lua field access,
-   zero per-game binding, tested) AND the editor's labeled typed inspector values
-   (`field=1` in the selftest). The "per-field reflection the ECS deliberately doesn't
-   carry" note is retired. **Step 6 complete.**
-7. ✅ **`games/netbox` state-sync demo** — the netcode's FIRST consumer, in the gate: a
-   headless server-authoritative sim (32 deterministic bouncing boxes on an okn-ecs World)
-   replicated tick-by-tick as Snapshot DELTAS over a `ReliabilityLayer` on the testkit
-   `FaultyLink` (drops every 3rd, reorders every other frame — ~100 of 301 frames hostile),
-   client materializes via the type-erased reflection, verified by per-id blob equality AND
-   `state_hash` equality of the two Worlds (`NETBOX SYNC OK ... deltas=200 blobs=1 hash=1`).
-   *Found + fixed by the demo: a sender that never drains its inbox never processes ACKs —
-   the cwnd stays shut (16 frames in 200 ticks); real integration lesson the unit tests
-   couldn't surface.* This de-risks P17's core loop ahead of schedule (state-sync needs no
-   determinism ADR). ✅ **Record/replay** — `TickRecorder`/`TickReplayer` fill the last two
-   testkit stubs (per-tick u64 journal, TKR1 disk persistence, first-divergent-tick
-   reporting, complete-match-only semantics; 3 unit cases). netbox is the feeder: it runs
-   its ENTIRE replicated session twice and replays run 2 against run 1's disk-reloaded
-   journal — 200/200 tick hashes bit-identical (`replay=1` in the gate). The §7
-   determinism track is no longer vaporware: state_hash + swarm hashMatch + netbox replay.
-
-Next tier: ✅ **P10 GLSL slice** — the sprite renderer picks its shader from the ACTIVE backend
-(HLSL/D3D11 unchanged; GLSL 330 for `GLCORE33`; GLSL 300 es for GLES3/WebGL2 — one shared body,
-so the not-yet-exercised es variant can't drift), plus `sokol_impl_gl.cpp` and a **`platformer-gl`
-target that runs the full autodemo on real desktop OpenGL** (maxLvl=3 + MENU OK) and compile-gates
-the GLSL forever (8 games in the gate; the guard caught the new impl TU and it was consciously
-baselined). Remaining P10: a Linux runner (the GL TU is the same one) + the emscripten/WASM build
-(the GLES3 strings are ready). ✅ **Editor→EKO1** — `BodyComp.kind` makes the ECS bytes a
-COMPLETE scene document; `SliceWorld::save/load_scene_eko` rebuild physics from components on
-load (body_id is live-handle-rewritten); the editor's Save writes `slice_scene.eko` beside the
-Lua and `--selftest` round-trips it through okn-asset's `SceneImporter` into a fresh world that
-verifiably SIMULATES (`eko ... bodies=1 settled=1 OK`). The P16 "editor authors the engine
-format" prerequisite is real; the offscreen-sokol viewport stays deferred (UniGUI device).
-✅ **CPack** — `-DOKN_PACKAGE_GAMES=ON` + `cpack -G ZIP` emit one download-and-play
-ZIP per game (platformer 1.8MB: exe + `RUNTIME_DEPENDENCIES`-resolved lua.dll + Lua levels;
-voidborne 5.6MB: exe + UniGUI DLLs + data/ + assets/), deliberately separate from the still-off
-SDK-export flag. **Proven by the stranger test**: each ZIP extracted to a clean directory runs
-to completion (platformer maxLvl=3 + MENU OK; voidborne M0-M7 OK). The gate packs + asserts
-both bundles. Still open: **Browser/WASM** `[M]` (rides the P10 GLSL), **editor→EKO1** `[M]`,
-**manifest/auto-atlas** `[M]`, **mesh3d textures** `[L]` — land them as their consumers arrive.
+## 7. Risks & watch-items
+- **The proxy/NAS**: GitHub traffic rides an unstable fake-IP proxy that kills sustained
+  uploads and long responses (it killed 9 survey agents while *writing this plan*); gitea
+  flakes intermittently. The mirror + hosted CI (§4A) is the mitigation; keep pushes small.
+- **okn-platform's Linux branches have never compiled** — treat rung A.1 as discovery, not
+  checkbox; budget for unknown unknowns beyond the enumerated hazards.
+- **Two flagship games** (platformer star-carrier + voidborne flagship) split the content
+  budget — voidborne's `[S]` sound pass is cheap, but don't let B's platformer kit sprawl.
+- **The editor purge touches a submodule with pre-existing local edits discipline** — stage
+  paths explicitly, never `git add -A` (okn-platform/okn-ui carry protected local edits).
+- **Windowed verification ceiling** shrinks but remains: the offscreen-viewport milestone
+  (D.3) is deliberately headless-first to keep it in the gate.

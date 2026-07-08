@@ -47,10 +47,12 @@ Each module is rated by **what the test gate and a live build actually prove**:
 | **Partial** | A real spine exists; a meaningful fraction is stub/fake. |
 | **Stub/Dead** | Present in the tree but non-functional or unreferenced. |
 
-The build-phys gate has **17 module test suites, all green** (~850 cases /
-~6,800 assertions; the 17th is `okn-input`, and many suites grew this cycle) and
-additionally **compiles all 7 games** and asserts **VOIDBORNE's headless
-`--selftest`/`--autodemo` markers** plus **okn-editor's `--selftest`** (the 6 sokol
+The build-phys gate has **17 module test suites, all green** (~877 cases; the 17th
+is `okn-input`, and many suites grew this cycle) and additionally **compiles all
+8 game targets** (incl. `platformer-gl` on desktop OpenGL), runs the **three headless
+behavioral games** (VOIDBORNE `--selftest`/`--autodemo`, the 20k-entity `swarm` perf
+gate, the `netbox` state-sync + record/replay gate), asserts the **CPack bundles**,
+and asserts **okn-editor's `--selftest`** (the 6 sokol
 games need a GPU/window, so they are compile-gated only). Suites build to
 `build-phys/bin/*_tests.exe` and are **run directly** (they are not registered with
 ctest — `ctest -N` reports 0). The suites don't map 1:1 to modules: `okn-render`
@@ -130,8 +132,9 @@ interpolation/easing, Perlin noise, SSE SIMD. **Matrices are column-major**
 
 ### okn-platform — **Substantial** *(submodule — carries pre-existing local edits; do not modify)*
 **Real:** Win32/Linux/macOS threads, sync, virtual memory, mmap, encoding,
-input, crash handling, dynamic-library loading, system info. **Gap:** the
-"work-stealing" deque is fake (`steal()` == `pop()`). **Tests:**
+input, crash handling, dynamic-library loading, system info. The
+work-stealing deque is REAL (Chase-Lev: `task_queue.cpp` steal() does the top-side
+CAS; the pool steals from sibling queues) and load-bearing under the ECS scheduler. **Tests:**
 `okn-platform_tests`, ~109 cases.
 
 ### okn-ecs — **Partial**
@@ -206,9 +209,11 @@ encoding (`message/snapshot.hpp`). Verified over a fault-injected lossy+reorderi
 link and live loopback UDP/TCP; `okn-network_tests` (**116 cases / 916 asserts**,
 loopback ASIO) **is in the build-phys gate**, and all of the above were
 **adversarially reviewed (10 found bugs fixed)**. **Still stubbed:** QUIC honestly
-reports unavailable (`connect()` → `false`; msquic never wired), there's no game
-consumer yet, and ~45 placeholder subsystem files (mux/qos/routing/bridges) remain.
-Netcode-for-a-game stays deferred until single-player ships
+reports unavailable (`connect()` → `false`; msquic never wired). The placeholder
+files are PRUNED (zero okn-network entries in the stub baseline) and the stack has
+its game consumer: `games/netbox` — Snapshot-delta replication over the testkit
+FaultyLink via ReliabilityLayer, verified by blob + state_hash equality plus
+bit-exact record/replay, in the gate. The remaining P17 ladder lives in ROADMAP §4E
 ([ROADMAP P17](ROADMAP.md)); the buy-vs-build call was [Fork 2](ROADMAP.md) (the
 owner chose to **build** — transport + state-sync are now real).
 
@@ -249,9 +254,11 @@ compressor), stereo pan, a real **WAV (RIFF/PCM 8/16-bit) decoder**, and a real
 **bus mixer** — buses now form a **hierarchy** (a sound's gain = `master_volume` ×
 the product of its bus's volume up the parent chain) with **ducking** (`set_duck`
 dips a bus while another has audio), summed and clamped. **Wired into nothing
-audible yet:** the bus model + spatializer are CPU/headless-tested but not routed
-through `ma_sound_group`/`ma_sound` (P14 windowed follow-up); mp3/flac/ogg decoders
-return empty; platform backends are bool-flip stubs.
+AUDIBLE:** `MixerPlayback` wraps the bus tree + ducking in a real miniaudio data
+source (consumer: harvest's Master▸Music▸SFX + duck), and positional one-shots are
+live (`play_at` + `set_listener`; consumer: mario3d). mp3 decode is real (dr_mp3 via
+`ma_decode_memory`); flac/ogg still return empty; platform backends are bool-flip
+stubs; streamed BGM (`MA_SOUND_FLAG_STREAM`) is the one remaining P14 tail.
 **Tests:** `okn-audio_tests`, 49 cases / 465 assertions.
 
 ### okn-script — **Partial → Lua now drives the live ECS**
@@ -271,10 +278,12 @@ Lua. **Tests:** `okn-script_tests`, 16 cases / 56 assertions.
 ### okn-ui — **Partial** *(submodule — carries pre-existing local edits; do not modify)*
 **Real & tested:** widget tree, 11 widgets emitting `DrawCommand`s, 3 layout
 engines (incl. flexbox), animation/tweens, mouse input routing + hit-test, theme.
-**Mouse-only** — no keyboard/text input yet. **The render path is not in okn-ui**:
-okn-ui emits `DrawCommand`s; `okn-render`'s `hud_bridge` turns them into sprite
-quads (correct dependency direction). Its test suite is not built in the
-build-phys gate; standalone the lib links only core + math.
+Mouse + keyboard/text (Key enum, `on_char`, a real TextInput widget, focus routing
+tests); `focus_manager` is still a stub (no tab-nav). **The render path is not in
+okn-ui**: okn-ui emits `DrawCommand`s; `okn-render`'s `hud_bridge` turns them into
+sprite quads incl. `kText` via the engine bitmap font (correct dependency
+direction). `okn-ui_tests` IS in the build-phys gate; standalone the lib links only
+core + math. First game consumer: the platformer's title/settings menu.
 
 ### okn-editor — **Substantial** *(builds only inside the root build)*
 Rebuilt on **TeamkillerUniGUI** (Dear ImGui, DX11); **Qt was dropped**
@@ -285,8 +294,9 @@ render path + audio + Lua). Drag-gizmos, inspector edits (write component **and*
 Jolt body), color edit, hot-reload of `slice_scene.lua`, save back to Lua, assets
 panel, Ctrl+Z undo. `--selftest` verifies a save/serialize round-trip headlessly.
 **Workaround:** the viewport rasterizes the SpriteBatch with `ImDrawList` rather
-than the engine's `GpuSpriteRenderer` (UniGUI doesn't expose its D3D11 device —
-[ROADMAP P16](ROADMAP.md)). Needs `unigui::unigui`; otherwise a stub lib.
+than the engine's `GpuSpriteRenderer`. (The old "UniGUI doesn't expose its D3D11
+device" blocker is STALE — the renderer's device members are public; only an
+app-layer accessor is missing — see ROADMAP v6 §4D.3 for the offscreen plan.) Needs `unigui::unigui`; otherwise a stub lib.
 
 ### tools/ — CLI
 A mono `okn-cli` or split sub-tools (asset/shader/script/net/audio/ui), gated by

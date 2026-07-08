@@ -1,6 +1,8 @@
-# ⚠️ INACTIVE TEMPLATE — this repository is hosted on gitea, not GitHub, so this
-# workflow never runs (and it is a clang-format lint only — it never compiles).
-# The live CI is .gitea/workflows/ci.yml. Kept only as a reference.
+# ⚠️ INACTIVE TEMPLATE — the live CI is .gitea/workflows/ci.yml. Kept as a reference.
+#
+# NOTE the `if: false` guards: this repo now ALSO mirrors to GitHub, where the old
+# trigger spawned a doomed queued run on every push (GitHub has no `fnos-shell`
+# runner). The ROADMAP v6 §4A plan replaces this with real hosted linux/windows jobs.
 #
 # CI Quick Check — 每次 push 触发
 # 运行在 fnos (N200/12G) shell runner 上
@@ -16,6 +18,7 @@ on:
 
 jobs:
   lint:
+    if: false   # inactive template — never schedule (see header note)
     runs-on: fnos-shell
     steps:
       - name: Checkout
@@ -45,7 +48,7 @@ jobs:
 
   summary:
     needs: [lint]
-    if: always()
+    if: false   # inactive template — never schedule (see header note)
     runs-on: fnos-shell
     steps:
       - name: Result
