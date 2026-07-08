@@ -503,8 +503,12 @@ gate-verifiable and respects rule #2 (names its consumer).
    a master-volume Slider (persisted) + jump-key rebind (ActionMap::rebind+save, loaded at
    boot), pixel-space camera matching InputRouter hit-testing; autodemo drives the real
    widgets+router+bridge headlessly ("menu ... MENU OK" in the trace) and gameplay still
-   reaches maxLvl=3. Remaining: the **per-field descriptor layer** `[M]` (labeled generic
-   editing for the inspector).
+   reaches maxLvl=3. ✅ **Per-field descriptor layer** — opt-in `FieldDesc{name, offset,
+   type}` on `register_component<T>` + `fields()/find_field()/field_data()`; ONE
+   registration powers okn-script's generic `get_field`/`set_field` (Lua field access,
+   zero per-game binding, tested) AND the editor's labeled typed inspector values
+   (`field=1` in the selftest). The "per-field reflection the ECS deliberately doesn't
+   carry" note is retired. **Step 6 complete.**
 7. ✅ **`games/netbox` state-sync demo** — the netcode's FIRST consumer, in the gate: a
    headless server-authoritative sim (32 deterministic bouncing boxes on an okn-ecs World)
    replicated tick-by-tick as Snapshot DELTAS over a `ReliabilityLayer` on the testkit
