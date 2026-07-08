@@ -253,9 +253,12 @@ the renderer) · lockstep multiplayer (state-sync first) · resurrecting the arc
 - **Windowed verification ceiling** — audio audibility, the editor viewport, and the P15 game
   can't be held to the headless-gate bar on a single Windows dev box; they need a display/audio
   device (and ideally the matrix CI from P10).
-- **Bus factor / NAS single point of failure** — root + most submodules resolve only from
-  `xbw-nas.iepose.cn` (which flaked mid-session); a public mirror is insurance + the precondition
-  for hosted Linux CI to fetch submodules.
+- **Bus factor / NAS single point of failure** — ◑ largely discharged: a public GitHub mirror
+  (github.com/Teamkiller131/*) now carries the root + 12 of 13 okn-* submodules, and
+  `.gitmodules`' relative urls make a GitHub clone self-contained. Remaining: okn-editor's
+  mirror (blocked by its committed-Qt-DLL history × an unstable local proxy — push it from
+  the NAS as a gitea push-mirror), and the fnos runner still bootstraps `act_runner` from
+  the NAS.
 - **Jolt cross-platform determinism is opt-in** → lockstep needs it on; state-sync/input-replay
   don't. Single-player unaffected.
 
@@ -459,8 +462,16 @@ gate-verifiable and respects rule #2 (names its consumer).
 2. ✅ **`okn_add_sokol_game()` helper** (cmake/OknGame.cmake — the platform gate is now ONE edit
    for P10; games/_template still open) and ✅ **`bitmap_text.hpp`** (5 glyph tables deleted;
    `hud_bridge` `kText` unblock still open).
-3. **Public Git mirror** `[S]` and **lift `FaultyLink` into the testkit** `[S]` — unblock,
-   respectively, hosted-Linux-CI and the netcode/replay substrate.
+3. ◑ **Public Git mirror** — ✅ github.com/Teamkiller131/{OmniKillerNexus + 12 okn-*} live;
+   `.gitmodules` now uses RELATIVE urls so one clone command resolves from either host
+   (verified by a real recursive clone from GitHub — 13/14 submodules OK). **Gap: okn-editor**
+   — its history carries ~125MB of committed Qt DLLs and the local network path to GitHub
+   rides an unstable fake-IP proxy (198.18.x) that kills sustained uploads; every strategy
+   (HTTPS/SSH, chunked, blob-seeded, negotiated, no-delta) died mid-pack. Fix from the NAS
+   side: a gitea **push-mirror** for okn-editor (server-side push, no local proxy), or push
+   once from a stable network; the P11 Qt-artifact prune would also shrink the problem.
+   ✅ **`FaultyLink` lifted into the testkit** (public `loopback_link.hpp`; `FaultInjector`
+   gains a reproducible seed, gate-tested) — the netcode/replay substrate is in place.
 4. **State-hash harness** `[M]` (`hash.cpp` + `World::state_hash()` + a save/load doctest) → then
    **the 10k swarm perf gate** `[M]` → then **SimdVec4** wired into the swarm and the **scheduler
    speedup microbench** `[S]` ride on top.
