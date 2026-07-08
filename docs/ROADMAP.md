@@ -533,7 +533,13 @@ so the not-yet-exercised es variant can't drift), plus `sokol_impl_gl.cpp` and a
 target that runs the full autodemo on real desktop OpenGL** (maxLvl=3 + MENU OK) and compile-gates
 the GLSL forever (8 games in the gate; the guard caught the new impl TU and it was consciously
 baselined). Remaining P10: a Linux runner (the GL TU is the same one) + the emscripten/WASM build
-(the GLES3 strings are ready). ✅ **CPack** — `-DOKN_PACKAGE_GAMES=ON` + `cpack -G ZIP` emit one download-and-play
+(the GLES3 strings are ready). ✅ **Editor→EKO1** — `BodyComp.kind` makes the ECS bytes a
+COMPLETE scene document; `SliceWorld::save/load_scene_eko` rebuild physics from components on
+load (body_id is live-handle-rewritten); the editor's Save writes `slice_scene.eko` beside the
+Lua and `--selftest` round-trips it through okn-asset's `SceneImporter` into a fresh world that
+verifiably SIMULATES (`eko ... bodies=1 settled=1 OK`). The P16 "editor authors the engine
+format" prerequisite is real; the offscreen-sokol viewport stays deferred (UniGUI device).
+✅ **CPack** — `-DOKN_PACKAGE_GAMES=ON` + `cpack -G ZIP` emit one download-and-play
 ZIP per game (platformer 1.8MB: exe + `RUNTIME_DEPENDENCIES`-resolved lua.dll + Lua levels;
 voidborne 5.6MB: exe + UniGUI DLLs + data/ + assets/), deliberately separate from the still-off
 SDK-export flag. **Proven by the stranger test**: each ZIP extracted to a clean directory runs
