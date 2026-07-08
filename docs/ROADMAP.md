@@ -80,10 +80,12 @@ okn-physics 23/82, okn-input 8/30, okn-script 16/56). 7 buildable demo games acr
 engine core.
 
 **The honest framing that still holds:**
-- **Windows/D3D11-only in practice.** The live renderer hard-defines `SOKOL_D3D11`; game
-  targets are `if(... AND WIN32)`; the editor forces `UNIGUI_BACKEND_DX11`. `okn-platform` is
-  coded for POSIX/Apple but has **never been built or CI'd off Windows**. *This is P10, the
-  biggest remaining gap.*
+- **Windows-only in practice — but no longer D3D11-only.** *(updated after §13)* The sprite
+  path now runs on desktop OpenGL too (backend-selected HLSL/GLSL + `sokol_impl_gl.cpp`;
+  `platformer-gl` autodemo-verified + compile-gated), with the GLES3/WASM strings staged.
+  Still true: game targets are `if(... AND WIN32)`, the editor forces `UNIGUI_BACKEND_DX11`,
+  mesh3d is HLSL-only, and `okn-platform` has **never been built or CI'd off Windows**.
+  *The remaining P10 gap is the Linux runner + the WIN32 gate widening.*
 - **Capability-with-consumer is now much better — but two big ones are still windowed.** The
   audio bus model and the spatializer are tested but **not wired to `ma_sound_group`/`ma_sound`
   (nothing audible yet)**; no single game yet meets the full north-star *on the engine stack*.
