@@ -28,6 +28,7 @@
 
 // VOIDBORNE runs on the OKN engine core where it genuinely fits.
 #include <okn/ecs/world.hpp>                    // crew = real ECS entities + components
+#include <okn/ecs/serialization/serialize.hpp>  // crew stats persist via the engine Serializer
 #include <okn/math/algebra/vec2.hpp>            // world vectors
 #include <okn/asset/io/asset_io.hpp>            // data loading
 #include <okn/asset/registry/asset_registry.hpp>
@@ -82,7 +83,11 @@ struct EventDef {
 // ECS component (stored in g.crewWorld); the strings live in a parallel side-table
 // (std::string isn't an ECS-friendly component — a string table is the idiom).
 struct CrewText { std::string id, name, role, department, shift; };
-struct CrewStats { int tier = 1; int skill = 50; int loyalty = 50; float voteLean = 0.5f; };
+struct CrewStats {
+    int tier = 1; int skill = 50; int loyalty = 50; float voteLean = 0.5f;
+    int idx = -1;   // position in the crewText/crewEnts side-tables — lets a Serializer
+                    // load (which assigns fresh entity ids) match stats back to crew
+};
 // ── M5 departments ──
 struct RecipeDef { std::string id, name, requiresTech; int rawCost = 0, powerCost = 0, partsOut = 0, days = 1; };
 struct ResearchDef { std::string id, name, line, unlockTech; int days = 1, powerPerDay = 0; float failRate = 0.1f; };
@@ -377,6 +382,7 @@ void load_crew() {
         s.skill = static_cast<int>(jnum(n, "skill", 50));
         s.loyalty = static_cast<int>(jnum(n, "loyalty", 50));
         s.voteLean = jnum(n, "voteLean", 0.5f);
+        s.idx = static_cast<int>(g.crewEnts.size());
 
         const okn::ecs::Entity e = g.crewWorld.create_entity();
         g.crewWorld.add_component(e, s);   // the crew member is now an ECS entity
@@ -456,6 +462,26 @@ void apply_effect(const std::string& key, float d) {
     else if (key == "player.perf") { g.playerPerf += static_cast<int>(d); }
     else if (key.rfind("void.", 0) == 0) { g.voidStage = std::clamp(g.voidStage + d, 0.0f, 100.0f); g.voidDiscovered = true; }
     else if (key.rfind("flag.", 0) == 0) { g.flags[key.substr(5)] = d != 0 ? static_cast<int>(d) : 1; }
+    else if (key.rfind("crew.", 0) == 0) {
+        // crew.<id>.<field> — mutate CrewStats on the ECS world (the data has carried
+        // these effects all along; they were silently dropped before this branch).
+        const std::string rest = key.substr(5);
+        const std::size_t dot = rest.find('.');
+        if (dot == std::string::npos) { return; }
+        const std::string id = rest.substr(0, dot);
+        const std::string field = rest.substr(dot + 1);
+        for (std::size_t i = 0; i < g.crewText.size() && i < g.crewEnts.size(); ++i) {
+            if (g.crewText[i].id != id) { continue; }
+            if (CrewStats* s = g.crewWorld.get_component<CrewStats>(g.crewEnts[i])) {
+                if (field == "loyalty") { s->loyalty = std::clamp(s->loyalty + static_cast<int>(d), 0, 100); }
+                else if (field == "skill") { s->skill = std::clamp(s->skill + static_cast<int>(d), 0, 100); }
+                else if (field == "tier") { s->tier = std::clamp(s->tier + static_cast<int>(d), 1, 5); }
+                else if (field == "voteLean") { s->voteLean = std::clamp(s->voteLean + d, 0.0f, 1.0f); }
+                // (crew.*.health appears in data but CrewStats carries no health field yet)
+            }
+            break;
+        }
+    }
 }
 std::uint32_t next_rand() { g.rng = g.rng * 1664525u + 1013904223u; return g.rng; }
 bool resource_below(const std::string& res, float below) { float* p = res_ptr(res); return p && *p < below; }
@@ -1797,6 +1823,9 @@ void save_game() {
     w.Key("kLang"); w.Int(static_cast<int>(g.keyLang));
     w.EndObject();
     std::ofstream f("voidborne_save.json"); f << sb.GetString();
+    // Crew stats (now event-mutable) persist via the engine Serializer — the ECS
+    // World IS the source of truth; JSON keeps only the non-ECS session scalars.
+    okn::ecs::Serializer(g.crewWorld).save_to_file("voidborne_crew.eko");
 }
 bool load_game() {
     const std::string txt = read_file("voidborne_save.json");
@@ -1824,6 +1853,23 @@ bool load_game() {
     g.keySave = static_cast<ImGuiKey>(gi("kSave", static_cast<int>(g.keySave)));
     g.keyLoad = static_cast<ImGuiKey>(gi("kLoad", static_cast<int>(g.keyLoad)));
     g.keyLang = static_cast<ImGuiKey>(gi("kLang", static_cast<int>(g.keyLang)));
+    // Crew stats: load the Serializer snapshot into a staging World (a load assigns
+    // fresh entity ids) and copy stats back onto the live crew by their idx. A
+    // pre-ECS save has no .eko file — stats then simply stay at the data defaults.
+    {
+        okn::ecs::World staged;
+        okn::ecs::Serializer sl(staged);
+        if (sl.load_from_file("voidborne_crew.eko")) {
+            for (auto [e, st] : staged.query<CrewStats>()) {
+                (void)e;
+                if (st->idx < 0 || st->idx >= static_cast<int>(g.crewEnts.size())) { continue; }
+                if (CrewStats* dst = g.crewWorld.get_component<CrewStats>(
+                        g.crewEnts[static_cast<std::size_t>(st->idx)])) {
+                    *dst = *st;
+                }
+            }
+        }
+    }
     return true;
 }
 
@@ -2127,12 +2173,25 @@ void run_autodemo() {
     g.lyTravelled = g.lyTotal; evaluate_endings();
     const bool endingOk = g.ending >= 0;
 
-    // M7 save/load: round-trip the session.
+    // M7 save/load: round-trip the session — including crew stats on the ECS World,
+    // mutated through the crew.<id>.<field> effect path and persisted by the engine
+    // Serializer (damage the stat after saving; load must restore it).
+    bool crewOk = false;
+    int crewLoyaltySaved = -1;
+    if (!g.crewEnts.empty() && !g.crewText.empty()) {
+        apply_effect("crew." + g.crewText[0].id + ".loyalty", 7.0f);
+        crewLoyaltySaved = g.crewWorld.get_component<CrewStats>(g.crewEnts[0])->loyalty;
+    }
     save_game();
     const int savedDay = g.day; g.day = 999;
+    if (!g.crewEnts.empty()) { g.crewWorld.get_component<CrewStats>(g.crewEnts[0])->loyalty = 1; }
     const bool loadOk = load_game() && g.day == savedDay;
+    if (!g.crewEnts.empty()) {
+        crewOk = g.crewWorld.get_component<CrewStats>(g.crewEnts[0])->loyalty == crewLoyaltySaved
+                 && crewLoyaltySaved > 1;
+    }
 
-    const bool ok = harvested >= kPlots && eventsOk && mfgOk && electionRan && endingOk && loadOk;
+    const bool ok = harvested >= kPlots && eventsOk && mfgOk && electionRan && endingOk && loadOk && crewOk;
     std::ofstream rf("voidborne_result.txt");
     rf << (ok ? "VOIDBORNE M0-M7 OK" : "VOIDBORNE M0-M7 FAIL")
        << " crops=" << g.cropDefs.size() << " events=" << g.events.size() << " crew=" << g.crewWorld.entity_count()
@@ -2143,7 +2202,7 @@ void run_autodemo() {
        << " tier=" << g.playerTier << " captain=" << g.isCaptain << " electionRan=" << electionRan
        << " void=" << static_cast<int>(g.voidStage) << " ending=" << g.ending
        << "(" << (g.ending >= 0 ? kEndingName[g.ending] : "-") << ")"
-       << " saveLoad=" << loadOk;
+       << " saveLoad=" << loadOk << " crewSave=" << crewOk;
 }
 
 }  // namespace
