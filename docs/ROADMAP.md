@@ -490,7 +490,12 @@ gate-verifiable and respects rule #2 (names its consumer).
    source whose audio-thread callback stages voices + runs `process()`, so the bus tree +
    ducking shape the device output; harvest runs Master▸Music▸SFX with a looping pad that
    audibly ducks under all 26 SFX. Gate test: a real device pull through the mixer.
-   Remaining: the **editor `EcsBridge`→real World** `[M]`.
+   ✅ **Editor generic reflection inspector** — the honest version of "wire `EcsBridge`":
+   the fake `EcsBridge`'s only consumers are the dead uncompiled Qt path (P11 prune
+   material, NOT wired), so the LIVE editor instead gained an "All components
+   (reflection)" Inspector section driven by the real `ScriptingBridge` (new
+   `descriptors()` enumerator; PlayerTag visible with zero editor code) + `--selftest`
+   reflection assertions in the gate. **Step 5 complete.**
 6. **renderer_bridge** `[M]` → **platformer title/settings menu** `[M]` (the P15 acceptance item) →
    the **per-field descriptor layer** `[M]` generalizes the inspector that the menu work touches.
 7. **`games/netbox` state-sync demo** `[M]` — the netcode's first consumer, once `FaultyLink` (3)
