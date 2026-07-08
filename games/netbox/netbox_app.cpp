@@ -18,6 +18,8 @@
 #include <okn/network/message/snapshot.hpp>
 #include <okn/network/reliability/reliability_layer.hpp>
 #include <okn/network/testkit/loopback_link.hpp>
+#include <okn/network/testkit/recorder.hpp>      // record/replay: per-tick hash journal
+#include <okn/network/testkit/replayer.hpp>
 
 #include <cstdio>
 #include <cstring>
@@ -76,9 +78,19 @@ auto frame_message(const std::vector<u8>& delta) -> std::vector<u8> {
     return msg;
 }
 
-}  // namespace
+struct SessionResult {
+    bool blobs_ok = false;
+    bool hash_ok = false;
+    int deltas_applied = 0;
+    u32 frames_seen = 0;
+    okn::ecs::u64 server_hash = 0;
+};
 
-int main() {
+// One full replicated session. When `rec` is set, each tick's authoritative
+// state_hash is journaled; when `rep` is set, it is checked against a recorded
+// baseline instead — the record/replay determinism harness end to end.
+SessionResult run_session(okn::network::testkit::TickRecorder* rec,
+                          okn::network::testkit::TickReplayer* rep) {
     // ── the wire: a deterministic lossy/reordering link + reliability on both ends ──
     FaultyLink link;
     ReliabilityLayer server_rel(link.a);
@@ -154,6 +166,8 @@ int main() {
     // ── run: step, delta, send reliably, pump — under drops + reordering ──
     for (int t = 1; t <= kTicks; ++t) {
         step_sim(server);
+        if (rec != nullptr) { rec->record(okn::ecs::state_hash(server)); }
+        if (rep != nullptr) { rep->check(okn::ecs::state_hash(server)); }
         Snapshot cur;
         snapshot_world(server, cur);
         const std::vector<u8> delta =
@@ -185,21 +199,54 @@ int main() {
             if (ce == nullptr || ce->data != es.data) { blobs_ok = false; break; }
         }
     }
-    const auto server_hash = okn::ecs::state_hash(server);
-    const auto client_hash = okn::ecs::state_hash(client);
-    const bool hash_ok = server_hash == client_hash;
-    const bool link_was_hostile = link.data_seen > 0 && link.data_seen / 3 > 0;
-    const bool ok = blobs_ok && hash_ok && deltas_applied == kTicks && link_was_hostile;
+    SessionResult r;
+    r.blobs_ok = blobs_ok;
+    r.hash_ok = okn::ecs::state_hash(server) == okn::ecs::state_hash(client);
+    r.deltas_applied = deltas_applied;
+    r.frames_seen = link.data_seen;
+    r.server_hash = okn::ecs::state_hash(server);
+    return r;
+}
+
+}  // namespace
+
+int main() {
+    using okn::network::testkit::TickRecorder;
+    using okn::network::testkit::TickReplayer;
+
+    // Run 1 — RECORD: journal the authoritative state hash every tick + persist it.
+    TickRecorder rec;
+    const SessionResult first = run_session(&rec, nullptr);
+    const bool journal_ok = rec.size() == kTicks && rec.save("netbox_replay.bin");
+
+    // Run 2 — REPLAY: a fresh session (fresh worlds, fresh link) checked tick-by-tick
+    // against the journal RELOADED from disk. Bit-exact or it names the first bad tick.
+    TickRecorder baseline;
+    const bool load_ok = baseline.load("netbox_replay.bin");
+    TickReplayer rep(baseline);
+    const SessionResult second = run_session(nullptr, &rep);
+
+    const bool link_was_hostile = first.frames_seen > 0 && first.frames_seen / 3 > 0;
+    const bool sync_ok = first.blobs_ok && first.hash_ok && first.deltas_applied == kTicks
+                      && link_was_hostile;
+    const bool replay_ok = journal_ok && load_ok && rep.ok()
+                        && second.server_hash == first.server_hash;
+    const bool ok = sync_ok && replay_ok;
 
     std::ofstream f("netbox_result.txt");
     f << (ok ? "NETBOX SYNC OK" : "NETBOX SYNC FAIL")
       << " boxes=" << kBoxes << " ticks=" << kTicks
-      << " deltas=" << deltas_applied
-      << " framesSeen=" << link.data_seen << " dropped~=" << link.data_seen / 3
-      << " blobs=" << (blobs_ok ? 1 : 0) << " hash=" << (hash_ok ? 1 : 0)
-      << " h=" << std::hex << server_hash;
-    std::printf("%s boxes=%d ticks=%d deltas=%d framesSeen=%u blobs=%d hash=%d\n",
-                ok ? "NETBOX SYNC OK" : "NETBOX SYNC FAIL", kBoxes, kTicks, deltas_applied,
-                link.data_seen, blobs_ok ? 1 : 0, hash_ok ? 1 : 0);
+      << " deltas=" << first.deltas_applied
+      << " framesSeen=" << first.frames_seen << " dropped~=" << first.frames_seen / 3
+      << " blobs=" << (first.blobs_ok ? 1 : 0) << " hash=" << (first.hash_ok ? 1 : 0)
+      << " replay=" << (replay_ok ? 1 : 0);
+    if (!rep.ok() && rep.first_mismatch() != TickReplayer::kNoMismatch) {
+        f << " firstBadTick=" << rep.first_mismatch();
+    }
+    f << " h=" << std::hex << first.server_hash;
+    std::printf("%s boxes=%d ticks=%d deltas=%d framesSeen=%u blobs=%d hash=%d replay=%d\n",
+                ok ? "NETBOX SYNC OK" : "NETBOX SYNC FAIL", kBoxes, kTicks,
+                first.deltas_applied, first.frames_seen, first.blobs_ok ? 1 : 0,
+                first.hash_ok ? 1 : 0, replay_ok ? 1 : 0);
     return ok ? 0 : 1;
 }

@@ -518,7 +518,12 @@ gate-verifiable and respects rule #2 (names its consumer).
    *Found + fixed by the demo: a sender that never drains its inbox never processes ACKs —
    the cwnd stays shut (16 frames in 200 ticks); real integration lesson the unit tests
    couldn't surface.* This de-risks P17's core loop ahead of schedule (state-sync needs no
-   determinism ADR). Next: **record/replay** `[M]` now has a real feeder.
+   determinism ADR). ✅ **Record/replay** — `TickRecorder`/`TickReplayer` fill the last two
+   testkit stubs (per-tick u64 journal, TKR1 disk persistence, first-divergent-tick
+   reporting, complete-match-only semantics; 3 unit cases). netbox is the feeder: it runs
+   its ENTIRE replicated session twice and replays run 2 against run 1's disk-reloaded
+   journal — 200/200 tick hashes bit-identical (`replay=1` in the gate). The §7
+   determinism track is no longer vaporware: state_hash + swarm hashMatch + netbox replay.
 
 **Browser/WASM** `[M]`, **CPack** `[M]`, **editor→EKO1** `[M]`, **manifest/auto-atlas** `[M]`, and
 **mesh3d textures** `[L]` are the next tier — land them as their consumers arrive, not speculatively.
