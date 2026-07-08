@@ -28,7 +28,8 @@
 #include <okn/render/sprite2d/image.hpp>
 
 #include <okn/audio/backend/audio_engine.hpp>
-#include <okn/audio/mixer/playback.hpp>
+#include <okn/audio/mixer/mixer.hpp>
+#include <okn/audio/mixer/mixer_playback.hpp>
 #include <okn/audio/decode/wav_decoder.hpp>
 
 #include <okn/input/action_map.hpp>
@@ -152,7 +153,12 @@ struct Game {
 Game g;
 std::unique_ptr<GpuSpriteRenderer> g_renderer;
 okn::audio::AudioEngine g_audio;
-std::unique_ptr<okn::audio::AudioPlayback> g_pb;
+// The audible BUS MODEL (Master ▸ Music ▸ SFX + ducking) — harvest is the mixer's
+// first game consumer: every SFX audibly dips the music bed (set_duck).
+std::unique_ptr<okn::audio::AudioMixer> g_mixer;
+std::unique_ptr<okn::audio::MixerPlayback> g_mixpb;
+okn::audio::u32 g_busMusic = 0, g_busSfx = 0;
+okn::audio::AudioBuffer g_music{};
 okn::audio::AudioBuffer g_till{}, g_plant{}, g_water{}, g_harvest{}, g_sleep{}, g_deny{},
                         g_levelup{}, g_ach{}, g_talk{}, g_gift{};
 
@@ -181,7 +187,30 @@ okn::audio::AudioBuffer decode(float f, float d, float dec, bool rising = false)
     okn::audio::WavDecoder wd; const auto w = make_beep(f, d, dec, rising);
     return wd.decode(w.data(), w.size());
 }
-void play(const okn::audio::AudioBuffer& b, float v) { if (g_pb && b.data) { g_pb->play(b, v); } }
+void play(const okn::audio::AudioBuffer& b, float v) {
+    if (g_mixpb && b.data) { g_mixpb->play_on_bus(b, g_busSfx, v); }
+}
+
+// A soft 4-note pad (C-E-G-E) in one WAV — the looping music bed the SFX duck against.
+std::vector<okn::audio::u8> make_pad() {
+    using okn::audio::u8;
+    const float notes[4] = {262.0f, 330.0f, 392.0f, 330.0f};
+    const unsigned rate = 22050, per = rate / 2, frames = per * 4, bytes = frames * 2;
+    std::vector<u8> w;
+    auto u16 = [&](unsigned v) { w.push_back(u8(v & 0xFF)); w.push_back(u8((v >> 8) & 0xFF)); };
+    auto u32f = [&](unsigned v) { for (int i = 0; i < 4; ++i) { w.push_back(u8((v >> (8 * i)) & 0xFF)); } };
+    auto tag = [&](const char* t) { for (int i = 0; i < 4; ++i) { w.push_back(u8(t[i])); } };
+    tag("RIFF"); u32f(36 + bytes); tag("WAVE"); tag("fmt "); u32f(16); u16(1); u16(1);
+    u32f(rate); u32f(rate * 2); u16(2); u16(16); tag("data"); u32f(bytes);
+    for (unsigned i = 0; i < frames; ++i) {
+        const unsigned n = i / per;
+        const float t = static_cast<float>(i % per) / per;
+        const float env = std::sin(t * 3.14159f);               // smooth attack/release per note
+        const float s = std::sin((static_cast<float>(i) / rate) * notes[n] * 6.2831853f);
+        u16(static_cast<unsigned>(static_cast<short>(s * 2500.0f * env)) & 0xFFFF);
+    }
+    return w;
+}
 
 // ── shared toast queue ─────────────────────────────────────────────────────────
 void push_toast(const char* s, Rgba8 col = rgba(255, 244, 210)) {
@@ -1014,7 +1043,20 @@ void on_init() {
     g_renderer->init();
     load_sprites();
     if (g_audio.initialize()) {
-        g_pb = std::make_unique<okn::audio::AudioPlayback>(g_audio);
+        // Bus tree: Master ▸ {Music, SFX}; every SFX dips the music bed to 35%.
+        g_mixer = std::make_unique<okn::audio::AudioMixer>(g_audio);
+        const okn::audio::u32 master = g_mixer->create_bus("master");
+        g_busMusic = g_mixer->create_bus("music", master);
+        g_busSfx = g_mixer->create_bus("sfx", master);
+        g_mixer->set_bus_volume(g_busMusic, 0.5f);
+        g_mixer->set_duck(g_busMusic, g_busSfx, 0.35f);
+        g_mixpb = std::make_unique<okn::audio::MixerPlayback>(g_audio, *g_mixer);
+        {
+            okn::audio::WavDecoder wd;
+            const auto pad = make_pad();
+            g_music = wd.decode(pad.data(), pad.size());
+            if (g_music.data) { g_mixpb->play_on_bus(g_music, g_busMusic, 1.0f, /*loop=*/true); }
+        }
         g_till = decode(300.0f, 0.10f, 1.2f);
         g_plant = decode(600.0f, 0.10f, 1.2f);
         g_water = decode(820.0f, 0.14f, 1.0f);
@@ -1096,7 +1138,9 @@ void on_cleanup() {
     for (auto* b : {&g_till, &g_plant, &g_water, &g_harvest, &g_sleep, &g_deny, &g_levelup, &g_ach, &g_talk, &g_gift}) {
         if (b->data) { delete[] b->data; b->data = nullptr; }
     }
-    g_pb.reset();
+    g_mixpb.reset();   // stops the mixer-backed ma_sound before the engine goes away
+    g_mixer.reset();
+    if (g_music.data) { delete[] g_music.data; g_music.data = nullptr; }
     if (g_audio.is_initialized()) { g_audio.shutdown(); }
     if (g_renderer) { g_renderer->shutdown(); g_renderer.reset(); }
     sg_shutdown();
