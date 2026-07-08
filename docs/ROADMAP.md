@@ -496,8 +496,15 @@ gate-verifiable and respects rule #2 (names its consumer).
    (reflection)" Inspector section driven by the real `ScriptingBridge` (new
    `descriptors()` enumerator; PlayerTag visible with zero editor code) + `--selftest`
    reflection assertions in the gate. **Step 5 complete.**
-6. **renderer_bridge** `[M]` → **platformer title/settings menu** `[M]` (the P15 acceptance item) →
-   the **per-field descriptor layer** `[M]` generalizes the inspector that the menu work touches.
+6. ◑ ✅ **renderer bridge kText** — hud_bridge renders okn-ui `kText` via the engine bitmap
+   font (centered in the widget rect; okn-ui's empty `renderer_bridge.hpp` stub deleted —
+   the recorded architecture is renderer-side consumption). ✅ **Platformer title/settings
+   menu** — the P15 acceptance screen on okn-ui's FIRST game consumer: Title→PLAY/SETTINGS,
+   a master-volume Slider (persisted) + jump-key rebind (ActionMap::rebind+save, loaded at
+   boot), pixel-space camera matching InputRouter hit-testing; autodemo drives the real
+   widgets+router+bridge headlessly ("menu ... MENU OK" in the trace) and gameplay still
+   reaches maxLvl=3. Remaining: the **per-field descriptor layer** `[M]` (labeled generic
+   editing for the inspector).
 7. **`games/netbox` state-sync demo** `[M]` — the netcode's first consumer, once `FaultyLink` (3)
    and the state-hash oracle (4) exist. Then **record/replay** `[M]` has a real feeder.
 
