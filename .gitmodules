@@ -1,42 +1,42 @@
 [submodule "modules/okn-editor"]
 	path = modules/okn-editor
-	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-editor.git
+	url = ../okn-editor.git
 [submodule "modules/okn-asset"]
 	path = modules/okn-asset
-	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-asset.git
+	url = ../okn-asset.git
 [submodule "modules/okn-render"]
 	path = modules/okn-render
-	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-render.git
+	url = ../okn-render.git
 [submodule "modules/okn-audio"]
 	path = modules/okn-audio
-	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-audio.git
+	url = ../okn-audio.git
 [submodule "modules/okn-ecs"]
 	path = modules/okn-ecs
-	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-ecs.git
+	url = ../okn-ecs.git
 [submodule "modules/okn-script"]
 	path = modules/okn-script
-	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-script.git
+	url = ../okn-script.git
 [submodule "modules/okn-ui"]
 	path = modules/okn-ui
-	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-ui.git
+	url = ../okn-ui.git
 [submodule "modules/okn-network"]
 	path = modules/okn-network
-	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-network.git
+	url = ../okn-network.git
 [submodule "modules/okn-platform"]
 	path = modules/okn-platform
-	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-platform.git
+	url = ../okn-platform.git
 [submodule "modules/okn-core"]
 	path = modules/okn-core
-	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-core.git
+	url = ../okn-core.git
 [submodule "modules/okn-memory"]
 	path = modules/okn-memory
-	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-memory.git
+	url = ../okn-memory.git
 [submodule "modules/okn-physics"]
 	path = modules/okn-physics
-	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-physics.git
+	url = ../okn-physics.git
 [submodule "modules/okn-math"]
 	path = modules/okn-math
-	url = https://xbw-nas.iepose.cn/Teamkiller131/okn-math.git
+	url = ../okn-math.git
 [submodule "third_party/TeamkillerUniGUI"]
 	path = third_party/TeamkillerUniGUI
-	url = git@github.com:Teamkiller131/TeamkillerUniGUI.git
+	url = https://github.com/Teamkiller131/TeamkillerUniGUI.git
