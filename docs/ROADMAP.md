@@ -482,8 +482,15 @@ gate-verifiable and respects rule #2 (names its consumer).
    "chunked iteration only if a benchmark demands it" now has its benchmark, and it demands the
    question: intra-system (chunked query) parallelism is where the pool would actually pay.
    Remaining: **SimdVec4** wired into a Vec4-packed/SoA transform bench on the swarm.
-5. **ECS Serializer as voidborne's save** `[M]` · **bus mixer audible in harvest** `[M]` · the
-   **editor `EcsBridge`→real World** `[M]` — the three biggest "island → shipped" conversions.
+5. ◑ ✅ **ECS Serializer as voidborne's save** — crew stats are now DYNAMIC (apply_effect
+   handles the `crew.<id>.<field>` effects the events data always carried but silently
+   dropped) and persist via `Serializer::save_to_file` (its first game consumer; staged-World
+   load + idx copy-back; autodemo proves mutate→save→damage→load→restored, `crewSave=1`).
+   ✅ **Bus mixer audible in harvest** — `MixerPlayback` (okn-audio): ONE miniaudio data
+   source whose audio-thread callback stages voices + runs `process()`, so the bus tree +
+   ducking shape the device output; harvest runs Master▸Music▸SFX with a looping pad that
+   audibly ducks under all 26 SFX. Gate test: a real device pull through the mixer.
+   Remaining: the **editor `EcsBridge`→real World** `[M]`.
 6. **renderer_bridge** `[M]` → **platformer title/settings menu** `[M]` (the P15 acceptance item) →
    the **per-field descriptor layer** `[M]` generalizes the inspector that the menu work touches.
 7. **`games/netbox` state-sync demo** `[M]` — the netcode's first consumer, once `FaultyLink` (3)
