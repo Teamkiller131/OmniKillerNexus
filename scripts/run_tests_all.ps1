@@ -192,6 +192,35 @@ if (-not $SkipGames) {
         $summary += "  netbox (state-sync)  BUILD FAILED"
     }
 
+    # PACKAGING: the download-and-play ZIP bundles (platformer + voidborne). Only
+    # runs when the build dir was configured with -DOKN_PACKAGE_GAMES=ON (CPack
+    # config present); asserts both game ZIPs form and the platformer's contains
+    # its exe + Lua levels. The "a stranger downloads it" north-star clause.
+    if (Test-Path (Join-Path $buildPath "CPackConfig.cmake")) {
+        Write-Host "[*] Packaging game bundles (cpack) ..." -ForegroundColor Yellow
+        Push-Location $buildPath
+        $cpackOut = (& cpack -G ZIP -B packages 2>&1 | Out-String)
+        Pop-Location
+        $platZip = Join-Path $buildPath "packages/okn-games-0.1.0-win64-platformer.zip"
+        $vbZip = Join-Path $buildPath "packages/okn-games-0.1.0-win64-voidborne.zip"
+        $bundlesOk = (Test-Path $platZip) -and (Test-Path $vbZip)
+        if ($bundlesOk) {
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            $zip = [System.IO.Compression.ZipFile]::OpenRead($platZip)
+            $names = $zip.Entries | ForEach-Object { $_.FullName }
+            $zip.Dispose()
+            $bundlesOk = ($names -contains "platformer.exe") -and ($names -contains "platformer_levels.lua")
+        }
+        if ($bundlesOk) {
+            $summary += "  game bundles (cpack)  OK  [platformer + voidborne ZIPs]"
+        } else {
+            $failures += "bundles"
+            $summary += "  game bundles (cpack)  FAILED: $($cpackOut.Trim())"
+        }
+    } else {
+        $summary += "  game bundles (cpack)  skipped (configure with -DOKN_PACKAGE_GAMES=ON)"
+    }
+
     # okn-editor (UniGUI / Dear ImGui) also exposes a headless --selftest that
     # returns before the window loop — it checks the scene serialize round-trip and
     # the multi-level undo/redo. Best-effort: build it (needs unigui); if the exe

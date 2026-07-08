@@ -21,4 +21,16 @@ if(TARGET platformer)
                 "${CMAKE_CURRENT_SOURCE_DIR}/platformer_levels.lua"
                 "$<TARGET_FILE_DIR:platformer>/platformer_levels.lua")
     endif()
+
+    # Download-and-play bundle: exe + resolved runtime DLLs + the Lua levels.
+    if(OKN_PACKAGE_GAMES)
+        install(TARGETS platformer
+                RUNTIME_DEPENDENCIES
+                    DIRECTORIES "${CMAKE_BINARY_DIR}/bin"
+                    PRE_EXCLUDE_REGEXES "api-ms-.*" "ext-ms-.*"
+                    POST_EXCLUDE_REGEXES ".*[Ss]ystem32.*"
+                RUNTIME DESTINATION . COMPONENT platformer)
+        install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/platformer_levels.lua"
+                DESTINATION . COMPONENT platformer)
+    endif()
 endif()

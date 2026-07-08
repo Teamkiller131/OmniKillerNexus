@@ -39,6 +39,7 @@ option(OKN_ENABLE_EDITOR_SDK "Build editor SDK" ON)
 option(OKN_BUILD_EDITOR_EXE  "Build editor executable (from okn-editor module)" ON)
 option(OKN_BUILD_CLI         "Build CLI tools" ON)
 option(OKN_ENABLE_INSTALL    "Enable install/export of SDKs" OFF)  # 先关闭安装
+option(OKN_PACKAGE_GAMES     "Install/package the demo games as CPack ZIP bundles" OFF)
 
 # Make the CRT explicit (dynamic /MD, matching the x64-windows vcpkg deps) so the
 # whole tree — engine, Jolt/sol2/sokol, UniGUI, ImGui — shares one runtime.
@@ -140,6 +141,23 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/games/voidborne/CMakeLists.txt")
 endif()
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/games/netbox/CMakeLists.txt")
     add_subdirectory(games/netbox)
+endif()
+
+# Game bundles: one download-and-double-click ZIP per game (the north star's
+# "a stranger downloads and finishes it"). Deliberately SEPARATE from the
+# OKN_ENABLE_INSTALL SDK export (which stays off until modules are EXPORT-tagged):
+# these install per-game RUNTIME components only — exe + resolved DLLs + data.
+if(OKN_PACKAGE_GAMES)
+    set(CPACK_GENERATOR ZIP)
+    set(CPACK_PACKAGE_NAME "okn-games")
+    set(CPACK_PACKAGE_VENDOR "OmniKillerNexus")
+    set(CPACK_PACKAGE_VERSION "0.1.0")
+    set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)   # one ZIP per game component
+    set(CPACK_COMPONENTS_GROUPING IGNORE)
+    # Pack ONLY the game components — third-party install rules (UniGUI's SDK
+    # headers land in "Unspecified") stay out of the bundles.
+    set(CPACK_COMPONENTS_ALL platformer voidborne)
+    include(CPack)
 endif()
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/games/swarm/CMakeLists.txt")
     add_subdirectory(games/swarm)

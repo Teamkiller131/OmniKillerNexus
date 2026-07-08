@@ -525,5 +525,10 @@ gate-verifiable and respects rule #2 (names its consumer).
    journal — 200/200 tick hashes bit-identical (`replay=1` in the gate). The §7
    determinism track is no longer vaporware: state_hash + swarm hashMatch + netbox replay.
 
-**Browser/WASM** `[M]`, **CPack** `[M]`, **editor→EKO1** `[M]`, **manifest/auto-atlas** `[M]`, and
-**mesh3d textures** `[L]` are the next tier — land them as their consumers arrive, not speculatively.
+Next tier: ✅ **CPack** — `-DOKN_PACKAGE_GAMES=ON` + `cpack -G ZIP` emit one download-and-play
+ZIP per game (platformer 1.8MB: exe + `RUNTIME_DEPENDENCIES`-resolved lua.dll + Lua levels;
+voidborne 5.6MB: exe + UniGUI DLLs + data/ + assets/), deliberately separate from the still-off
+SDK-export flag. **Proven by the stranger test**: each ZIP extracted to a clean directory runs
+to completion (platformer maxLvl=3 + MENU OK; voidborne M0-M7 OK). The gate packs + asserts
+both bundles. Still open: **Browser/WASM** `[M]` (rides the P10 GLSL), **editor→EKO1** `[M]`,
+**manifest/auto-atlas** `[M]`, **mesh3d textures** `[L]` — land them as their consumers arrive.

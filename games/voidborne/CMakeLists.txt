@@ -35,6 +35,21 @@ if(TARGET unigui::unigui)
             "${CMAKE_CURRENT_SOURCE_DIR}/data" "$<TARGET_FILE_DIR:voidborne>/data"
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_CURRENT_SOURCE_DIR}/assets" "$<TARGET_FILE_DIR:voidborne>/assets")
+
+    # Download-and-play bundle: exe + resolved runtime DLLs + data/ + assets/
+    # (the same layout the post-build staging gives a dev run).
+    if(OKN_PACKAGE_GAMES)
+        install(TARGETS voidborne
+                RUNTIME_DEPENDENCIES
+                    DIRECTORIES "${CMAKE_BINARY_DIR}/bin"
+                    PRE_EXCLUDE_REGEXES "api-ms-.*" "ext-ms-.*"
+                    POST_EXCLUDE_REGEXES ".*[Ss]ystem32.*"
+                RUNTIME DESTINATION . COMPONENT voidborne)
+        install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data"
+                DESTINATION . COMPONENT voidborne)
+        install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+                DESTINATION . COMPONENT voidborne)
+    endif()
 else()
     message(STATUS "voidborne: unigui::unigui not found — skipping (needs the OKN root build)")
 endif()
