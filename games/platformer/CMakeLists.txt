@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.20)
 # sprite (stb) + binary progress save + Lua-authored hot-reloaded levels.
 # Windows-only (sokol DX11), guarded on sokol + stb.
 
-okn_add_sokol_game(NAME platformer LIBS okn-audio okn-physics okn-input NEEDS_STB)
+okn_add_sokol_game(NAME platformer LIBS okn-audio okn-physics okn-input okn-ui NEEDS_STB)
 
 # P15: levels authored in a hot-reloadable Lua file (sol2/Lua, like the slice). Optional
 # — without sol2/Lua the game uses its built-in levels.

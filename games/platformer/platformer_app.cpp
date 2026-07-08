@@ -26,6 +26,13 @@
 #include <okn/audio/mixer/playback.hpp>
 #include <okn/audio/decode/wav_decoder.hpp>
 
+#include <okn/ui/widget/widget.hpp>
+#include <okn/ui/widget/button.hpp>
+#include <okn/ui/widget/slider.hpp>
+#include <okn/ui/widget/label.hpp>
+#include <okn/ui/input/input_router.hpp>
+#include <okn/render/slice/hud_bridge.hpp>   // okn-ui DrawCommands -> sprite quads (+ kText)
+
 #include "platformer_lua.hpp"   // hot-reloadable Lua level loader (P15)
 
 #include <algorithm>
@@ -78,6 +85,8 @@ constexpr float kProxyZ = 1.2f;   // trigger-probe z offset: clear of the charac
 constexpr unsigned kPlayerTex = 1;
 const char* kSavePath = "platformer_save.dat";
 const char* kSpritePath = "platformer_player.png";
+const char* kKeysPath = "platformer_keys.dat";        // ActionMap rebinds (binary)
+const char* kSettingsPath = "platformer_settings.dat"; // master volume (one float, text)
 
 // ── P6: input action-map (engine module okn-input; was a per-game struct) ────────
 enum class Action { Left, Right, Jump, Count };
@@ -113,6 +122,124 @@ std::unique_ptr<GpuSpriteRenderer> g_renderer;
 okn::audio::AudioEngine g_audio;
 std::unique_ptr<okn::audio::AudioPlayback> g_pb;
 okn::audio::AudioBuffer g_jump_sfx{}, g_win_sfx{};
+
+// ── Title/settings menu (okn-ui widgets rendered through okn-render's hud_bridge) ──
+// The P15 acceptance screen: title → play/settings; settings = a master-volume
+// Slider (AudioEngine::set_volume) + a jump-key rebind row (ActionMap::rebind+save).
+enum class Screen { Title, Settings, Playing };
+struct Menu {
+    okn::ui::WidgetTree tree;
+    okn::ui::InputRouter router;
+    okn::ui::Label* title = nullptr;
+    okn::ui::Button* play = nullptr;
+    okn::ui::Button* settings = nullptr;
+    okn::ui::Label* vol_label = nullptr;
+    okn::ui::Slider* volume = nullptr;
+    okn::ui::Button* rebind = nullptr;
+    okn::ui::Button* back = nullptr;
+    bool awaiting_key = false;   // rebind row armed: the next key becomes Jump
+    float built_w = 0.0f, built_h = 0.0f;
+};
+std::unique_ptr<Menu> g_menu;
+Screen g_screen = Screen::Title;
+
+void save_settings() {
+    std::ofstream f(kSettingsPath);
+    if (f) { f << g_audio.volume(); }
+}
+void load_settings() {
+    std::ifstream f(kSettingsPath);
+    float v = 1.0f;
+    if (f && (f >> v)) { g_audio.set_volume(std::clamp(v, 0.0f, 1.0f)); }
+}
+
+void set_rebind_text() {
+    if (!g_menu) { return; }
+    const okn::input::KeyCode k = g.input.key_of(Action::Jump, 0);
+    std::string label = "JUMP KEY ";
+    if (g_menu->awaiting_key) { label += "PRESS A KEY"; }
+    else if (k == SAPP_KEYCODE_SPACE) { label += "SPACE"; }
+    else if (k >= SAPP_KEYCODE_A && k <= SAPP_KEYCODE_Z) {
+        label += static_cast<char>('A' + (k - SAPP_KEYCODE_A));
+    } else { label += std::to_string(k); }
+    g_menu->rebind->set_text(label);
+}
+
+void apply_screen() {
+    if (!g_menu) { return; }
+    const bool title = g_screen == Screen::Title;
+    const bool setting = g_screen == Screen::Settings;
+    g_menu->title->set_visible(title || setting);
+    g_menu->play->set_visible(title);
+    g_menu->settings->set_visible(title);
+    g_menu->vol_label->set_visible(setting);
+    g_menu->volume->set_visible(setting);
+    g_menu->rebind->set_visible(setting);
+    g_menu->back->set_visible(setting);
+}
+
+void build_menu(float w, float h) {
+    using okn::ui::WidgetType;
+    using okn::ui::Rect;
+    g_menu = std::make_unique<Menu>();
+    auto& t = g_menu->tree;
+    const float cx = w * 0.5f;
+    const float bw = std::min(360.0f, w * 0.6f), bh = 56.0f;
+
+    g_menu->title = static_cast<okn::ui::Label*>(t.create(WidgetType::kText));
+    g_menu->title->set_text("PLATFORMER");
+    g_menu->title->set_rect(Rect{cx - bw * 0.5f, h * 0.18f, bw, 70.0f});
+
+    g_menu->play = static_cast<okn::ui::Button*>(t.create(WidgetType::kButton));
+    g_menu->play->set_text("PLAY");
+    g_menu->play->set_rect(Rect{cx - bw * 0.5f, h * 0.42f, bw, bh});
+    g_menu->play->on_click = [] { g_screen = Screen::Playing; apply_screen(); };
+
+    g_menu->settings = static_cast<okn::ui::Button*>(t.create(WidgetType::kButton));
+    g_menu->settings->set_text("SETTINGS");
+    g_menu->settings->set_rect(Rect{cx - bw * 0.5f, h * 0.42f + bh + 16.0f, bw, bh});
+    g_menu->settings->on_click = [] { g_screen = Screen::Settings; apply_screen(); };
+
+    g_menu->vol_label = static_cast<okn::ui::Label*>(t.create(WidgetType::kText));
+    g_menu->vol_label->set_text("VOLUME");
+    g_menu->vol_label->set_rect(Rect{cx - bw * 0.5f, h * 0.40f, bw * 0.35f, 36.0f});
+
+    g_menu->volume = static_cast<okn::ui::Slider*>(t.create(WidgetType::kSlider));
+    g_menu->volume->set_rect(Rect{cx - bw * 0.5f + bw * 0.4f, h * 0.40f, bw * 0.6f, 36.0f});
+    g_menu->volume->set_min_value(0.0f);
+    g_menu->volume->set_max_value(1.0f);
+    g_menu->volume->set_value(g_audio.volume());
+
+    g_menu->rebind = static_cast<okn::ui::Button*>(t.create(WidgetType::kButton));
+    g_menu->rebind->set_rect(Rect{cx - bw * 0.5f, h * 0.40f + 52.0f, bw, bh});
+    g_menu->rebind->on_click = [] {
+        g_menu->awaiting_key = true;
+        set_rebind_text();
+    };
+
+    g_menu->back = static_cast<okn::ui::Button*>(t.create(WidgetType::kButton));
+    g_menu->back->set_text("BACK");
+    g_menu->back->set_rect(Rect{cx - bw * 0.5f, h * 0.40f + 2.0f * (bh + 16.0f), bw, bh});
+    g_menu->back->on_click = [] {
+        save_settings();
+        g_screen = Screen::Title;
+        apply_screen();
+    };
+
+    for (okn::ui::Widget* wgt : {static_cast<okn::ui::Widget*>(g_menu->title),
+                                 static_cast<okn::ui::Widget*>(g_menu->play),
+                                 static_cast<okn::ui::Widget*>(g_menu->settings),
+                                 static_cast<okn::ui::Widget*>(g_menu->vol_label),
+                                 static_cast<okn::ui::Widget*>(g_menu->volume),
+                                 static_cast<okn::ui::Widget*>(g_menu->rebind),
+                                 static_cast<okn::ui::Widget*>(g_menu->back)}) {
+        t.root()->add_child(wgt);
+    }
+    g_menu->built_w = w;
+    g_menu->built_h = h;
+    set_rebind_text();
+    apply_screen();
+}
 
 // ── audio (procedural, same pattern as the other games) ──────────────────────────
 std::vector<okn::audio::u8> make_beep(float freq, float dur, float decay) {
@@ -419,6 +546,14 @@ void render() {
     hud_cam.viewport_h = vh;
     hud_cam.viewport_w = vw;
 
+    // Menu overlay: okn-ui widgets -> DrawCommands -> sprite quads (hud_bridge, with
+    // kText via the engine bitmap font), in a pixel-space camera for mouse hit-testing.
+    SpriteBatch menu;
+    if (g_screen != Screen::Playing && g_menu) {
+        quad(menu, {w * 0.5f, h * 0.5f}, w, h, rgba(18, 24, 40, 215));   // dim backdrop
+        okn::render::slice::append_hud(menu, g_menu->tree.collect_all_draws(), h);
+    }
+
     sg_pass_action pa{};
     pa.colors[0].load_action = SG_LOADACTION_CLEAR;
     pa.colors[0].clear_value = {0.36f, 0.62f, 0.80f, 1.0f};
@@ -426,9 +561,74 @@ void render() {
     g_renderer->begin_frame();
     g_renderer->add(world_cam, world.build());
     g_renderer->add(hud_cam, hud.build());
+    if (g_screen != Screen::Playing && g_menu) {
+        g_renderer->add(okn::render::slice::hud_camera(w, h), menu.build());
+    }
     g_renderer->end_frame();
     sg_end_pass();
     sg_commit();
+}
+
+// Headless proof of the menu logic (autodemo): the REAL widgets + router + bridge,
+// no window needed — click PLAY (screen flips), drag the volume slider (value +
+// engine volume track), arm + complete a rebind (ActionMap saves), and confirm the
+// widget tree renders through hud_bridge into actual sprite quads (incl. kText).
+void menu_selfcheck() {
+    using okn::ui::MouseButton;
+    build_menu(800.0f, 600.0f);
+    auto& m = *g_menu;
+    auto click = [&](const okn::ui::Rect& r) {
+        m.router.set_mouse_position(r.x + r.w * 0.5f, r.y + r.h * 0.5f);
+        m.router.set_mouse_button(MouseButton::kLeft, true);
+        m.router.dispatch(m.tree.root());
+        m.router.update_previous_state();
+        m.router.set_mouse_button(MouseButton::kLeft, false);
+        m.router.dispatch(m.tree.root());
+        m.router.update_previous_state();
+    };
+
+    g_screen = Screen::Title;
+    apply_screen();
+    click(m.play->rect());
+    const bool play_ok = g_screen == Screen::Playing;
+
+    g_screen = Screen::Settings;
+    apply_screen();
+    const okn::ui::Rect vr = m.volume->rect();
+    m.router.set_mouse_position(vr.x + vr.w * 0.25f, vr.y + vr.h * 0.5f);
+    m.router.set_mouse_button(MouseButton::kLeft, true);
+    m.router.dispatch(m.tree.root());                        // press at 25%
+    m.router.update_previous_state();
+    m.router.set_mouse_position(vr.x + vr.w * 0.75f, vr.y + vr.h * 0.5f);
+    m.router.dispatch(m.tree.root());                        // drag to 75%
+    m.router.set_mouse_button(MouseButton::kLeft, false);
+    m.router.dispatch(m.tree.root());
+    m.router.update_previous_state();
+    const bool slider_ok = m.volume->value() > 0.75f - 0.02f && m.volume->value() < 0.75f + 0.02f;
+    g_audio.set_volume(m.volume->value());
+
+    click(m.rebind->rect());                                 // arm the rebind row
+    const bool armed_ok = m.awaiting_key;
+    g.input.rebind(Action::Jump, 0, static_cast<okn::input::KeyCode>(SAPP_KEYCODE_J));
+    const bool keys_saved = g.input.save(kKeysPath);
+    m.awaiting_key = false;
+    const bool rebind_ok = armed_ok && keys_saved
+                        && g.input.key_of(Action::Jump, 0) == static_cast<okn::input::KeyCode>(SAPP_KEYCODE_J);
+    g.input.bind(Action::Jump, SAPP_KEYCODE_SPACE, SAPP_KEYCODE_W);   // restore for the demo
+
+    SpriteBatch batch;
+    okn::render::slice::append_hud(batch, m.tree.collect_all_draws(), 600.0f);
+    const std::size_t quads = batch.sprite_count();
+    const bool render_ok = quads > 10;   // widget rects + bitmap-font text glyphs
+
+    std::ofstream f("platformer_trace.txt", std::ios::app);
+    if (f) {
+        f << "menu play=" << play_ok << " slider=" << slider_ok << " rebind=" << rebind_ok
+          << " quads=" << quads << " vol=" << g_audio.volume()
+          << (play_ok && slider_ok && rebind_ok && render_ok ? " MENU OK" : " MENU FAIL") << "\n";
+    }
+    g_menu.reset();               // the frame loop rebuilds it at the real window size
+    g_screen = Screen::Playing;   // hand the autodemo back to gameplay
 }
 
 // ── sokol callbacks ───────────────────────────────────────────────────────────────
@@ -452,8 +652,14 @@ void on_init() {
     g.input.bind(Action::Left, SAPP_KEYCODE_A, SAPP_KEYCODE_LEFT);
     g.input.bind(Action::Right, SAPP_KEYCODE_D, SAPP_KEYCODE_RIGHT);
     g.input.bind(Action::Jump, SAPP_KEYCODE_SPACE, SAPP_KEYCODE_W);
+    g.input.load(kKeysPath);   // rebinds persist; a missing/mismatched file keeps defaults
+    load_settings();
 
     g.autodemo = (std::getenv("OKN_PLAT_AUTODEMO") != nullptr);
+    if (g.autodemo) {
+        g_screen = Screen::Playing;   // the gameplay demo skips the title
+        menu_selfcheck();             // ... but the menu logic is proven headlessly first
+    }
 
     load_progress();
     build_levels();
@@ -461,8 +667,52 @@ void on_init() {
 }
 
 void on_event(const sapp_event* ev) {
+    // Menu screens: mouse drives the okn-ui widgets; a pending rebind eats the next key.
+    if (g_screen != Screen::Playing && g_menu) {
+        if (ev->type == SAPP_EVENTTYPE_MOUSE_MOVE) {
+            g_menu->router.set_mouse_position(ev->mouse_x, ev->mouse_y);
+            g_menu->router.dispatch(g_menu->tree.root());   // live slider drag
+        } else if (ev->type == SAPP_EVENTTYPE_MOUSE_DOWN &&
+                   ev->mouse_button == SAPP_MOUSEBUTTON_LEFT) {
+            g_menu->router.set_mouse_position(ev->mouse_x, ev->mouse_y);
+            g_menu->router.set_mouse_button(okn::ui::MouseButton::kLeft, true);
+            g_menu->router.dispatch(g_menu->tree.root());
+            g_menu->router.update_previous_state();
+        } else if (ev->type == SAPP_EVENTTYPE_MOUSE_UP &&
+                   ev->mouse_button == SAPP_MOUSEBUTTON_LEFT) {
+            g_menu->router.set_mouse_position(ev->mouse_x, ev->mouse_y);
+            g_menu->router.set_mouse_button(okn::ui::MouseButton::kLeft, false);
+            g_menu->router.dispatch(g_menu->tree.root());
+            g_menu->router.update_previous_state();
+        } else if (ev->type == SAPP_EVENTTYPE_KEY_DOWN && !ev->key_repeat) {
+            if (g_menu->awaiting_key && ev->key_code != SAPP_KEYCODE_ESCAPE) {
+                g.input.rebind(Action::Jump, 0, static_cast<okn::input::KeyCode>(ev->key_code));
+                g.input.save(kKeysPath);
+                g_menu->awaiting_key = false;
+                set_rebind_text();
+                return;
+            }
+            if (ev->key_code == SAPP_KEYCODE_ESCAPE) {
+                if (g_menu->awaiting_key) { g_menu->awaiting_key = false; set_rebind_text(); return; }
+                if (g_screen == Screen::Settings) { save_settings(); g_screen = Screen::Title; apply_screen(); return; }
+                sapp_request_quit();
+                return;
+            }
+            if (ev->key_code == SAPP_KEYCODE_ENTER && g_screen == Screen::Title) {
+                g_screen = Screen::Playing;
+                return;
+            }
+        }
+        return;
+    }
+
     if (ev->type == SAPP_EVENTTYPE_KEY_DOWN && !ev->key_repeat) {
-        if (ev->key_code == SAPP_KEYCODE_ESCAPE) { sapp_request_quit(); return; }
+        if (ev->key_code == SAPP_KEYCODE_ESCAPE) {   // in-game Esc -> back to the title
+            g_screen = Screen::Title;
+            if (g_menu) { apply_screen(); }
+            g.input.clear_state();
+            return;
+        }
         if (ev->key_code == SAPP_KEYCODE_R) { load_level(g.won && g.level + 1 >= (int)g_levels.size() ? 0 : g.level); return; }
         g.input.on_key(ev->key_code, true);
     } else if (ev->type == SAPP_EVENTTYPE_KEY_UP) {
@@ -490,9 +740,15 @@ void on_frame() {
 #if defined(OKN_PLAT_HAS_LUA)
     if (!g.autodemo) { check_lua_hot_reload(); }
 #endif
+    // (Re)build the menu at the current window size; apply the volume slider live.
+    const float w = sapp_widthf(), h = sapp_heightf();
+    if (!g_menu || g_menu->built_w != w || g_menu->built_h != h) { build_menu(w, h); }
+    if (g_screen == Screen::Settings) { g_audio.set_volume(g_menu->volume->value()); }
+
     float dt = static_cast<float>(sapp_frame_duration());
     dt = std::clamp(dt, 0.0f, 1.0f / 30.0f);
-    if (!(g.won && g.level + 1 >= static_cast<int>(g_levels.size()))) { update(dt); }
+    if (g_screen == Screen::Playing &&
+        !(g.won && g.level + 1 >= static_cast<int>(g_levels.size()))) { update(dt); }
     render();
     g.input.end_frame();
 }
