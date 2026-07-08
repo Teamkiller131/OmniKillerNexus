@@ -218,6 +218,7 @@ okn-platform/src/platform.cpp
 okn-platform/src/thread/tls.cpp
 okn-render/gpu/sokol_impl_app.cpp
 okn-render/gpu/sokol_impl_dummy.cpp
+okn-render/gpu/sokol_impl_gl.cpp
 okn-render/src/backend/backend_factory.cpp
 okn-script/samples/sample_cli.cpp
 okn-script/samples/sample_hot_reload.cpp

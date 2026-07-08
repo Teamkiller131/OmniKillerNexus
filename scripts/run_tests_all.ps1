@@ -114,7 +114,7 @@ foreach ($mod in $targets.Keys) {
 # are asserted (the one game whose behaviour CI can verify without a display).
 $gameCount = 0
 if (-not $SkipGames) {
-    $gameTargets = @("flappy", "knockdown", "platformer", "mario", "mario3d", "harvest", "voidborne")
+    $gameTargets = @("flappy", "knockdown", "platformer", "platformer-gl", "mario", "mario3d", "harvest", "voidborne")
     foreach ($g in $gameTargets) {
         Write-Host "[*] Building game $g ..." -ForegroundColor Yellow
         Invoke-Dev "cmake --build `"$buildPath`" --target $g"

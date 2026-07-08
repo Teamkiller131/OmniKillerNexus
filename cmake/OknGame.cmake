@@ -6,19 +6,33 @@
 # backend (WIN32 → WIN32 OR LINUX + the GL impl TU) is ONE edit, not six.
 #
 #   okn_add_sokol_game(NAME <name>
+#       [SRC <file>]               # main TU (default: <name>_app.cpp beside the caller)
+#       [MANIFEST <file>]          # DPI manifest (default: <name>.manifest beside the caller)
+#       [IMPL_TU <file>]           # sokol impl TU relative to modules/okn-render
+#                                  #   (default: gpu/sokol_impl_app.cpp = D3D11;
+#                                  #    gpu/sokol_impl_gl.cpp = desktop GL)
 #       [LIBS <targets...>]        # linked in addition to okn-math
 #       [EXTRA_SRC <files...>]     # additional sources (absolute paths)
 #       [RENDER_TU <files...>]     # render TUs relative to modules/okn-render
 #                                  #   (default: gpu/gpu_sprite_renderer.cpp)
 #       [NEEDS_STB])               # game #includes stb_image / stb_image_write
 #
-# Expects <name>_app.cpp + <name>.manifest next to the calling CMakeLists. If the
-# prerequisites (sokol, stb when needed, the platform) are missing, no target is
-# created — guard follow-up customization with if(TARGET <name>).
+# Expects <name>_app.cpp + <name>.manifest next to the calling CMakeLists (unless
+# overridden). If the prerequisites (sokol, stb when needed, the platform) are
+# missing, no target is created — guard follow-up customization with if(TARGET <name>).
 function(okn_add_sokol_game)
-    cmake_parse_arguments(G "NEEDS_STB" "NAME" "LIBS;EXTRA_SRC;RENDER_TU" ${ARGN})
+    cmake_parse_arguments(G "NEEDS_STB" "NAME;SRC;MANIFEST;IMPL_TU" "LIBS;EXTRA_SRC;RENDER_TU" ${ARGN})
     if(NOT G_NAME)
         message(FATAL_ERROR "okn_add_sokol_game: NAME is required")
+    endif()
+    if(NOT G_SRC)
+        set(G_SRC "${CMAKE_CURRENT_SOURCE_DIR}/${G_NAME}_app.cpp")
+    endif()
+    if(NOT G_MANIFEST)
+        set(G_MANIFEST "${CMAKE_CURRENT_SOURCE_DIR}/${G_NAME}.manifest")
+    endif()
+    if(NOT G_IMPL_TU)
+        set(G_IMPL_TU "gpu/sokol_impl_app.cpp")
     endif()
 
     find_path(SOKOL_INCLUDE_DIR NAMES sokol_gfx.h)
@@ -44,10 +58,10 @@ function(okn_add_sokol_game)
     endforeach()
 
     add_executable(${G_NAME} WIN32
-        "${CMAKE_CURRENT_SOURCE_DIR}/${G_NAME}_app.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/${G_NAME}.manifest"  # PerMonitorV2 DPI awareness
+        "${G_SRC}"
+        "${G_MANIFEST}"  # PerMonitorV2 DPI awareness
         ${_render_srcs}
-        "${RENDER_DIR}/gpu/sokol_impl_app.cpp"
+        "${RENDER_DIR}/${G_IMPL_TU}"
         ${G_EXTRA_SRC})
     target_include_directories(${G_NAME} PRIVATE
         "${RENDER_DIR}/include" "${SOKOL_INCLUDE_DIR}" ${_stb_include})
