@@ -472,9 +472,15 @@ gate-verifiable and respects rule #2 (names its consumer).
    once from a stable network; the P11 Qt-artifact prune would also shrink the problem.
    ✅ **`FaultyLink` lifted into the testkit** (public `loopback_link.hpp`; `FaultInjector`
    gains a reproducible seed, gate-tested) — the netcode/replay substrate is in place.
-4. **State-hash harness** `[M]` (`hash.cpp` + `World::state_hash()` + a save/load doctest) → then
-   **the 10k swarm perf gate** `[M]` → then **SimdVec4** wired into the swarm and the **scheduler
-   speedup microbench** `[S]` ride on top.
+4. ◑ **State-hash harness** ✅ (okn-math hash fns implemented + `okn::ecs::state_hash()` over the
+   byte-deterministic EKO1 image; gate-tested for equality/round-trip/mutation-sensitivity) →
+   **the 20k swarm perf gate** ✅ (`games/swarm`, headless, in the gate: seq-vs-pool with
+   `state_hash` equality across scheduling — the oracle's 2nd consumer — plus a loose budget).
+   **FINDING: system-level parallelism is a net LOSS at this shape — speedup ≈0.9x** (one heavy
+   Move system dominates the 3-wide level; dispatch overhead eats the gains). The §8 condition
+   "chunked iteration only if a benchmark demands it" now has its benchmark, and it demands the
+   question: intra-system (chunked query) parallelism is where the pool would actually pay.
+   Remaining: **SimdVec4** wired into a Vec4-packed/SoA transform bench on the swarm.
 5. **ECS Serializer as voidborne's save** `[M]` · **bus mixer audible in harvest** `[M]` · the
    **editor `EcsBridge`→real World** `[M]` — the three biggest "island → shipped" conversions.
 6. **renderer_bridge** `[M]` → **platformer title/settings menu** `[M]` (the P15 acceptance item) →

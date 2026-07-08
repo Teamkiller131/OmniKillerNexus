@@ -148,6 +148,28 @@ if (-not $SkipGames) {
         Pop-Location
     }
 
+    # SWARM: the headless ECS scale/perf gate — 20k entities through the parallel
+    # scheduler, sequential vs pool, asserting scheduling-independent state hashes
+    # + a loose frame budget (the measured speedup is reported, not asserted).
+    Write-Host "[*] Building swarm (ECS perf gate) ..." -ForegroundColor Yellow
+    Invoke-Dev "cmake --build `"$buildPath`" --target swarm"
+    if (Test-Path (Join-Path $binDir "swarm.exe")) {
+        Push-Location $binDir
+        Remove-Item "swarm_result.txt" -ErrorAction SilentlyContinue
+        $swarmOut = (& ".\swarm.exe" 2>&1 | Out-String)
+        Pop-Location
+        if ($swarmOut -like "*SWARM OK*") {
+            $line = ($swarmOut -split "`n" | Select-String "SWARM OK" | Select-Object -First 1)
+            $summary += "  swarm (20k ECS)  OK  [$($line.ToString().Trim())]"
+        } else {
+            $failures += "swarm"
+            $summary += "  swarm (20k ECS)  FAILED: $($swarmOut.Trim())"
+        }
+    } else {
+        $failures += "swarm"
+        $summary += "  swarm (20k ECS)  BUILD FAILED"
+    }
+
     # okn-editor (UniGUI / Dear ImGui) also exposes a headless --selftest that
     # returns before the window loop — it checks the scene serialize round-trip and
     # the multi-level undo/redo. Best-effort: build it (needs unigui); if the exe

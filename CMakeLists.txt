@@ -138,6 +138,9 @@ endif()
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/games/voidborne/CMakeLists.txt")
     add_subdirectory(games/voidborne)
 endif()
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/games/swarm/CMakeLists.txt")
+    add_subdirectory(games/swarm)
+endif()
 
 # 安装/导出暂不启用，避免依赖未导出目标导致的错误
 # 若未来需要安装，请确保各模块都有 install(TARGETS ... EXPORT OmniKillerNexusTargets)
